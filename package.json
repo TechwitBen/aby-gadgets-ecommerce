@@ -1,0 +1,17 @@
+{
+  "name": "aby-gadgets",
+  "version": "1.0.0",
+  "description": "e-commerce project for a gadgets store",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend dev",
+    "build": "pnpm --recursive build",
+    "install:all": "pnpm install -r"
+  },
+  "keywords": [],
+  "author": "Gordian Okon",
+  "license": "ISC",
+  "packageManager": "pnpm@10.27.0"
+}
