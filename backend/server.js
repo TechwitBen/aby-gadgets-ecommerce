@@ -1,5 +1,6 @@
 import express from "express";
 import { authRouter } from "./routes/auth.routes.js";
+import pool from "./db.js";
 
 const app = express();
 
@@ -13,4 +14,5 @@ app.use("/api/v1/auth", authRouter);
 
 app.listen(port, () => {
   console.log(`server is running on localhost ${port}`);
+  pool; // Initialize the database connection
 });
