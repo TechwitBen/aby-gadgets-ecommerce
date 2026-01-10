@@ -1,4 +1,5 @@
 import { Pool } from "pg";
+import { Sequelize } from "sequelize";
 import {
   DATABASE_URL,
   PGSSLMODE,
@@ -70,6 +71,17 @@ pool.on("error", (err) => {
   console.error("Unexpected idle Postgres client error:", err);
 });
 
+const sequelize = new Sequelize(
+  DATABASE_URL ||
+    `postgres://${PGUSER || DB_USER}:${PGPASSWORD || DB_PASSWORD}@${
+      PGHOST || "localhost"
+    }:${PGPORT || 5432}/${PGDATABASE || DB_NAME}`,
+  {
+    dialect: "postgres",
+    logging: false,
+  }
+);
+
 /**
  * Test connection helper for manual debugging. Example:
  *   node -e "import('./backend/db.js').then(m=>m.testConnection())"
@@ -97,5 +109,7 @@ export const testConnection = async (timeoutMs = 10000) => {
 };
 
 export const query = (text, params) => pool.query(text, params);
+
+export { sequelize };
 
 export default pool;
