@@ -1,53 +1,24 @@
-# Dependencies
-node_modules/
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-.pnp
-.pnp.js
+lerna-debug.log*
 
-# Environment variables
-.env
-.env.local
-.env.development
-.env.development.local
-.env.test
-.env.test.local
-.env.production
-.env.production.local
-.env*.local
+node_modules
+dist
+dist-ssr
+*.local
 
-# Build outputs
-dist/
-build/
-out/
-
-# Testing
-coverage/
-.nyc_output
-*.lcov
-.jest-cache/
-
-# IDE and Editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
 .DS_Store
-*.sublime-project
-*.sublime-workspace
-.history/
-
-
-# Database
-*.sqlite
-*.sqlite3
-*.db
-.mongodb/
-
-
-
-
-
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -1,17 +1,26 @@
 {
-  "name": "aby-gadgets",
-  "version": "1.0.0",
-  "description": "e-commerce project for a gadgets store",
+  "name": "aby-gadgets-root",
   "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "pnpm --parallel dev",
     "dev:frontend": "pnpm --filter frontend dev",
     "dev:backend": "pnpm --filter backend dev",
     "build": "pnpm --recursive build",
-    "install:all": "pnpm install -r"
+    "install:all": "pnpm install -r",
+    "lint": "pnpm --recursive lint"
   },
-  "keywords": [],
-  "author": "Gordian Okon",
-  "license": "ISC",
-  "packageManager": "pnpm@10.27.0"
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "eslint": "^9.32.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  }
 }
+
+
+
+
+
