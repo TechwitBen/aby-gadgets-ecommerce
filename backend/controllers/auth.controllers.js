@@ -1,20 +1,7 @@
 import crypto from "crypto";
 import passport from "passport";
 import LocalStrategy from "passport-local";
-import { sequelize } from "../db.js";
-import initUser from "../models/user.model.js";
-import jwt from "jsonwebtoken";
-import { OAuth2Client } from "google-auth-library";
 import User from "../models/user.model.js";
-import { CLIENT_ID, CLIENT_SECRET, JWT_SECRET } from "../configs/env.config.js";
-
-const User = initUser(sequelize);
-
-const client = new OAuth2Client(
-  CLIENT_ID,
-  CLIENT_SECRET,
-  "http://localhost:8000/api/v1/auth/google/callback"
-);
 
 passport.use(
   new LocalStrategy(async function verify(username, password, cb) {
@@ -22,6 +9,7 @@ passport.use(
       const user = await User.findOne({ where: { username } });
       if (!user) {
         return cb(null, false, {
+          success: false,
           message: "Incorrect username or password.",
         });
       }
@@ -43,6 +31,7 @@ passport.use(
             )
           ) {
             return cb(null, false, {
+              success: false,
               message: "Incorrect username or password.",
             });
           }
@@ -59,21 +48,29 @@ export const loginController = (req, res, next) => {
   try {
     passport.authenticate("local", (err, user, info) => {
       if (err) {
-        return res.status(500).json({ error: "Internal server error." });
+        return res
+          .status(500)
+          .json({ success: false, error: "Internal server error." });
       }
 
       if (!user) {
         const errorMsg = info?.message || "Username or password is incorrect.";
-        return res.status(400).json({ error: errorMsg });
+        return res.status(400).json({ success: false, error: errorMsg });
       }
 
       req.logIn(user, (err) => {
         if (err) {
-          return res.status(500).json({ error: "Failed to log in user." });
+          return res.status(500).json({
+            success: false,
+            error: "Failed to log in user.",
+          });
         }
 
         req.session.save(() => {
-          return res.status(200).json({ message: "Login successful" });
+          return res.status(200).json({
+            success: true,
+            message: "Login successful",
+          });
         });
       });
     })(req, res, next);
@@ -87,24 +84,27 @@ export const RegisterController = async (req, res, next) => {
     const { username, password, email } = req.body;
 
     if (!username || !password || !email) {
-      return res
-        .status(400)
-        .json({ error: "Username, email and password are required." });
+      return res.status(400).json({
+        success: false,
+        error: "Username, email and password are required.",
+      });
     }
 
     // Check if user exists
     const existingUser = await User.findOne({ where: { username } });
     if (existingUser) {
-      return res
-        .status(400)
-        .json({ error: "A user with that username already exists." });
+      return res.status(400).json({
+        success: false,
+        error: "A user with that username already exists.",
+      });
     }
 
     const existingEmail = await User.findOne({ where: { email } });
     if (existingEmail) {
-      return res
-        .status(400)
-        .json({ error: "A user with that email already exists." });
+      return res.status(400).json({
+        success: false,
+        error: "A user with that email already exists.",
+      });
     }
 
     // Generate salt
@@ -119,7 +119,9 @@ export const RegisterController = async (req, res, next) => {
       "sha256",
       async (err, hashedPassword) => {
         if (err) {
-          return res.status(500).json({ error: "Error hashing password." });
+          return res
+            .status(500)
+            .json({ success: false, error: "Error hashing password." });
         }
 
         try {
@@ -132,72 +134,29 @@ export const RegisterController = async (req, res, next) => {
 
           req.logIn(user, (err) => {
             if (err) {
-              return res.status(500).json({ error: "Failed to log in user." });
+              return res
+                .status(500)
+                .json({ success: false, error: "Failed to log in user." });
             }
 
             req.session.save(() => {
-              return res.status(200).json({ message: "Signup successful" });
+              return res
+                .status(200)
+                .json({ success: true, message: "Signup successful" });
             });
           });
         } catch (createErr) {
           console.log(createErr);
-          return res.status(500).json({ error: "Error creating user." });
+          return res
+            .status(500)
+            .json({ success: false, error: "Error creating user." });
         }
       }
     );
   } catch (error) {
     console.log(error);
-    return res.status(500).json({ error: "Internal server error." });
-  }
-};
-
-export const googleAuth = (req, res) => {
-  const url = client.generateAuthUrl({
-    access_type: "offline",
-    scope: ["profile", "email"],
-  });
-
-  res.redirect(url);
-};
-
-export const googleCallback = async (req, res) => {
-  try {
-    const { code } = req.query;
-
-    const { tokens } = await client.getToken(code);
-    client.setCredentials(tokens);
-
-    const ticket = client.verifyIdToken({
-      idToken: tokens.id_token,
-      audience: CLIENT_ID,
-    });
-
-    const payload = ticket.getPayload();
-
-    const { sub: googleId, email, name, picture } = payload;
-
-    // 1. Find or create user in DB
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      user = await User.create({
-        email,
-        name,
-        googleId,
-        avatar: picture,
-        provider: "google",
-      });
-    }
-
-    // 2. Issue your own JWT
-    const appToken = jwt.sign({ userId: user._id }, JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    // 3. Redirect back to frontend
-    res.redirect(`http://localhost:5173/oauth-success?token=${appToken}`);
-  } catch (err) {
-    console.error(err);
-    res.redirect("http://localhost:5173/login?error=google");
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error." });
   }
 };

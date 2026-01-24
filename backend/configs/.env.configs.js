@@ -16,4 +16,6 @@ export const {
   DB_NAME,
   DATABASE_SSL,
   SESSION_SECRET,
+  GOOGLE_CLIENT_SECRET,
+  GOOGLE_CLIENT_ID,
 } = process.env;
