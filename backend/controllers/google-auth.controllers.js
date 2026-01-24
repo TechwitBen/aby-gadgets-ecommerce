@@ -14,7 +14,7 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/api/auth/google/callback",
+      callbackURL: "http://localhost:5000/api/auth/google/callback",
     },
     async function verify(accessToken, refreshToken, profile, cb) {
       try {
@@ -45,8 +45,8 @@ passport.use(
       } catch (err) {
         return cb(err);
       }
-    }
-  )
+    },
+  ),
 );
 
 export const googleAuth = passport.authenticate("google", {
@@ -69,7 +69,7 @@ export const googleCallback = (req, res, next) => {
       }
 
       req.session.save(() => {
-        res.redirect("http://localhost:5173/dashboard");
+        res.redirect("http://localhost:5173/");
       });
     });
   })(req, res, next);
