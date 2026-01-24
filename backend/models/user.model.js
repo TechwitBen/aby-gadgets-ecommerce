@@ -1,11 +1,5 @@
 import { DataTypes } from "sequelize";
 
-/**
- * Initialize and return the User model.
- * Usage:
- *   import initUser from './models/user.model.js';
- *   const User = initUser(sequelize);
- */
 export default function initUser(sequelize) {
   const User = sequelize.define(
     "User",
@@ -23,24 +17,53 @@ export default function initUser(sequelize) {
           isEmail: true,
         },
       },
+      username: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        unique: true,
+      },
       hashed_password: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
       salt: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
       },
-      username: {
-        type: DataTypes.STRING(100),
+      provider: {
+        type: DataTypes.ENUM("local", "google"),
         allowNull: false,
+        defaultValue: "local",
+      },
+      google_id: {
+        type: DataTypes.STRING,
+        allowNull: true,
         unique: true,
+      },
+      name: {
+        type: DataTypes.STRING(200),
+        allowNull: true,
       },
     },
     {
       tableName: "users",
       timestamps: true,
       underscored: true,
+      validate: {
+        hasAuthMethod() {
+          if (
+            this.provider === "local" &&
+            (!this.hashed_password || !this.salt || !this.username)
+          ) {
+            throw new Error(
+              "Local users must have username, hashed_password, and salt"
+            );
+          }
+          if (this.provider === "google" && !this.google_id) {
+            throw new Error("Google users must have google_id");
+          }
+        },
+      },
     }
   );
 
