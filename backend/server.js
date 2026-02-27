@@ -1,8 +1,8 @@
 import express from "express";
 // import morgan from "morgan";
 import { authRouter } from "./routes/auth.routes.js";
-import pool, { sequelize } from "./db.js";
-import initUser from "./models/user.model.js";
+import { connect } from "./db.js";
+import User from "./models/user.model.js";
 import passport from "passport";
 import session from "express-session";
 import cors from "cors";
@@ -13,10 +13,8 @@ const app = express();
 const port = 3000;
 
 const startServer = async () => {
-  const User = initUser(sequelize);
-
-  // Sync database models
-  await sequelize.sync();
+  // Connect to MongoDB
+  await connect();
 
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
@@ -25,7 +23,7 @@ const startServer = async () => {
     cors({
       origin: "http://localhost:5173",
       credentials: true,
-    })
+    }),
   );
   app.use(
     session({
@@ -40,7 +38,7 @@ const startServer = async () => {
         httpOnly: true,
         domain: "localhost",
       },
-    })
+    }),
   );
 
   passport.serializeUser((user, done) => {
@@ -49,7 +47,7 @@ const startServer = async () => {
 
   passport.deserializeUser(async (id, done) => {
     try {
-      const user = await User.findByPk(id);
+      const user = await User.findById(id).lean();
       done(null, user);
     } catch (err) {
       done(err);
@@ -64,7 +62,6 @@ const startServer = async () => {
 
   app.listen(port, () => {
     console.log(`server is running on localhost ${port}`);
-    pool; // Initialize the database connection
   });
 };
 

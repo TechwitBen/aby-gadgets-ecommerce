@@ -1,71 +1,43 @@
-import { DataTypes } from "sequelize";
+import mongoose from "mongoose";
 
-export default function initUser(sequelize) {
-  const User = sequelize.define(
-    "User",
-    {
-      id: {
-        type: DataTypes.INTEGER,
-        primaryKey: true,
-        autoIncrement: true,
-      },
-      email: {
-        type: DataTypes.STRING(254),
-        allowNull: false,
-        unique: true,
-        validate: {
-          isEmail: true,
-        },
-      },
-      username: {
-        type: DataTypes.STRING(100),
-        allowNull: true,
-        unique: true,
-      },
-      hashed_password: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      salt: {
-        type: DataTypes.STRING,
-        allowNull: true,
-      },
-      provider: {
-        type: DataTypes.ENUM("local", "google"),
-        allowNull: false,
-        defaultValue: "local",
-      },
-      google_id: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        unique: true,
-      },
-      name: {
-        type: DataTypes.STRING(200),
-        allowNull: true,
-      },
+const { Schema } = mongoose;
+
+const UserSchema = new Schema(
+  {
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
     },
-    {
-      tableName: "users",
-      timestamps: true,
-      underscored: true,
-      validate: {
-        hasAuthMethod() {
-          if (
-            this.provider === "local" &&
-            (!this.hashed_password || !this.salt || !this.username)
-          ) {
-            throw new Error(
-              "Local users must have username, hashed_password, and salt"
-            );
-          }
-          if (this.provider === "google" && !this.google_id) {
-            throw new Error("Google users must have google_id");
-          }
-        },
-      },
-    }
-  );
+    username: { type: String, required: false, unique: true, sparse: true },
+    hashed_password: { type: String },
+    salt: { type: String },
+    provider: { type: String, enum: ["local", "google"], default: "local" },
+    google_id: { type: String, unique: true, sparse: true },
+    name: { type: String },
+  },
+  {
+    collection: "users",
+    timestamps: true,
+  },
+);
 
-  return User;
-}
+UserSchema.pre("save", function (next) {
+  if (this.provider === "local") {
+    if (!this.hashed_password || !this.salt || !this.username) {
+      return next(
+        new Error("Local users must have username, hashed_password, and salt"),
+      );
+    }
+  }
+  if (this.provider === "google" && !this.google_id) {
+    return next(new Error("Google users must have google_id"));
+  }
+  return next();
+});
+
+const User = mongoose.models.User || mongoose.model("User", UserSchema);
+
+export default User;

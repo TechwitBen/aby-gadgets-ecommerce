@@ -1,13 +1,10 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { sequelize } from "../db.js";
-import initUser from "../models/user.model.js";
+import User from "../models/user.model.js";
 import {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
 } from "../configs/.env.configs.js";
-
-const User = initUser(sequelize);
 
 passport.use(
   new GoogleStrategy(
@@ -22,19 +19,16 @@ passport.use(
         const googleId = profile.id;
         const name = profile.displayName;
 
-        let user = await User.findOne({
-          where: {
-            email,
-          },
-        });
+        let user = await User.findOne({ email });
 
         if (!user) {
-          user = await User.create({
+          user = new User({
             email,
             name,
             google_id: googleId,
             provider: "google",
           });
+          await user.save();
         } else if (user.provider === "local") {
           user.google_id = googleId;
           user.provider = "google";

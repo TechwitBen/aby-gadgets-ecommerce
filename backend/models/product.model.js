@@ -1,486 +1,157 @@
-import { DataTypes, Model } from "sequelize";
+import mongoose from "mongoose";
 
-module.exports = (sequelize) => {
-  class Product extends Model {
-    static associate(models) {
-      // i defined associations here
-      Product.belongsTo(models.Category, {
-        foreignKey: "categoryId",
-        as: "category",
-      });
+const { Schema } = mongoose;
 
-      Product.belongsTo(models.Brand, {
-        foreignKey: "brandId",
-        as: "brand",
-      });
+const ProductSchema = new Schema(
+  {
+    sku: { type: String, required: true, unique: true, trim: true },
+    name: { type: String, required: true, trim: true },
+    slug: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    description: { type: String },
+    shortDescription: { type: String },
+    categoryId: { type: Schema.Types.ObjectId, ref: "Category" },
+    brandId: { type: Schema.Types.ObjectId, ref: "Brand" },
+    basePrice: { type: Number, required: true, min: 0 },
+    salePrice: { type: Number, min: 0 },
+    currency: { type: String, default: "NGN", maxlength: 3 },
+    costPrice: { type: Number, min: 0 },
+    discountType: {
+      type: String,
+      enum: ["percentage", "fixed", "none"],
+      default: "none",
+    },
+    discountValue: { type: Number, min: 0 },
+    discountStartDate: { type: Date },
+    discountEndDate: { type: Date },
+    quantity: { type: Number, default: 0, min: 0 },
+    lowStockThreshold: { type: Number, default: 10, min: 0 },
+    allowBackorder: { type: Boolean, default: false },
+    trackInventory: { type: Boolean, default: true },
+    specifications: { type: Schema.Types.Mixed, default: {} },
+    tags: { type: [String], default: [] },
+    metaTitle: { type: String },
+    metaDescription: { type: String },
+    keywords: { type: [String], default: [] },
+    ogImage: { type: String },
+    weight: { type: Number },
+    dimensions: { type: Schema.Types.Mixed, default: {} },
+    freeShipping: { type: Boolean, default: false },
+    shippingClass: {
+      type: String,
+      enum: ["standard", "express", "oversized", "fragile"],
+      default: "standard",
+    },
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    totalReviews: { type: Number, default: 0, min: 0 },
+    ratingDistribution: {
+      type: Schema.Types.Mixed,
+      default: { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 },
+    },
+    status: {
+      type: String,
+      enum: ["draft", "active", "archived", "out_of_stock"],
+      default: "draft",
+    },
+    visibility: {
+      type: String,
+      enum: ["public", "private", "hidden"],
+      default: "public",
+    },
+    featured: { type: Boolean, default: false },
+    warrantyDuration: { type: Number },
+    warrantyType: { type: String, enum: ["months", "years", "lifetime"] },
+    warrantyDescription: { type: String },
+    returnable: { type: Boolean, default: false },
+    returnWindow: { type: Number, default: 30 },
+    restockingFee: { type: Number, default: 0 },
+    badges: { type: [String], default: [] },
+    publishedAt: { type: Date },
+    availableFrom: { type: Date },
+    availableUntil: { type: Date },
+    viewCount: { type: Number, default: 0 },
+    deletedAt: { type: Date, default: null },
+  },
+  { timestamps: true },
+);
 
-      Product.hasMany(models.ProductVariant, {
-        foreignKey: "productId",
-        as: "variants",
-      });
+// Indexes
+ProductSchema.index({ sku: 1 }, { unique: true });
+ProductSchema.index({ slug: 1 }, { unique: true });
+ProductSchema.index({ categoryId: 1 });
+ProductSchema.index({ brandId: 1 });
+ProductSchema.index({ status: 1 });
+ProductSchema.index({ featured: 1 });
+ProductSchema.index({ basePrice: 1 });
+ProductSchema.index({ createdAt: 1 });
+// Text index for search
+ProductSchema.index({ name: "text", description: "text" });
 
-      Product.hasMany(models.ProductImage, {
-        foreignKey: "productId",
-        as: "images",
-      });
-
-      Product.hasMany(models.Review, {
-        foreignKey: "productId",
-        as: "reviews",
-      });
-
-      Product.belongsToMany(models.Product, {
-        through: "RelatedProducts",
-        as: "relatedProducts",
-        foreignKey: "productId",
-        otherKey: "relatedProductId",
-      });
-    }
+// Hooks
+ProductSchema.pre("validate", function (next) {
+  if (this.name && !this.slug) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/(^-|-$)/g, "");
   }
+  next();
+});
 
-  Product.init(
-    {
-      id: {
-        type: DataTypes.UUID,
-        defaultValue: DataTypes.UUIDV4,
-        primaryKey: true,
-      },
+ProductSchema.pre("save", function (next) {
+  if (this.salePrice && this.basePrice && this.salePrice > this.basePrice) {
+    this.salePrice = this.basePrice;
+  }
+  next();
+});
 
-      // Basic Information
-      sku: {
-        type: DataTypes.STRING(100),
-        allowNull: false,
-        unique: true,
-        validate: {
-          notEmpty: true,
-        },
-      },
-
-      name: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        validate: {
-          notEmpty: true,
-          len: [3, 255],
-        },
-      },
-
-      slug: {
-        type: DataTypes.STRING(255),
-        allowNull: false,
-        unique: true,
-        validate: {
-          notEmpty: true,
-          is: /^[a-z0-9-]+$/,
-        },
-      },
-
-      description: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-
-      shortDescription: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-      },
-
-      // Foreign Keys
-      categoryId: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-          model: "categories",
-          key: "id",
-        },
-      },
-
-      brandId: {
-        type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-          model: "brands",
-          key: "id",
-        },
-      },
-
-      // Pricing
-      basePrice: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: false,
-        validate: {
-          min: 0,
-        },
-      },
-
-      salePrice: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        validate: {
-          min: 0,
-        },
-      },
-
-      currency: {
-        type: DataTypes.STRING(3),
-        defaultValue: "NGN",
-        validate: {
-          len: [3, 3],
-        },
-      },
-
-      costPrice: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        validate: {
-          min: 0,
-        },
-      },
-
-      // Discount Information
-      discountType: {
-        type: DataTypes.ENUM("percentage", "fixed", "none"),
-        defaultValue: "none",
-      },
-
-      discountValue: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        validate: {
-          min: 0,
-        },
-      },
-
-      discountStartDate: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-
-      discountEndDate: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-
-      // Inventory
-      quantity: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        validate: {
-          min: 0,
-        },
-      },
-
-      lowStockThreshold: {
-        type: DataTypes.INTEGER,
-        defaultValue: 10,
-        validate: {
-          min: 0,
-        },
-      },
-
-      allowBackorder: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-
-      trackInventory: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: true,
-      },
-
-      // Specifications (stored as JSONB for flexibility)
-      specifications: {
-        type: DataTypes.JSONB,
-        defaultValue: {},
-        comment:
-          "Flexible JSON storage for product specs like processor, RAM, storage, etc.",
-      },
-
-      // Tags
-      tags: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        defaultValue: [],
-      },
-
-      // SEO
-      metaTitle: {
-        type: DataTypes.STRING(255),
-        allowNull: true,
-      },
-
-      metaDescription: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-      },
-
-      keywords: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        defaultValue: [],
-      },
-
-      ogImage: {
-        type: DataTypes.STRING(500),
-        allowNull: true,
-      },
-
-      // Shipping
-      weight: {
-        type: DataTypes.DECIMAL(10, 2),
-        allowNull: true,
-        comment: "Weight in kg",
-      },
-
-      dimensions: {
-        type: DataTypes.JSONB,
-        defaultValue: {},
-        comment: "Object with length, width, height in cm",
-      },
-
-      freeShipping: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-
-      shippingClass: {
-        type: DataTypes.ENUM("standard", "express", "oversized", "fragile"),
-        defaultValue: "standard",
-      },
-
-      // Reviews & Ratings (calculated fields)
-      averageRating: {
-        type: DataTypes.DECIMAL(3, 2),
-        defaultValue: 0,
-        validate: {
-          min: 0,
-          max: 5,
-        },
-      },
-
-      totalReviews: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-        validate: {
-          min: 0,
-        },
-      },
-
-      ratingDistribution: {
-        type: DataTypes.JSONB,
-        defaultValue: {
-          5: 0,
-          4: 0,
-          3: 0,
-          2: 0,
-          1: 0,
-        },
-      },
-
-      // Status & Visibility
-      status: {
-        type: DataTypes.ENUM("draft", "active", "archived", "out_of_stock"),
-        defaultValue: "draft",
-      },
-
-      visibility: {
-        type: DataTypes.ENUM("public", "private", "hidden"),
-        defaultValue: "public",
-      },
-
-      featured: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-
-      // Warranty
-      warrantyDuration: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
-        comment: "Warranty duration value",
-      },
-
-      warrantyType: {
-        type: DataTypes.ENUM("months", "years", "lifetime"),
-        allowNull: true,
-      },
-
-      warrantyDescription: {
-        type: DataTypes.TEXT,
-        allowNull: true,
-      },
-
-      // Return Policy
-      returnable: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false,
-      },
-
-      returnWindow: {
-        type: DataTypes.INTEGER,
-        defaultValue: 30,
-        comment: "Return window in days",
-      },
-
-      restockingFee: {
-        type: DataTypes.DECIMAL(5, 2),
-        defaultValue: 0,
-        comment: "Restocking fee percentage",
-      },
-
-      // Badges
-      badges: {
-        type: DataTypes.ARRAY(DataTypes.STRING),
-        defaultValue: [],
-        comment: 'e.g., ["New Arrival", "Best Seller", "Limited Edition"]',
-      },
-
-      // Availability Dates
-      publishedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-
-      availableFrom: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        comment: "For pre-orders or scheduled releases",
-      },
-
-      availableUntil: {
-        type: DataTypes.DATE,
-        allowNull: true,
-        comment: "For limited time availability",
-      },
-
-      // View count for analytics
-      viewCount: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
-      },
-
-      // Soft delete
-      deletedAt: {
-        type: DataTypes.DATE,
-        allowNull: true,
-      },
-    },
-    {
-      sequelize,
-      modelName: "Product",
-      tableName: "products",
-      timestamps: true,
-      paranoid: true, // Enables soft deletes
-      indexes: [
-        {
-          fields: ["sku"],
-          unique: true,
-        },
-        {
-          fields: ["slug"],
-          unique: true,
-        },
-        {
-          fields: ["categoryId"],
-        },
-        {
-          fields: ["brandId"],
-        },
-        {
-          fields: ["status"],
-        },
-        {
-          fields: ["featured"],
-        },
-        {
-          fields: ["basePrice"],
-        },
-        {
-          fields: ["createdAt"],
-        },
-        {
-          // Full-text search index on name and description
-          fields: ["name", "description"],
-          type: "GIN",
-          name: "products_search_idx",
-        },
-      ],
-      hooks: {
-        // Auto-generate slug from name if not provided
-        beforeValidate: (product) => {
-          if (product.name && !product.slug) {
-            product.slug = product.name
-              .toLowerCase()
-              .replace(/[^a-z0-9]+/g, "-")
-              .replace(/(^-|-$)/g, "");
-          }
-        },
-
-        // Calculate effective price
-        beforeSave: (product) => {
-          // Ensuring sale price is not higher than base price
-          if (product.salePrice && product.salePrice > product.basePrice) {
-            product.salePrice = product.basePrice;
-          }
-        },
-      },
-    },
-  );
-
-  // Instance methods
-  Product.prototype.getEffectivePrice = function () {
-    const now = new Date();
-
-    // Check if discount is active
-    if (
-      this.salePrice &&
-      this.salePrice < this.basePrice &&
-      (!this.discountStartDate || this.discountStartDate <= now) &&
-      (!this.discountEndDate || this.discountEndDate >= now)
-    ) {
-      return this.salePrice;
-    }
-
-    return this.basePrice;
-  };
-
-  Product.prototype.isInStock = function () {
-    if (!this.trackInventory) return true;
-    return this.quantity > 0 || this.allowBackorder;
-  };
-
-  Product.prototype.isLowStock = function () {
-    if (!this.trackInventory) return false;
-    return this.quantity > 0 && this.quantity <= this.lowStockThreshold;
-  };
-
-  Product.prototype.incrementViewCount = async function () {
-    this.viewCount += 1;
-    await this.save();
-  };
-
-  // Class methods
-  Product.findBySlug = async function (slug) {
-    return await this.findOne({
-      where: { slug },
-      include: [
-        { association: "category" },
-        { association: "brand" },
-        { association: "images" },
-        { association: "variants" },
-      ],
-    });
-  };
-
-  Product.findFeatured = async function (limit = 10) {
-    return await this.findAll({
-      where: {
-        featured: true,
-        status: "active",
-        visibility: "public",
-      },
-      limit,
-      order: [["createdAt", "DESC"]],
-    });
-  };
-
-  return Product;
+// Instance methods
+ProductSchema.methods.getEffectivePrice = function () {
+  const now = new Date();
+  if (
+    this.salePrice &&
+    this.salePrice < this.basePrice &&
+    (!this.discountStartDate || this.discountStartDate <= now) &&
+    (!this.discountEndDate || this.discountEndDate >= now)
+  ) {
+    return this.salePrice;
+  }
+  return this.basePrice;
 };
+
+ProductSchema.methods.isInStock = function () {
+  if (!this.trackInventory) return true;
+  return this.quantity > 0 || this.allowBackorder;
+};
+
+ProductSchema.methods.isLowStock = function () {
+  if (!this.trackInventory) return false;
+  return this.quantity > 0 && this.quantity <= this.lowStockThreshold;
+};
+
+ProductSchema.methods.incrementViewCount = async function () {
+  this.viewCount = (this.viewCount || 0) + 1;
+  await this.save();
+};
+
+// Statics
+ProductSchema.statics.findBySlug = async function (slug) {
+  return this.findOne({ slug }).exec();
+};
+
+ProductSchema.statics.findFeatured = async function (limit = 10) {
+  return this.find({ featured: true, status: "active", visibility: "public" })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .exec();
+};
+
+const Product =
+  mongoose.models.Product || mongoose.model("Product", ProductSchema);
+
+export default Product;
