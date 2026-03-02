@@ -6,7 +6,7 @@ import User from "../models/user.model.js";
 passport.use(
   new LocalStrategy(async function verify(username, password, cb) {
     try {
-      const user = await User.findOne({ where: { username } });
+      const user = await User.findOne({ username });
       if (!user) {
         return cb(null, false, {
           success: false,
