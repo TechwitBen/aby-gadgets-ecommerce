@@ -13,7 +13,6 @@ const app = express();
 const port = 3000;
 
 const startServer = async () => {
-  // Connect to MongoDB
   await connect();
 
   app.use(express.json());
@@ -59,6 +58,7 @@ const startServer = async () => {
   });
 
   app.use("/api/v1/auth", authRouter);
+  app.use("/api/v1/product", productRouter);
 
   app.listen(port, () => {
     console.log(`server is running on localhost ${port}`);
