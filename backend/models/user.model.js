@@ -24,18 +24,17 @@ const UserSchema = new Schema(
   },
 );
 
-UserSchema.pre("save", function (next) {
+UserSchema.pre("save", function () {
   if (this.provider === "local") {
     if (!this.hashed_password || !this.salt || !this.username) {
-      return next(
-        new Error("Local users must have username, hashed_password, and salt"),
+      throw new Error(
+        "Local users must have username, hashed_password, and salt",
       );
     }
   }
   if (this.provider === "google" && !this.google_id) {
-    return next(new Error("Google users must have google_id"));
+    throw new Error("Google users must have google_id");
   }
-  return next();
 });
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);

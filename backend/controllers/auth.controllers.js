@@ -27,7 +27,7 @@ passport.use(
           if (
             !crypto.timingSafeEqual(
               Buffer.from(user.hashed_password, "hex"),
-              hashedPassword
+              hashedPassword,
             )
           ) {
             return cb(null, false, {
@@ -36,12 +36,12 @@ passport.use(
             });
           }
           return cb(null, user);
-        }
+        },
       );
     } catch (err) {
       return cb(err);
     }
-  })
+  }),
 );
 
 export const loginController = (req, res, next) => {
@@ -91,7 +91,7 @@ export const RegisterController = async (req, res, next) => {
     }
 
     // Check if user exists
-    const existingUser = await User.findOne({ where: { username } });
+    const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -99,7 +99,7 @@ export const RegisterController = async (req, res, next) => {
       });
     }
 
-    const existingEmail = await User.findOne({ where: { email } });
+    const existingEmail = await User.findOne({ email });
     if (existingEmail) {
       return res.status(400).json({
         success: false,
@@ -151,7 +151,7 @@ export const RegisterController = async (req, res, next) => {
             .status(500)
             .json({ success: false, error: "Error creating user." });
         }
-      }
+      },
     );
   } catch (error) {
     console.log(error);
