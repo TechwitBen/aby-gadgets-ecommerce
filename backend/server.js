@@ -1,6 +1,7 @@
 import express from "express";
 // import morgan from "morgan";
 import { authRouter } from "./routes/auth.routes.js";
+import productRouter from "./routes/product.routes.js";
 import { connect } from "./db.js";
 import User from "./models/user.model.js";
 import passport from "passport";

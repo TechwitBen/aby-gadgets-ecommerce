@@ -8,51 +8,79 @@ import { Product } from "../models/product.model.js";
  * @access  Private
  */
 
+import mongoose from "mongoose";
+import { Order } from "../models/order.model.js";
+import Variant from "../models/variant.model.js";
+
 export const createOrder = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { orderItems, shippingAddress, paymentMethod } = req.body;
 
     if (!orderItems || orderItems.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: "No order items provided" });
     }
 
     let totalPrice = 0;
 
+    const populatedItems = [];
+
     for (const item of orderItems) {
-      const product = await Product.findById(item.product);
+      const variant = await Variant.findById(item.variant).session(session);
 
-      if (!product) {
-        return res.status(404).json({ message: "Product not found" });
+      if (!variant) {
+        throw new Error("Variant not found");
       }
 
-      if (product.countInStock < item.quantity) {
-        return res.status(400).json({
-          message: `Insufficient stock for ${product.name}`,
-        });
+      if (!variant.is_active) {
+        throw new Error("Variant is not available");
       }
 
-      // Calculate total
-      totalPrice += product.price * item.quantity;
+      if (variant.stock < item.quantity) {
+        throw new Error(`Insufficient stock for SKU: ${variant.sku}`);
+      }
 
-      // Reduce stock
-      product.countInStock -= item.quantity;
-      await product.save();
+      // Reduce variant stock
+      variant.stock -= item.quantity;
+      await variant.save({ session });
+
+      totalPrice += variant.price * item.quantity;
+
+      populatedItems.push({
+        variant: variant._id,
+        quantity: item.quantity,
+        price: variant.price, // snapshot price at time of order
+      });
     }
 
-    const order = await Order.create({
-      user: req.user._id,
-      orderItems,
-      shippingAddress,
-      paymentMethod,
-      totalPrice,
-      status: "Processing",
-    });
+    const order = await Order.create(
+      [
+        {
+          user: req.user._id,
+          orderItems: populatedItems,
+          shippingAddress,
+          paymentMethod,
+          totalPrice,
+          status: "Processing",
+        },
+      ],
+      { session },
+    );
 
-    res.status(201).json(order);
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json(order[0]);
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+
     res.status(500).json({
-      message: "Failed to create order",
-      error: error.message,
+      message: error.message || "Failed to create order",
     });
   }
 };
