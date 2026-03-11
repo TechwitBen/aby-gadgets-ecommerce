@@ -11,7 +11,7 @@ export const isAuthenticated = (req, res, next) => {
 export const isAdmin = (req, res, next) => {
   if (!req.isAuthenticated || !req.isAuthenticated()) {
     return res.status(401).json({
-      message: "Not authenticated",
+      message: "Login or signup user not authenticated",
     });
   }
 
