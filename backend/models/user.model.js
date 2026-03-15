@@ -17,6 +17,11 @@ const UserSchema = new Schema(
     provider: { type: String, enum: ["local", "google"], default: "local" },
     google_id: { type: String, unique: true, sparse: true },
     name: { type: String },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
   },
   {
     collection: "users",
