@@ -70,6 +70,7 @@ export const loginController = (req, res, next) => {
           return res.status(200).json({
             success: true,
             message: "Login successful",
+            data: req.user,
           });
         });
       });
@@ -81,7 +82,7 @@ export const loginController = (req, res, next) => {
 
 export const RegisterController = async (req, res, next) => {
   try {
-    const { username, password, email } = req.body;
+    const { username, password, email, role } = req.body;
 
     if (!username || !password || !email) {
       return res.status(400).json({
@@ -90,7 +91,6 @@ export const RegisterController = async (req, res, next) => {
       });
     }
 
-    // Check if user exists
     const existingUser = await User.findOne({ username });
     if (existingUser) {
       return res.status(400).json({
@@ -130,6 +130,7 @@ export const RegisterController = async (req, res, next) => {
             email,
             hashed_password: hashedPassword.toString("hex"),
             salt,
+            role,
           });
 
           req.logIn(user, (err) => {
