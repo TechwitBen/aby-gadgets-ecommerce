@@ -1,23 +1,70 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Mail, Eye, EyeOff } from "lucide-react";
+import { User, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { oauthHelpers } from "@/utils/oauth";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
+  const { register } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
-    fullName: "",
+    username: "",
     email: "",
     password: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Check for OAuth errors on component mount
+  useEffect(() => {
+    const oauthError = oauthHelpers.checkOAuthError();
+    if (oauthError === 'google') {
+      setError("Google authentication failed. Please try again.");
+      oauthHelpers.clearOAuthError();
+    } else if (oauthError === 'facebook') {
+      setError("Facebook authentication failed. Please try again.");
+      oauthHelpers.clearOAuthError();
+    }
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // For now, just navigate to orders page
-    navigate("/orders");
+    setError("");
+
+    // Validation
+    if (!formData.username || !formData.email || !formData.password) {
+      setError("All fields are required");
+      return;
+    }
+
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      await register(formData.username, formData.email, formData.password);
+      // Navigate to home page after successful registration
+      navigate("/");
+    } catch (err: any) {
+      setError(err.message || "Registration failed. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignup = () => {
+    oauthHelpers.loginWithGoogle();
+  };
+
+  const handleFacebookSignup = () => {
+    oauthHelpers.loginWithFacebook();
   };
 
   return (
@@ -26,18 +73,26 @@ const SignUpPage = () => {
       subtitle="Your trusted store for authentic gadgets. Sign up to track your orders, get updates, and shop faster next time."
     >
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Sign UP</h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Sign Up</h1>
         
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-600">{error}</p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm text-gray-600 mb-2">Full name</label>
+            <label className="block text-sm text-gray-600 mb-2">Username</label>
             <div className="relative">
               <Input
                 type="text"
-                placeholder="Jane Ojo Adakole"
-                value={formData.fullName}
-                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                placeholder="johndoe"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
                 className="pr-10 bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"
+                disabled={isLoading}
               />
               <User className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
@@ -52,6 +107,7 @@ const SignUpPage = () => {
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="pr-10 bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"
+                disabled={isLoading}
               />
               <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
@@ -62,15 +118,17 @@ const SignUpPage = () => {
             <div className="relative">
               <Input
                 type={showPassword ? "text" : "password"}
-                placeholder="•••"
+                placeholder="•••••••"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="pr-10 bg-white border-gray-200 text-gray-900"
+                disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -88,15 +146,17 @@ const SignUpPage = () => {
             type="submit" 
             variant="outline"
             className="w-full border-primary text-primary hover:bg-primary hover:text-white"
+            disabled={isLoading}
           >
-            CREATE ACCOUNT
+            {isLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
           </Button>
           
           <Button 
             type="button" 
             variant="ghost" 
             className="w-full text-primary font-medium"
-            onClick={() => navigate("/orders")}
+            onClick={() => navigate("/")}
+            disabled={isLoading}
           >
             CONTINUE WITHOUT ACCOUNT
           </Button>
@@ -115,6 +175,8 @@ const SignUpPage = () => {
               type="button" 
               variant="outline" 
               className="w-full border-primary text-gray-700 hover:bg-gray-50"
+              disabled={isLoading}
+              onClick={handleGoogleSignup}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -129,6 +191,8 @@ const SignUpPage = () => {
               type="button" 
               variant="outline" 
               className="w-full border-primary text-gray-700 hover:bg-gray-50"
+              disabled={isLoading}
+              onClick={handleFacebookSignup}
             >
               <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>

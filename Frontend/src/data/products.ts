@@ -9,19 +9,31 @@ export interface Product {
   price: number;
   originalPrice?: number;
   image: string;
-  category: string;
-  brand?: string;
-  condition?: string;
+  image2?: string;                 // second image for hover effect
+  section?: "New Arrivals" | "Popular Products" | "Sweet Deals";
+  category: string;               // e.g. "Phones", "Laptops"
+  type?: string;                 // e.g. "smartphone", "laptop", "earbuds"
+  brand: string;
+  condition: string;
   description?: string;
   features?: string[];
   colors?: string[];
   storage?: string[];
+  screenSize?: string;
+  camera?: string;
+  processor?: string;
+  ram?: string;
+  battery?: string;
+  inStock?: boolean;
   rating?: number;
   reviews?: number;
+  tags?: string[];
+  categories?: string[];         // for additional classification
 }
 
 export const products: Product[] = [
-  // New Arrivals
+  // ============ EXISTING PRODUCTS FROM product.ts ============
+  // New Arrivals (section)
   {
     id: "1",
     name: "iPhone 15pro",
@@ -29,6 +41,7 @@ export const products: Product[] = [
     originalPrice: 950000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "UK Used, 256GB, Battery health 96%, mint condition, all parts original and fully functional.",
@@ -41,7 +54,10 @@ export const products: Product[] = [
     colors: ["Space Black", "Silver", "Gold", "Deep Purple"],
     storage: ["128GB", "256GB", "512GB", "1TB"],
     rating: 4.8,
-    reviews: 124
+    reviews: 124,
+    section: "New Arrivals",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
   },
   {
     id: "2",
@@ -50,6 +66,7 @@ export const products: Product[] = [
     originalPrice: 850000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "Excellent condition with all original parts.",
@@ -62,7 +79,10 @@ export const products: Product[] = [
     colors: ["Space Black", "Silver", "Gold", "Deep Purple"],
     storage: ["128GB", "256GB", "512GB", "1TB"],
     rating: 4.7,
-    reviews: 89
+    reviews: 89,
+    section: "New Arrivals",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
   },
   {
     id: "3",
@@ -71,6 +91,7 @@ export const products: Product[] = [
     originalPrice: 1350000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "Brand New",
     description: "Latest iPhone with cutting edge features.",
@@ -83,7 +104,10 @@ export const products: Product[] = [
     colors: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
     storage: ["256GB", "512GB", "1TB"],
     rating: 4.9,
-    reviews: 45
+    reviews: 45,
+    section: "New Arrivals",
+    inStock: true,
+    tags: ["Flagship", "New"]
   },
   {
     id: "4",
@@ -92,6 +116,7 @@ export const products: Product[] = [
     originalPrice: 1100000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "Brand New",
     description: "Ultra-thin design with powerful performance.",
@@ -104,9 +129,12 @@ export const products: Product[] = [
     colors: ["Midnight", "Starlight", "Blue", "Purple", "Yellow"],
     storage: ["128GB", "256GB", "512GB"],
     rating: 4.6,
-    reviews: 32
+    reviews: 32,
+    section: "New Arrivals",
+    inStock: true,
+    tags: ["Flagship", "New"]
   },
-  // Popular Products
+  // Popular Products (section)
   {
     id: "5",
     name: "iPhone 16 pro max",
@@ -114,6 +142,7 @@ export const products: Product[] = [
     originalPrice: 1150000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "Brand New",
     description: "The ultimate iPhone experience.",
@@ -126,7 +155,10 @@ export const products: Product[] = [
     colors: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
     storage: ["256GB", "512GB", "1TB"],
     rating: 4.9,
-    reviews: 156
+    reviews: 156,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "New"]
   },
   {
     id: "6",
@@ -134,6 +166,7 @@ export const products: Product[] = [
     price: 720000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "(UK Used), 256GB, 89% battery health, very neat condition, all parts original and fully functional.",
@@ -146,7 +179,10 @@ export const products: Product[] = [
     colors: ["Space Black", "Silver", "Gold"],
     storage: ["128GB", "256GB", "512GB"],
     rating: 4.5,
-    reviews: 78
+    reviews: 78,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["UK Used"]
   },
   {
     id: "7",
@@ -155,6 +191,7 @@ export const products: Product[] = [
     originalPrice: 420000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "Compact powerhouse.",
@@ -167,7 +204,10 @@ export const products: Product[] = [
     colors: ["Black", "White", "Blue", "Green", "Red"],
     storage: ["64GB", "128GB", "256GB"],
     rating: 4.4,
-    reviews: 234
+    reviews: 234,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Compact", "UK Used"]
   },
   {
     id: "8",
@@ -176,6 +216,7 @@ export const products: Product[] = [
     originalPrice: 650000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "Professional camera system in a compact form.",
@@ -188,7 +229,10 @@ export const products: Product[] = [
     colors: ["Graphite", "Gold", "Silver", "Sierra Blue"],
     storage: ["128GB", "256GB", "512GB", "1TB"],
     rating: 4.6,
-    reviews: 189
+    reviews: 189,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
   },
   // Laptops
   {
@@ -198,6 +242,7 @@ export const products: Product[] = [
     originalPrice: 2100000,
     image: productLaptop,
     category: "Laptops",
+    type: "laptop",
     brand: "Apple",
     condition: "Brand New",
     description: "Professional laptop for power users.",
@@ -210,7 +255,10 @@ export const products: Product[] = [
     colors: ["Space Black", "Silver"],
     storage: ["512GB", "1TB", "2TB"],
     rating: 4.9,
-    reviews: 67
+    reviews: 67,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Professional", "New"]
   },
   {
     id: "10",
@@ -219,6 +267,7 @@ export const products: Product[] = [
     originalPrice: 480000,
     image: productLaptop,
     category: "Laptops",
+    type: "laptop",
     brand: "Dell",
     condition: "Brand New",
     description: "Versatile everyday laptop.",
@@ -231,7 +280,10 @@ export const products: Product[] = [
     colors: ["Silver", "Black"],
     storage: ["256GB", "512GB", "1TB"],
     rating: 4.3,
-    reviews: 145
+    reviews: 145,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Budget", "Windows"]
   },
   // Tablets
   {
@@ -241,6 +293,7 @@ export const products: Product[] = [
     originalPrice: 1100000,
     image: productTablet,
     category: "Tablets",
+    type: "tablet",
     brand: "Apple",
     condition: "Brand New",
     description: "The ultimate iPad experience.",
@@ -253,7 +306,10 @@ export const products: Product[] = [
     colors: ["Space Gray", "Silver"],
     storage: ["128GB", "256GB", "512GB", "1TB", "2TB"],
     rating: 4.8,
-    reviews: 89
+    reviews: 89,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Pro", "New"]
   },
   // Accessories
   {
@@ -263,6 +319,7 @@ export const products: Product[] = [
     originalPrice: 145000,
     image: productAccessories,
     category: "Accessories",
+    type: "earbuds",
     brand: "Apple",
     condition: "Brand New",
     description: "Active Noise Cancellation, Wireless Charging Case, white.",
@@ -274,7 +331,10 @@ export const products: Product[] = [
     ],
     colors: ["White"],
     rating: 4.7,
-    reviews: 312
+    reviews: 312,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Noise Cancelling", "Wireless"]
   },
   {
     id: "13",
@@ -283,6 +343,7 @@ export const products: Product[] = [
     originalPrice: 720000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "Excellent condition, battery health 92%.",
@@ -295,7 +356,10 @@ export const products: Product[] = [
     colors: ["Graphite", "Gold", "Silver", "Sierra Blue", "Alpine Green"],
     storage: ["128GB", "256GB", "512GB", "1TB"],
     rating: 4.7,
-    reviews: 267
+    reviews: 267,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
   },
   {
     id: "14",
@@ -304,6 +368,7 @@ export const products: Product[] = [
     originalPrice: 340000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "Open Box",
     description: "Like new condition with warranty.",
@@ -316,7 +381,10 @@ export const products: Product[] = [
     colors: ["Black", "White", "Green", "Yellow", "Purple", "Red"],
     storage: ["64GB", "128GB", "256GB"],
     rating: 4.4,
-    reviews: 178
+    reviews: 178,
+    section: "Sweet Deals",
+    inStock: true,
+    tags: ["Open Box", "Value"]
   },
   {
     id: "15",
@@ -325,6 +393,7 @@ export const products: Product[] = [
     originalPrice: 175000,
     image: productPhone,
     category: "Phones",
+    type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "Good condition, fully functional.",
@@ -337,10 +406,696 @@ export const products: Product[] = [
     colors: ["Space Gray", "Silver", "Gold"],
     storage: ["64GB", "128GB", "256GB"],
     rating: 4.2,
-    reviews: 456
+    reviews: 456,
+    section: "Sweet Deals",
+    inStock: true,
+    tags: ["Budget", "UK Used"]
+  },
+
+  // ============ PRODUCTS FROM Products.tsx (allProducts) ============
+  // New Arrivals
+  {
+    id: "16",
+    name: "iPhone 16 Pro",
+    price: 895995,
+    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 128,
+    storage: ["256GB"],
+    screenSize: "6.7\"",
+    camera: "48MP Triple Camera",
+    colors: ["Titanium", "White", "Natural"],
+    tags: ["Flagship", "New"],
+    section: "New Arrivals"
+  },
+  {
+    id: "17",
+    name: "MacBook Pro 16-inch",
+    price: 1899995,
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.9,
+    reviews: 245,
+    storage: ["1TB SSD"],
+    ram: "32GB",
+    processor: "M3 Pro Chip",
+    colors: ["Space Gray", "Silver"],
+    tags: ["Professional", "Creative"],
+    section: "New Arrivals"
+  },
+  {
+    id: "18",
+    name: "Samsung Galaxy S24 Ultra",
+    price: 899995,
+    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Samsung",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 189,
+    storage: ["512GB"],
+    screenSize: "6.8\"",
+    camera: "200MP Pro Camera",
+    colors: ["Titanium Gray", "Titanium Black"],
+    tags: ["Best Camera", "Premium"],
+    section: "New Arrivals"
+  },
+  {
+    id: "19",
+    name: "AirPods Pro 2",
+    price: 24995,
+    image: "https://images.unsplash.com/photo-1591370874773-6702e8f12fd8?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "earbuds",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.6,
+    reviews: 312,
+    battery: "30hrs with case",
+    features: ["Active Noise Cancellation"],
+    colors: ["White"],
+    tags: ["Noise Cancelling", "Premium"],
+    section: "New Arrivals"
+  },
+  // Popular Products
+  {
+    id: "20",
+    name: "iPad Pro 12.9-inch",
+    price: 899995,
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 289,
+    storage: ["256GB"],
+    screenSize: "12.9\"",
+    colors: ["Space Gray", "Silver"],
+    tags: ["Pro Display", "Creative"],
+    section: "Popular Products"
+  },
+  {
+    id: "21",
+    name: "Sony WH-1000XM5",
+    price: 34995,
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "headphones",
+    brand: "Sony",
+    condition: "New",
+    inStock: true,
+    rating: 4.9,
+    reviews: 421,
+    battery: "30hrs battery",
+    features: ["Industry-leading ANC"],
+    colors: ["Black", "Silver"],
+    tags: ["Best ANC", "Comfort"],
+    section: "Popular Products"
+  },
+  {
+    id: "22",
+    name: "Dell XPS 15",
+    price: 1599995,
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Dell",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 178,
+    storage: ["1TB SSD"],
+    ram: "32GB",
+    processor: "Intel i9 13th Gen",
+    colors: ["Platinum Silver"],
+    tags: ["Design", "Content Creation"],
+    section: "Popular Products"
+  },
+  {
+    id: "23",
+    name: "Apple Watch Series 9",
+    price: 54995,
+    image: "https://images.unsplash.com/photo-1434493650001-5d43a6fea0a6?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "smartwatch",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.6,
+    reviews: 256,
+    battery: "18hrs battery",
+    features: ["Always-On Display"],
+    colors: ["Midnight", "Starlight", "Product Red"],
+    tags: ["Health Tracking", "Premium"],
+    section: "Popular Products"
+  },
+  {
+    id: "24",
+    name: "Samsung Galaxy Tab S9",
+    price: 799995,
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Samsung",
+    condition: "New",
+    inStock: true,
+    rating: 4.5,
+    reviews: 189,
+    storage: ["256GB"],
+    screenSize: "11\"",
+    colors: ["Graphite", "Beige"],
+    tags: ["Large Screen", "S Pen"],
+    section: "Popular Products"
+  },
+  {
+    id: "25",
+    name: "Google Pixel 8 Pro",
+    price: 799995,
+    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Google",
+    condition: "New",
+    inStock: true,
+    rating: 4.4,
+    reviews: 156,
+    storage: ["256GB"],
+    screenSize: "6.7\"",
+    camera: "50MP AI Camera",
+    colors: ["Obsidian", "Porcelain"],
+    tags: ["AI Powered", "Best Camera"],
+    section: "Popular Products"
+  },
+  // Sweet Deals
+  {
+    id: "26",
+    name: "Refurbished MacBook Air M1",
+    price: 699995,
+    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Apple",
+    condition: "Refurbished",
+    inStock: true,
+    rating: 4.6,
+    reviews: 89,
+    storage: ["512GB SSD"],
+    ram: "16GB",
+    processor: "M1 Chip",
+    colors: ["Space Gray", "Gold"],
+    tags: ["Refurbished", "Value"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "27",
+    name: "UK Used Samsung S23 Ultra",
+    price: 599995,
+    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Samsung",
+    condition: "UK Used",
+    inStock: true,
+    rating: 4.3,
+    reviews: 134,
+    storage: ["512GB"],
+    screenSize: "6.8\"",
+    camera: "200MP Pro Camera",
+    colors: ["Phantom Black"],
+    tags: ["UK Used", "Value"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "28",
+    name: "Open Box iPad Air",
+    price: 549995,
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Apple",
+    condition: "Open Box",
+    inStock: true,
+    rating: 4.4,
+    reviews: 67,
+    storage: ["256GB"],
+    screenSize: "10.9\"",
+    colors: ["Space Gray"],
+    tags: ["Open Box", "Value"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "29",
+    name: "Sony PlayStation 5",
+    price: 349995,
+    image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    category: "Gaming",
+    type: "gaming",
+    brand: "Sony",
+    condition: "New",
+    inStock: true,
+    rating: 4.9,
+    reviews: 512,
+    storage: ["825GB SSD"],
+    features: ["4K 120fps Gaming"],
+    colors: ["White"],
+    tags: ["4K Gaming", "Exclusive Games"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "30",
+    name: "Xbox Series X",
+    price: 299995,
+    image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    category: "Gaming",
+    type: "gaming",
+    brand: "Microsoft",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 389,
+    storage: ["1TB SSD"],
+    features: ["4K Gaming"],
+    colors: ["Black"],
+    tags: ["4K Gaming", "Game Pass"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "31",
+    name: "Bose QuietComfort 45",
+    price: 29995,
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "headphones",
+    brand: "Bose",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 245,
+    battery: "24hrs battery",
+    features: ["Noise Cancelling"],
+    colors: ["Black", "White"],
+    tags: ["Noise Cancelling", "Comfort"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "32",
+    name: "Nintendo Switch OLED",
+    price: 249995,
+    image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    category: "Gaming",
+    type: "gaming",
+    brand: "Nintendo",
+    condition: "New",
+    inStock: true,
+    rating: 4.6,
+    reviews: 178,
+    storage: ["64GB"],
+    features: ["OLED Display"],
+    colors: ["White", "Neon"],
+    tags: ["Portable Gaming", "OLED"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "33",
+    name: "Samsung Galaxy Watch 6",
+    price: 39995,
+    image: "https://images.unsplash.com/photo-1434493650001-5d43a6fea0a6?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "smartwatch",
+    brand: "Samsung",
+    condition: "New",
+    inStock: true,
+    rating: 4.5,
+    reviews: 156,
+    battery: "40hrs battery",
+    features: ["Health Tracking"],
+    colors: ["Graphite", "Silver"],
+    tags: ["Health Tracking", "Smartwatch"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "34",
+    name: "GoPro Hero 12",
+    price: 49995,
+    image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "camera",
+    brand: "GoPro",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 89,
+    features: ["5.3K Video"],
+    colors: ["Black"],
+    tags: ["Action Camera", "Waterproof"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "35",
+    name: "DJI Mini 3 Pro",
+    price: 89995,
+    image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "drone",
+    brand: "DJI",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 134,
+    features: ["4K HDR Video"],
+    colors: ["Gray"],
+    tags: ["Drone", "4K Video"],
+    section: "Sweet Deals"
+  },
+  {
+    id: "36",
+    name: "Amazon Kindle Paperwhite",
+    price: 19995,
+    image: "https://images.unsplash.com/photo-1544716278-e513176f20b5?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "e-reader",
+    brand: "Amazon",
+    condition: "New",
+    inStock: true,
+    rating: 4.6,
+    reviews: 278,
+    storage: ["32GB"],
+    features: ["Waterproof"],
+    colors: ["Black"],
+    tags: ["E-Reader", "Waterproof"],
+    section: "Sweet Deals"
+  },
+
+  // ============ PRODUCTS FROM Categories.tsx (allGadgets) ============
+  // Converted to NGN (multiply original USD cents by 10)
+  {
+    id: "37",
+    name: "iPhone 16 Pro",
+    price: 1299990,          // converted: 129999 * 10
+    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 342,
+    storage: ["256GB"],
+    screenSize: "6.7\"",
+    camera: "48MP Triple Camera",
+    colors: ["Titanium", "White", "Natural"],
+    tags: ["Flagship", "New"],
+    categories: ["iphone", "flagship", "new"]
+  },
+  {
+    id: "38",
+    name: "Samsung Galaxy S24 Ultra",
+    price: 1199990,
+    image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Samsung",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 289,
+    storage: ["512GB"],
+    screenSize: "6.8\"",
+    camera: "200MP Pro Camera",
+    colors: ["Titanium Gray", "Titanium Black", "Titanium Violet"],
+    tags: ["Best Camera", "Premium"],
+    categories: ["samsung", "flagship", "gaming"]
+  },
+  {
+    id: "39",
+    name: "Google Pixel 8 Pro",
+    price: 899990,
+    image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Google",
+    condition: "New",
+    inStock: true,
+    rating: 4.6,
+    reviews: 189,
+    storage: ["256GB"],
+    screenSize: "6.7\"",
+    camera: "50MP AI Camera",
+    colors: ["Obsidian", "Porcelain", "Bay"],
+    tags: ["AI Powered", "Best Camera"],
+    categories: ["android", "flagship"]
+  },
+  {
+    id: "40",
+    name: "MacBook Pro 16\" M3",
+    price: 3499990,
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1545235617-9465d2a55698?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.9,
+    reviews: 456,
+    storage: ["1TB"],
+    ram: "64GB",
+    processor: "M3 Max 16-core",
+    colors: ["Space Black", "Silver"],
+    tags: ["Professional", "Creative Work"],
+    categories: ["laptop", "flagship", "apple"]
+  },
+  {
+    id: "41",
+    name: "Dell XPS 15",
+    price: 1999990,
+    image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1545235617-9465d2a55698?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Dell",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 312,
+    storage: ["1TB"],
+    ram: "32GB",
+    processor: "Intel i9 13th Gen",
+    colors: ["Platinum Silver", "Frost"],
+    tags: ["Design", "Content Creation"],
+    categories: ["laptop", "premium"]
+  },
+  {
+    id: "42",
+    name: "iPad Pro 12.9\" M2",
+    price: 1299990,
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 278,
+    storage: ["256GB"],
+    screenSize: "12.9\"",
+    colors: ["Space Gray", "Silver"],
+    tags: ["Pro Display", "Creative"],
+    categories: ["tablet", "apple", "premium"]
+  },
+  {
+    id: "43",
+    name: "Samsung Galaxy Tab S9 Ultra",
+    price: 1199990,
+    image: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Samsung",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 189,
+    storage: ["512GB"],
+    screenSize: "14.6\"",
+    colors: ["Graphite", "Beige"],
+    tags: ["Large Screen", "S Pen"],
+    categories: ["tablet", "samsung", "premium"]
+  },
+  {
+    id: "44",
+    name: "Apple AirPods Pro 2",
+    price: 249990,
+    image: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "earbuds",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 891,
+    battery: "30hrs with case",
+    features: ["Active Noise Cancellation"],
+    colors: ["White"],
+    tags: ["Noise Cancelling", "Premium"],
+    categories: ["audio", "apple", "wireless"]
+  },
+  {
+    id: "45",
+    name: "Sony WH-1000XM5",
+    price: 349990,
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "headphones",
+    brand: "Sony",
+    condition: "New",
+    inStock: true,
+    rating: 4.9,
+    reviews: 672,
+    battery: "30hrs battery",
+    features: ["Industry-leading ANC"],
+    colors: ["Black", "Silver"],
+    tags: ["Best ANC", "Comfort"],
+    categories: ["audio", "headphones", "premium"]
+  },
+  {
+    id: "46",
+    name: "Apple Watch Series 9",
+    price: 429990,
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "smartwatch",
+    brand: "Apple",
+    condition: "New",
+    inStock: true,
+    rating: 4.7,
+    reviews: 445,
+    battery: "18hrs battery",
+    features: ["Always-On Display"],
+    colors: ["Midnight", "Starlight", "Product Red"],
+    tags: ["Health Tracking", "Premium"],
+    categories: ["wearable", "apple", "smartwatch"]
+  },
+  {
+    id: "47",
+    name: "PlayStation 5",
+    price: 499990,
+    image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=400&h=400&fit=crop",
+    category: "Gaming",
+    type: "gaming",
+    brand: "Sony",
+    condition: "New",
+    inStock: true,
+    rating: 4.8,
+    reviews: 923,
+    storage: ["825GB SSD"],
+    features: ["4K 120fps Gaming"],
+    colors: ["White"],
+    tags: ["4K Gaming", "Exclusive Games"],
+    categories: ["gaming", "console"]
+  },
+  {
+    id: "48",
+    name: "AbygGadget Basic 2026",
+    price: 149990,
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "AbygGadget",
+    condition: "New",
+    inStock: true,
+    rating: 4.2,
+    reviews: 89,
+    storage: ["64GB"],
+    screenSize: "6.1\"",
+    colors: ["Black", "Blue"],
+    tags: ["Budget", "Best Seller"],
+    categories: ["budget", "smartphone"]
+  },
+  {
+    id: "49",
+    name: "Amazon Echo Studio",
+    price: 199990,
+    image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "speaker",
+    brand: "Amazon",
+    condition: "New",
+    inStock: true,
+    rating: 4.5,
+    reviews: 234,
+    features: ["Hi-Fi 3D Audio"],
+    colors: ["Black", "White"],
+    tags: ["Smart Home", "High Quality"],
+    categories: ["audio", "smart", "speaker"]
+  },
+  {
+    id: "50",
+    name: "iPhone 13 Pro",
+    price: 499990,
+    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "Refurbished",
+    inStock: true,
+    rating: 4.5,
+    reviews: 178,
+    storage: ["256GB"],
+    screenSize: "6.1\"",
+    colors: ["Graphite", "Gold", "Silver"],
+    tags: ["Refurbished", "Value"],
+    categories: ["refurbished", "apple", "budget"]
   }
 ];
 
+// ============ HELPER FUNCTIONS ============
 export const getProductById = (id: string): Product | undefined => {
   return products.find((p) => p.id === id);
 };
@@ -349,6 +1104,14 @@ export const getProductsByCategory = (category: string): Product[] => {
   return products.filter((p) => p.category === category);
 };
 
+export const getProductsByType = (type: string): Product[] => {
+  return products.filter((p) => p.type === type);
+};
+
+export const getProductsBySection = (section: "New Arrivals" | "Popular Products" | "Sweet Deals"): Product[] => {
+  return products.filter((p) => p.section === section);
+};
+
 export const formatPrice = (price: number): string => {
-  return `₦${price.toLocaleString()}`;
+  return `₦${price.toLocaleString("en-NG")}`;
 };

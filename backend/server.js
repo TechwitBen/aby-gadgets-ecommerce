@@ -22,8 +22,21 @@ const port = 3000;
 const startServer = async () => {
   await connect();
 
+  // CRITICAL: Middleware order is important!
+  
+  // 1. CORS must come first (before session)
+  app.use(
+    cors({
+      origin: "http://localhost:5173",
+      credentials: true,
+    })
+  );
+
+  // 2. Body parsers
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // 3. Session MUST come before Passport
   app.use(
     session({
       secret: SESSION_SECRET,
@@ -47,6 +60,11 @@ const startServer = async () => {
     }),
   );
 
+  // 4. Passport initialization (must come after session)
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // 5. Passport serialization
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
@@ -60,6 +78,7 @@ const startServer = async () => {
     }
   });
 
+  // 6. Routes come last
   app.get("/", (req, res) => {
     res.send("server side is working");
   });

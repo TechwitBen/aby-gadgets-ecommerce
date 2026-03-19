@@ -1,67 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ArrowLeft, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { oauthHelpers } from "@/utils/oauth";
+import { ArrowLeft, Mail, Eye, EyeOff } from "lucide-react";
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     rememberMe: false,
   });
 
-  // Check for OAuth errors on component mount
-  useEffect(() => {
-    const oauthError = oauthHelpers.checkOAuthError();
-    if (oauthError === 'google') {
-      setError("Google authentication failed. Please try again.");
-      oauthHelpers.clearOAuthError();
-    } else if (oauthError === 'facebook') {
-      setError("Facebook authentication failed. Please try again.");
-      oauthHelpers.clearOAuthError();
-    }
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    // Validation
-    if (!formData.email || !formData.password) {
-      setError("Email and password are required");
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Your backend expects username, but we'll send email as username
-      await login(formData.email, formData.password);
-      // Navigate to home page after successful login
-      navigate("/");
-    } catch (err: any) {
-      setError(err.message || "Login failed. Please check your credentials.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleGoogleLogin = () => {
-    oauthHelpers.loginWithGoogle();
-  };
-
-  const handleFacebookLogin = () => {
-    oauthHelpers.loginWithFacebook();
+    // For now, just navigate to orders page
+    navigate("/orders");
   };
 
   return (
@@ -79,24 +36,16 @@ const LoginPage = () => {
         
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Login</h1>
         
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-        
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm text-gray-600 mb-2">Email or Username</label>
+            <label className="block text-sm text-gray-600 mb-2">Email</label>
             <div className="relative">
               <Input
-                type="text"
+                type="email"
                 placeholder="abrahamegoh24@gmail.com"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="pr-10 bg-white border-gray-200 text-gray-900 placeholder:text-gray-400"
-                disabled={isLoading}
               />
               <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
             </div>
@@ -111,13 +60,11 @@ const LoginPage = () => {
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                 className="pr-10 bg-white border-gray-200 text-gray-900"
-                disabled={isLoading}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                disabled={isLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
@@ -132,9 +79,8 @@ const LoginPage = () => {
                 onCheckedChange={(checked) => 
                   setFormData({ ...formData, rememberMe: checked as boolean })
                 }
-                disabled={isLoading}
               />
-              <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
+              <label htmlFor="remember" className="text-sm text-gray-600">
                 Remember me
               </label>
             </div>
@@ -150,20 +96,15 @@ const LoginPage = () => {
             </Link>
           </p>
           
-          <Button 
-            type="submit" 
-            className="w-full bg-primary hover:bg-primary/90 text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? "LOGGING IN..." : "LOGIN"}
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-white">
+            LOGIN
           </Button>
           
           <Button 
             type="button" 
             variant="ghost" 
             className="w-full text-primary font-medium"
-            onClick={() => navigate("/")}
-            disabled={isLoading}
+            onClick={() => navigate("/orders")}
           >
             CONTINUE WITHOUT ACCOUNT
           </Button>
@@ -182,8 +123,6 @@ const LoginPage = () => {
               type="button" 
               variant="outline" 
               className="w-full border-primary text-gray-700 hover:bg-gray-50"
-              disabled={isLoading}
-              onClick={handleGoogleLogin}
             >
               <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24">
                 <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -198,8 +137,6 @@ const LoginPage = () => {
               type="button" 
               variant="outline" 
               className="w-full border-primary text-gray-700 hover:bg-gray-50"
-              disabled={isLoading}
-              onClick={handleFacebookLogin}
             >
               <svg className="w-5 h-5 mr-2" fill="#1877F2" viewBox="0 0 24 24">
                 <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>

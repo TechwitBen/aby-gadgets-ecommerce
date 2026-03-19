@@ -8,13 +8,16 @@ import WhyChooseUs from "@/components/WhyChooseUs";
 import FAQ from "@/components/FAQ";
 import TrustBadges from "@/components/TrustBadges";
 import Footer from "@/components/Footer";
+import FeaturedProducts from "@/components/FeaturedProducts";
 
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Header isLoggedIn={true} />
+      <Header  />
+     
       <HeroSection />
       <ProductCategories />
+       <FeaturedProducts/>
       <ServicesSection />
       <GadgetGuide />
       <Testimonials />

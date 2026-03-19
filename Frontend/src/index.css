@@ -1,13 +1,15 @@
+/* Import font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-
+/* Tailwind base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
+/* ------------------- Base Variables ------------------- */
 @layer base {
   :root {
+    /* Main site variables */
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
@@ -38,7 +40,7 @@
 
     --radius: 0.5rem;
 
-    /* Custom colors */
+    /* Custom main site colors */
     --hero-gradient-start: 240 60% 15%;
     --hero-gradient-end: 260 50% 25%;
     --teal: 174 100% 42%;
@@ -59,6 +61,7 @@
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
+  /* Dark mode for main site */
   .dark {
     --background: 222 84% 5%;
     --foreground: 210 40% 98%;
@@ -88,24 +91,66 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
 
-@layer base {
+  /* Admin theme scoped variables */
+  .admin-theme {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 262 83% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 262 83% 58%;
+    --radius: 0.5rem;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary: 262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 262 83% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 262 83% 58%;
+    --sidebar-active: 262 30% 20%;
+    --lavender: 262 70% 90%;
+    --lavender-foreground: 262 50% 30%;
+    --mint: 158 64% 85%;
+    --mint-foreground: 158 50% 20%;
+  }
+
+  /* Global reset */
   * {
     @apply border-border;
   }
 
+  /* Body */
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
   }
 }
 
+/* ------------------- Components ------------------- */
 @layer components {
+  /* Hero gradient for main site */
   .hero-gradient {
     background: linear-gradient(135deg, hsl(var(--hero-gradient-start)) 0%, hsl(var(--hero-gradient-end)) 100%);
   }
 
+  /* Buttons */
   .btn-teal {
     @apply bg-accent text-accent-foreground hover:opacity-90 transition-all;
   }
@@ -114,6 +159,7 @@
     @apply bg-primary text-primary-foreground hover:opacity-90 transition-all;
   }
 
+  /* Cards */
   .service-card {
     @apply bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow;
   }
@@ -122,10 +168,12 @@
     @apply bg-card rounded-lg border border-border p-4 hover:shadow-lg transition-all;
   }
 
+  /* Section headings */
   .section-heading {
     @apply text-2xl md:text-3xl font-bold text-foreground;
   }
 
+  /* Trust badges */
   .trust-badge {
     @apply flex flex-col items-center gap-2 text-center;
   }

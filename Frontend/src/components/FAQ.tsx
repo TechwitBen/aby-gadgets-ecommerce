@@ -26,8 +26,8 @@ const faqs = [
 
 const FAQ = () => {
   return (
-    <section className="py-12 md:py-20 bg-background">
-      <div className="container mx-auto px-4 max-w-3xl">
+    <section className="py-12 md:py-20" style={{ backgroundColor: '#F5F5F5' }}>
+      <div className="w-[90%] mx-auto max-w-6xl">
         <h2 className="text-2xl md:text-3xl font-bold text-foreground text-center mb-10">
           Everything You Need to Know
         </h2>
@@ -37,7 +37,7 @@ const FAQ = () => {
             <AccordionItem 
               key={index} 
               value={`item-${index}`}
-              className="bg-[hsl(200_60%_97%)] rounded-xl px-6 border border-border/50 data-[state=open]:border-primary/30"
+              className="bg-[hsl(200_60%_97%)] rounded-xl px-6 border border-[hsl(200_60%_97%)] data-[state=open]:border-[hsl(200_60%_97%)]"
             >
               <AccordionTrigger className="text-left font-medium hover:no-underline py-5 text-foreground">
                 {faq.question}

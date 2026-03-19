@@ -1,0 +1,237 @@
+export const ordersData = [
+  {
+    id: "Aby-2601-0009",
+    name: "Jenny Wilson",
+    phone: "(209) 555-0104",
+    address: "Plot 412, Aguiyi Ironsi Street Maitama, Abuja, FCT.",
+    email: "jennywilson@email.com",
+    date: "12/10/13. 18:14",
+    items: [
+      {
+        name: "iPhone 11 pro",
+        condition: "Uk Used.",
+        specs: "256GB•Battery 89%•UK Used•Fully tested.",
+        price: 275000,
+        quantity: 2,
+        image: "/placeholder.svg",
+      },
+    ],
+    paymentMethod: "Bank Transfer",
+    subtotal: 550000,
+    delivery: "Free",
+    total: 550000,
+    orderStatus: "Processing",
+    paymentStatus: "Awaiting Confirmation",
+    internalNote: "Awaiting bank transfer confirmation.",
+  },
+  {
+    id: "Aby-2601-0013",
+    name: "Ralph Edwards",
+    phone: "(629) 555-0129",
+    address: "24B, Adeola Odeku Street Victoria Island, Lagos State.",
+    email: "ralphed43@email.com",
+    date: "12/10/13. 14:30",
+    items: [],
+    paymentMethod: "Cash",
+    subtotal: 584000,
+    delivery: "Free",
+    total: 584000,
+    orderStatus: "Confirmed",
+    paymentStatus: "Confirmed",
+    internalNote: "",
+  },
+  {
+    id: "Aby-2606-0313",
+    name: "Devon Lane",
+    phone: "(217) 555-0113",
+    address: "24B, Adeola Odeku Street Victoria Island, Lagos, Lag...",
+    email: "devonlane@email.com",
+    date: "12/10/13. 10:20",
+    items: [],
+    paymentMethod: "Bank Transfer",
+    subtotal: 320000,
+    delivery: 5000,
+    total: 325000,
+    orderStatus: "Processing",
+    paymentStatus: "Pending",
+    internalNote: "",
+  },
+  {
+    id: "Aby-2508-0233",
+    name: "Bessie Cooper",
+    phone: "(308) 555-0121",
+    address: "58, Upper Siluko Road Ogida Quarters, Benin City, Edo State.",
+    email: "bessiecoop@email.com",
+    date: "12/09/13. 16:45",
+    items: [],
+    paymentMethod: "Pay On Delivery",
+    subtotal: 194000,
+    delivery: "Free",
+    total: 194000,
+    orderStatus: "Delivered",
+    paymentStatus: "Confirmed",
+    internalNote: "",
+  },
+  {
+    id: "Aby-2510-0013",
+    name: "Eleanor Pena",
+    phone: "(239) 555-0108",
+    address: "Suite 12, Trans-Amadi Industrial Layout Port Harcourt, Rivers st...",
+    email: "penaelean@email.com",
+    date: "12/08/13. 09:15",
+    items: [],
+    paymentMethod: "Bank Transfer",
+    subtotal: 450000,
+    delivery: 3000,
+    total: 453000,
+    orderStatus: "Processing",
+    paymentStatus: "Awaiting Confirmation",
+    internalNote: "",
+  },
+  {
+    id: "Aby-2512-0213",
+    name: "Darlene Robertson",
+    phone: "(808) 555-0111",
+    address: "Block G, Housing Estate Ondo Road, Akure, Ondo State.",
+    email: "robertson7@email.com",
+    date: "12/07/13. 11:30",
+    items: [],
+    paymentMethod: "Cash",
+    subtotal: 275000,
+    delivery: "Free",
+    total: 275000,
+    orderStatus: "Confirmed",
+    paymentStatus: "Confirmed",
+    internalNote: "",
+  },
+];
+
+export const paymentsData = [
+  {
+    paymentId: "Pay-0126-0012",
+    orderId: "Aby-0126-0012",
+    customerName: "Jenny Wilson",
+    amount: 234000,
+    paymentMethod: "Bank Transfer",
+    status: "Confirmed",
+  },
+  {
+    paymentId: "Pay-0126-0011",
+    orderId: "Aby-0126-0011",
+    customerName: "Ralph Edwards",
+    amount: 584000,
+    paymentMethod: "Cash",
+    status: "Confirmed",
+  },
+  {
+    paymentId: "Pay-0126-0010",
+    orderId: "Aby-0126-0010",
+    customerName: "Bessie Cooper",
+    amount: 194000,
+    paymentMethod: "Pay On Delivery",
+    status: "Pending",
+  },
+];
+
+export const productsData = [
+  {
+    id: "1",
+    name: "14 Pro max",
+    condition: "UK Used",
+    price: 897000,
+    stock: 5,
+    status: "In Stock",
+    category: "Phones",
+    brand: "Apple",
+    storage: "256GB",
+    batteryHealth: "100%",
+    color: "Gray",
+    description:
+      "iPhone 14 Pro Max (256GB) features a 6.7-inch Super Retina XDR display with ProMotion, powered by Apple's A16 Bionic chip for fast and efficient performance. Equipped with a 48MP triple-camera system for high-quality photos and 4K video, premium stainless-steel build, and large storage capacity, it delivers a smooth and reliable experience for both everyday and heavy use. Fully tested and verified for quality assurance.",
+    images: ["/placeholder.svg", "/placeholder.svg", "/placeholder.svg", "/placeholder.svg", "/placeholder.svg", "/placeholder.svg"],
+  },
+  {
+    id: "2",
+    name: "14 pro",
+    condition: "Brand New",
+    price: 964000,
+    stock: 0,
+    status: "Out of Stock",
+    category: "Phones",
+    brand: "Apple",
+    storage: "256GB",
+    batteryHealth: "100%",
+    color: "Silver",
+    description: "Brand new iPhone 14 Pro with all original accessories.",
+    images: ["/placeholder.svg"],
+  },
+  {
+    id: "3",
+    name: "11 pro max",
+    condition: "Fairly Used",
+    price: 204000,
+    stock: 2,
+    status: "Low Stock",
+    category: "Phones",
+    brand: "Apple",
+    storage: "128GB",
+    batteryHealth: "85%",
+    color: "Space Gray",
+    description: "Good condition iPhone 11 Pro Max with minor scratches.",
+    images: ["/placeholder.svg"],
+  },
+];
+
+export const customersData = [
+  {
+    id: "1",
+    name: "Jenny Wilson",
+    lastVisit: "17-01-26. 18:23.pm",
+    phone: "(209) 555-0104",
+    age: 21,
+    email: "jennywilson@email.com",
+  },
+  {
+    id: "2",
+    name: "Ralph Edwards",
+    lastVisit: "12-01-26. 18:01.pm",
+    phone: "(629) 555-0129",
+    age: 28,
+    email: "ralphed43@email.com",
+  },
+];
+
+export const staffData = {
+  fullName: "Egoh .J.",
+  email: "egohjimmy422@gmail.com",
+  phone: "09030834028",
+  role: "Staff",
+  status: "Active.",
+  homeAddress: "8, Oni-Oladipupo Street Mowe Ogun State, Nigeria",
+  permissions: {
+    order: {
+      viewOrder: true,
+      updateOrderStatus: true,
+      addInternalNotes: true,
+    },
+    payments: {
+      contactCustomers: true,
+    },
+    delivery: {
+      confirmDelivery: false,
+    },
+    products: {
+      confirmPaymentStatus: false,
+    },
+  },
+};
+
+export const categories = ["Phones", "Laptops", "Tabs", "Watches", "Games", "pods", "others"];
+
+export const brands = ["Apple", "Samsung", "Dell", "HP", "Lenovo", "Microsoft", "Others"];
+
+export const conditions = ["Brand New", "Uk Used (U.U)", "Fairly Used (F.U)", "Open Box"];
+
+export const orderStatuses = ["Processing", "Confirmed", "Shipped", "Delivered", "Cancelled"];
+
+export const paymentStatuses = ["Awaiting Confirmation", "Confirmed", "Failed", "Refunded"];

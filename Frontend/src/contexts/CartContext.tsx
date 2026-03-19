@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
 
 export interface CartItem {
   id: string;
@@ -23,8 +23,31 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const CART_STORAGE_KEY = "abygadget_cart";
+
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+    if (storedCart) {
+      try {
+        setItems(JSON.parse(storedCart));
+      } catch (e) {
+        console.error("Failed to parse cart from localStorage");
+      }
+    }
+    setIsInitialized(true);
+  }, []);
+
+  // Save cart to localStorage whenever it changes (only after initial load)
+  useEffect(() => {
+    if (isInitialized) {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+    }
+  }, [items, isInitialized]);
 
   const addToCart = (item: CartItem) => {
     setItems((prev) => {
