@@ -11,19 +11,8 @@ export const createProduct = async (req, res) => {
       });
     }
 
-    const slug = slugify(name, { lower: true });
-
-    const existingProduct = await Product.findOne({ slug });
-
-    if (existingProduct) {
-      return res.status(400).json({
-        message: "Product already exists",
-      });
-    }
-
-    const product = await Product.create({
+    const product = new Product({
       name,
-      slug,
       description,
       price,
       category: category.toLowerCase(),
@@ -31,6 +20,8 @@ export const createProduct = async (req, res) => {
       brand,
       image,
     });
+
+    await product.save();
 
     res.status(201).json(product);
   } catch (error) {
@@ -54,7 +45,6 @@ export const updateProduct = async (req, res) => {
 
     if (name) {
       product.name = name;
-      product.slug = slugify(name, { lower: true });
     }
 
     product.description = description ?? product.description;
@@ -70,6 +60,53 @@ export const updateProduct = async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to update product",
+      error: error.message,
+    });
+  }
+};
+
+export const patchProduct = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    const allowedFields = [
+      "name",
+      "description",
+      "price",
+      "category",
+      "countInStock",
+      "brand",
+      "image",
+      "is_active",
+    ];
+
+    const updates = Object.keys(req.body);
+    const invalidFields = updates.filter((key) => !allowedFields.includes(key));
+
+    if (invalidFields.length > 0) {
+      return res.status(400).json({
+        message: `Invalid fields: ${invalidFields.join(", ")}`,
+      });
+    }
+
+    updates.forEach((key) => {
+      if (key === "category") {
+        product.category = req.body.category.toLowerCase();
+      } else {
+        product[key] = req.body[key];
+      }
+    });
+
+    const updatedProduct = await product.save();
+
+    res.status(200).json(updatedProduct);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to patch product",
       error: error.message,
     });
   }

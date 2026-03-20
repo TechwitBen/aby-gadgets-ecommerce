@@ -40,14 +40,13 @@ const ProductSchema = new Schema(
   { collection: "products", timestamps: true },
 );
 
-ProductSchema.pre("save", function (next) {
+ProductSchema.pre("save", async function () {
   if (!this.slug || this.isModified("name")) {
     this.slug =
       slugify(this.name, { lower: true, strict: true }) +
       "-" +
       this._id.toString().slice(-4);
   }
-  next();
 });
 
 const Product =
