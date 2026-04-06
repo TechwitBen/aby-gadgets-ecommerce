@@ -11,11 +11,11 @@ const benefits = [
 
 const WhyChooseUs = () => {
   return (
-    <section className="py-12 md:py-20 bg-background">
+    <section className="py-12 md:py-20" style={{ backgroundColor: '#F5F5F5' }}>
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-2 gap-6 items-stretch">
           {/* Left - Why Choose */}
-          <div className="bg-background border-2 border-primary rounded-2xl p-8 md:p-10 flex flex-col justify-between">
+          <div className="bg-white border-2 border-primary rounded-2xl p-8 md:p-10 flex flex-col justify-between">
             <div>
               <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-8">
                 Why Choose Aby Gadgets?

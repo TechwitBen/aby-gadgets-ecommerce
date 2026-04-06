@@ -61,7 +61,7 @@ const services = [
 
 const ServicesSection = () => {
   return (
-    <section className="py-12 md:py-20 bg-background">
+    <section className="mb-[100px]  bg-background">
       <div className="container mx-auto px-4">
         <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-12">Services We Offer</h2>
 
@@ -69,8 +69,8 @@ const ServicesSection = () => {
           {services.map((service, index) => (
             <div 
               key={service.title}
-              className={`relative flex flex-col ${service.align === 'right' ? 'md:flex-row-reverse' : 'md:flex-row'} items-stretch overflow-hidden rounded-3xl bg-gradient-to-br from-purple-100/80 via-violet-50/60 to-indigo-100/40`}
-            >
+              className={`relative flex flex-col ${service.align === 'right' ? 'md:flex-row-reverse' : 'md:flex-row'} items-stretch overflow-hidden rounded-3xl`}
+            style={{ backgroundColor: 'hsl(150 30% 92%)' }}>
               {/* Image */}
               <div className="w-full md:w-[45%] relative">
                 <div className={`h-56 md:h-72 overflow-hidden ${service.align === 'right' ? 'md:rounded-l-[80px]' : 'md:rounded-r-[80px]'}`}>
@@ -91,7 +91,7 @@ const ServicesSection = () => {
                   {service.description}
                 </p>
                 <div>
-                  <Button className="bg-teal hover:bg-teal/90 text-white font-semibold px-6 py-2 rounded-md text-xs uppercase tracking-wide">
+                  <Button className="bg-primary text-primary-foreground hover:bg-teal/90 text-white font-semibold px-6 py-2 rounded-md text-xs uppercase tracking-wide">
                     {service.buttonText}
                   </Button>
                 </div>

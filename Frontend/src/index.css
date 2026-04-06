@@ -1,44 +1,34 @@
+/* Import font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-
+/* Tailwind base */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-
+/* ------------------- Base Variables ------------------- */
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
-
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
-
-    --primary: 240 60% 20%;
+    --primary: 260, 76%, 52%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
-
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-
     --accent: 174 100% 42%;
     --accent-foreground: 0 0% 100%;
-
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-
     --border: 214 32% 91%;
     --input: 214 32% 91%;
     --ring: 174 100% 42%;
-
     --radius: 0.5rem;
-
-    /* Custom colors */
     --hero-gradient-start: 240 60% 15%;
     --hero-gradient-end: 260 50% 25%;
     --teal: 174 100% 42%;
@@ -48,7 +38,6 @@
     --purple-accent: 260 60% 55%;
     --light-gray: 210 20% 98%;
     --service-card-bg: 0 0% 100%;
-
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
     --sidebar-primary: 240 5.9% 10%;
@@ -88,9 +77,93 @@
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
-}
 
-@layer base {
+  /* ── Admin theme — DARK (default) ── */
+  .admin-theme {
+    --background:         0 0% 4%;
+    --foreground:         0 0% 98%;
+    --card:               0 0% 7%;
+    --card-foreground:    0 0% 98%;
+    --popover:            0 0% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary:            262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary:          0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted:              0 0% 15%;
+    --muted-foreground:   0 0% 60%;
+    --accent:             262 83% 58%;
+    --accent-foreground:  0 0% 100%;
+    --destructive:        0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success:            142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --border:             0 0% 18%;
+    --input:              0 0% 12%;
+    --ring:               262 83% 58%;
+    --radius:             0.5rem;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 70%;
+    --sidebar-primary:    262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:     262 83% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border:     0 0% 15%;
+    --sidebar-ring:       262 83% 58%;
+    --sidebar-active:     262 30% 20%;
+    --lavender:           262 70% 90%;
+    --lavender-foreground: 262 50% 30%;
+    --mint:               158 64% 85%;
+    --mint-foreground:    158 50% 20%;
+
+    /* Apply dark background/text to the entire admin layout */
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
+  /* ── Admin theme — LIGHT ──
+     Toggled by adding .admin-light to the .admin-theme root div.
+     Overrides every variable so all child pages respond automatically. */
+  .admin-theme.admin-light {
+    --background:         0 0% 97%;
+    --foreground:         0 0% 10%;
+    --card:               0 0% 100%;
+    --card-foreground:    0 0% 10%;
+    --popover:            0 0% 100%;
+    --popover-foreground: 0 0% 10%;
+    --primary:            262 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary:          0 0% 94%;
+    --secondary-foreground: 0 0% 10%;
+    --muted:              0 0% 92%;
+    --muted-foreground:   0 0% 45%;
+    --accent:             262 83% 58%;
+    --accent-foreground:  0 0% 100%;
+    --destructive:        0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success:            142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --border:             0 0% 85%;
+    --input:              0 0% 92%;
+    --ring:               262 83% 58%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 0 0% 35%;
+    --sidebar-primary:    262 83% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent:     262 83% 58%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border:     0 0% 88%;
+    --sidebar-ring:       262 83% 58%;
+    --sidebar-active:     262 60% 93%;
+    --lavender:           262 60% 93%;
+    --lavender-foreground: 262 50% 25%;
+    --mint:               158 64% 85%;
+    --mint-foreground:    158 50% 20%;
+
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
+
   * {
     @apply border-border;
   }
@@ -101,32 +174,15 @@
   }
 }
 
+/* ------------------- Components ------------------- */
 @layer components {
   .hero-gradient {
     background: linear-gradient(135deg, hsl(var(--hero-gradient-start)) 0%, hsl(var(--hero-gradient-end)) 100%);
   }
-
-  .btn-teal {
-    @apply bg-accent text-accent-foreground hover:opacity-90 transition-all;
-  }
-
-  .btn-navy {
-    @apply bg-primary text-primary-foreground hover:opacity-90 transition-all;
-  }
-
-  .service-card {
-    @apply bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow;
-  }
-
-  .product-card {
-    @apply bg-card rounded-lg border border-border p-4 hover:shadow-lg transition-all;
-  }
-
-  .section-heading {
-    @apply text-2xl md:text-3xl font-bold text-foreground;
-  }
-
-  .trust-badge {
-    @apply flex flex-col items-center gap-2 text-center;
-  }
+  .btn-teal    { @apply bg-accent text-accent-foreground hover:opacity-90 transition-all; }
+  .btn-navy    { @apply bg-primary text-primary-foreground hover:opacity-90 transition-all; }
+  .service-card { @apply bg-card rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow; }
+  .product-card { @apply bg-card rounded-lg border border-border p-4 hover:shadow-lg transition-all; }
+  .section-heading { @apply text-2xl md:text-3xl font-bold text-foreground; }
+  .trust-badge { @apply flex flex-col items-center gap-2 text-center; }
 }

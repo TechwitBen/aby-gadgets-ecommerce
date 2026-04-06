@@ -3,7 +3,7 @@ import guideInspection from "@/assets/guide-inspection.jpg";
 
 const GadgetGuide = () => {
   return (
-    <section className="py-12 md:py-20 bg-[hsl(200_60%_95%)]">
+    <section className="py-12 md:py-20 bg-[#F5F5F5]">
       <div className="container mx-auto px-4">
         <div className="text-center mb-10">
           <h2 className="text-2xl md:text-3xl font-bold text-foreground">The Aby Gadgets Guide</h2>
