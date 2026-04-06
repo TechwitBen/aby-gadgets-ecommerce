@@ -7,4 +7,5 @@ export const {
   SESSION_SECRET,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_CLIENT_ID,
+  PAYSTACK_SECRET_KEY,
 } = process.env;

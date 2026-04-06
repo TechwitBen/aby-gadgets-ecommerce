@@ -1,0 +1,30 @@
+import mongoose from "mongoose";
+
+const { Schema } = mongoose;
+
+const PaymentSchema = new Schema(
+  {
+    order: { type: Schema.Types.ObjectId, ref: "Order", required: true },
+    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    amount: { type: Number, required: true, min: 0 },
+    currency: { type: String, default: "NGN" },
+    status: {
+      type: String,
+      enum: ["pending", "success", "failed", "cancelled"],
+      default: "pending",
+    },
+    reference: { type: String, required: true, unique: true },
+    paystack_reference: { type: String },
+    payment_method: { type: String },
+    metadata: { type: Schema.Types.Mixed },
+  },
+  { collection: "payments", timestamps: true },
+);
+
+PaymentSchema.index({ order: 1 });
+PaymentSchema.index({ user: 1 });
+
+const Payment =
+  mongoose.models.Payment || mongoose.model("Payment", PaymentSchema);
+
+export default Payment;
