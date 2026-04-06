@@ -1,11 +1,9 @@
 import { useState } from "react";
 import { Users, Award, Briefcase, Trophy, CheckCircle, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
 
 // Image URLs (gadget/tech themed)
-const aboutHeroBanner = "https://images.unsplash.com/photo-1550745165-9bc0b252726f?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80"; // tech gadgets collage
+const aboutHeroBanner = "https://images.unsplash.com/photo-1716681863832-8e1f4b2e0cc0?q=80&w=1228&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // tech gadgets collage
 const aboutTeam1 = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // team working with laptops
 const aboutTeam2 = "https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // person holding tablet/tech
 
@@ -63,21 +61,29 @@ const About = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header />
 
-      {/* Hero Banner */}
-      <section className="relative h-[280px] md:h-[340px] flex items-center justify-center overflow-hidden">
-        <img
-          src={aboutHeroBanner}
-          alt="About Us Banner"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-primary/80" />
-        <div className="relative z-10 text-center text-primary-foreground">
-          <h1 className="text-3xl md:text-5xl font-bold italic mb-2">About Us</h1>
-          <p className="text-sm text-primary-foreground/80">Aby Gadgets &gt; About Us</p>
-        </div>
-      </section>
+    {/* Hero Banner - Refined */}
+<section className="relative h-[280px] md:h-[340px] flex items-center justify-center overflow-hidden">
+  <img
+    src={aboutHeroBanner}
+    alt="About Us Banner"
+    className="absolute inset-0 w-full h-full object-cover"
+  />
+  {/* Dark overlay for better text readability */}
+  <div className="absolute inset-0 bg-black/70" />
+  {/* Gradient overlay: from primary to primary/70 gives depth */}
+  <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-primary/70" />
+  <div className="relative z-10 text-center text-white px-4">
+    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">
+      About Us
+    </h1>
+    <p className="text-sm text-white/80 flex items-center justify-center gap-2">
+      <span className="hover:text-white transition-colors cursor-pointer">Home</span>
+      <span className="text-white/60">•</span>
+      <span className="text-white/90">About Us</span>
+    </p>
+  </div>
+</section>
 
       {/* Company About Section */}
       <section className="py-16 md:py-24">
@@ -233,8 +239,7 @@ const About = () => {
           </div>
         </div>
       </section>
-
-      <Footer />
+ 
     </div>
   );
 };

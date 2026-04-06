@@ -321,8 +321,7 @@ const Header = ({
                             { icon: Package, label: "My Orders", path: "/orders" },
                             { icon: Truck, label: "Track Order", path: "/track-order" },
                             { icon: Bell, label: "Notifications", path: "/notifications" },
-                            { icon: Settings, label: "Settings", path: "/settings" },
-                            { icon: Headphones, label: "Support", path: "/support" },
+  
                             { icon: HelpCircle, label: "Help Center", path: "/help" },
                           ].map((item) => (
                             <button

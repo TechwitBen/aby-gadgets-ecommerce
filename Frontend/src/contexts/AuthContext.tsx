@@ -1,6 +1,5 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { authAPI } from '@/services/api';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface User {
   id: string;
@@ -15,78 +14,93 @@ interface AuthContextType {
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  setUserManually: (user: User) => void; // Temporary until backend adds /me endpoint
+  setUserManually: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading] = useState(false); // Not loading since we're not checking auth on mount
+// ── localStorage keys ─────────────────────────────────────────────────────────
+const USERS_KEY   = "abygadget_users";
+const SESSION_KEY = "abygadget_session";
 
-  // NOTE: We're NOT checking auth on mount because backend doesn't have /auth/me endpoint yet
-  // Once backend adds GET /api/v1/auth/me, uncomment this:
-  /*
+interface StoredUser extends User {
+  password: string;
+}
+
+const getStoredUsers = (): StoredUser[] => {
+  try { return JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]"); }
+  catch { return []; }
+};
+
+const saveStoredUsers = (users: StoredUser[]) =>
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+
+const getSession = (): User | null => {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+
+const saveSession = (user: User) =>
+  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+
+const clearSession = () =>
+  localStorage.removeItem(SESSION_KEY);
+
+// ── Provider ──────────────────────────────────────────────────────────────────
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const [user, setUser]         = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Rehydrate session on mount
   useEffect(() => {
-    checkAuth();
+    const session = getSession();
+    if (session) setUser(session);
+    setIsLoading(false);
   }, []);
 
-  const checkAuth = async () => {
-    try {
-      const currentUser = await authAPI.getCurrentUser();
-      setUser(currentUser);
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  */
-
   const register = async (username: string, email: string, password: string) => {
-    try {
-      await authAPI.register({ username, email, password });
-      // Temporarily set user manually after successful registration
-      // This is a workaround until backend implements /auth/me
-      setUser({ 
-        id: Date.now().toString(), // temporary ID
-        username, 
-        email 
-      });
-    } catch (error) {
-      throw error;
-    }
+    const users = getStoredUsers();
+
+    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase()))
+      throw new Error("An account with this email already exists.");
+
+    if (users.some((u) => u.username.toLowerCase() === username.toLowerCase()))
+      throw new Error("This username is already taken.");
+
+    const newUser: StoredUser = { id: crypto.randomUUID(), username, email, password };
+    saveStoredUsers([...users, newUser]);
+
+    const session: User = { id: newUser.id, username, email };
+    saveSession(session);
+    setUser(session);
   };
 
   const login = async (username: string, password: string) => {
-    try {
-      await authAPI.login({ username, password });
-      // Temporarily set user manually after successful login
-      // This is a workaround until backend implements /auth/me
-      setUser({ 
-        id: Date.now().toString(), // temporary ID
-        username, 
-        email: '' // We don't have email from login, so empty string
-      });
-    } catch (error) {
-      throw error;
-    }
+    const users = getStoredUsers();
+
+    const match = users.find(
+      (u) =>
+        (u.username.toLowerCase() === username.toLowerCase() ||
+          u.email.toLowerCase() === username.toLowerCase()) &&
+        u.password === password
+    );
+
+    if (!match) throw new Error("Invalid username/email or password.");
+
+    const session: User = { id: match.id, username: match.username, email: match.email };
+    saveSession(session);
+    setUser(session);
   };
 
   const logout = async () => {
-    try {
-      await authAPI.logout();
-      setUser(null);
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // Even if API call fails, clear user state
-      setUser(null);
-    }
+    clearSession();
+    setUser(null);
   };
 
-  // Temporary method to set user manually
   const setUserManually = (userData: User) => {
+    saveSession(userData);
     setUser(userData);
   };
 

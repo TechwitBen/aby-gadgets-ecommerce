@@ -1,58 +1,52 @@
-import productPhone from "@/assets/product-phone.png";
-import productLaptop from "@/assets/product-laptop.png";
-import productTablet from "@/assets/product-tablet.png";
-import productAccessories from "@/assets/product-accessories.png";
-
 export interface Product {
   id: string;
   name: string;
   price: number;
-  originalPrice?: number;
   image: string;
-  image2?: string;                 // second image for hover effect
+  image2?: string;
   section?: "New Arrivals" | "Popular Products" | "Sweet Deals";
-  category: string;               // e.g. "Phones", "Laptops"
-  type?: string;                 // e.g. "smartphone", "laptop", "earbuds"
+  category: string;
+  type?: string;
   brand: string;
   condition: string;
   description?: string;
-  features?: string[];
-  colors?: string[];
-  storage?: string[];
+  features: string[];
+  storage?: string;
   screenSize?: string;
   camera?: string;
-  processor?: string;
-  ram?: string;
   battery?: string;
   inStock?: boolean;
   rating?: number;
   reviews?: number;
   tags?: string[];
-  categories?: string[];         // for additional classification
+  categories?: string[];
 }
 
 export const products: Product[] = [
-  // ============ EXISTING PRODUCTS FROM product.ts ============
-  // New Arrivals (section)
+
+  // ── NEW ARRIVALS ────────────────────────────────────────────────────────────
   {
     id: "1",
-    name: "iPhone 15pro",
+    name: "iPhone 15 Pro",
     price: 890000,
-    originalPrice: 950000,
-    image: productPhone,
+    image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1696446702183-079240a7e77d?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
     description: "UK Used, 256GB, Battery health 96%, mint condition, all parts original and fully functional.",
     features: [
-      "Pro-level camera performance with triple 12MP lenses that captures sharp photos, videos night shots, and more",
-      "Large, fluid display experience on a 6.7-inch Super Retina XDR screen with ProMotion for bright display",
-      "Powerful iOS chip with 6-core CPU that delivers ultra-fast performance",
-      "UK used. Fully tested and verified, carefully inspected to ensure full functionality, original components, and authenticity"
+      "Pro-level triple 48MP camera system captures sharp photos and 4K ProRes video",
+      "6.1-inch Super Retina XDR display with ProMotion 120Hz adaptive refresh rate",
+      "A17 Pro chip — the first 3nm chip in a smartphone for blazing performance",
+      "Titanium frame — strongest and lightest Pro iPhone ever made",
+      "UK used, fully tested and verified with all original components intact"
     ],
-    colors: ["Space Black", "Silver", "Gold", "Deep Purple"],
-    storage: ["128GB", "256GB", "512GB", "1TB"],
+    storage: "256GB",
+    screenSize: "6.1\"",
+    camera: "48MP Triple Camera",
+    battery: "All-day battery",
     rating: 4.8,
     reviews: 124,
     section: "New Arrivals",
@@ -61,23 +55,26 @@ export const products: Product[] = [
   },
   {
     id: "2",
-    name: "iPhone 14 pro max",
+    name: "iPhone 14 Pro Max",
     price: 780000,
-    originalPrice: 850000,
-    image: productPhone,
+    image: "https://images.unsplash.com/photo-1664478546384-d57ffe74a78c?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1660162609885-d87ace7c4e94?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Apple",
     condition: "UK Used",
-    description: "Excellent condition with all original parts.",
+    description: "Excellent condition with all original parts and 89% battery health.",
     features: [
-      "Dynamic Island feature",
-      "48MP main camera",
-      "A16 Bionic chip",
-      "ProMotion display"
+      "Dynamic Island — a new interactive way to experience iPhone notifications and activities",
+      "48MP main camera with second-generation sensor-shift optical image stabilisation",
+      "A16 Bionic chip, the fastest chip ever in a smartphone at launch",
+      "ProMotion 120Hz always-on display with 2000 nits peak outdoor brightness",
+      "Emergency SOS via satellite for safety in remote areas"
     ],
-    colors: ["Space Black", "Silver", "Gold", "Deep Purple"],
-    storage: ["128GB", "256GB", "512GB", "1TB"],
+    storage: "256GB",
+    screenSize: "6.7\"",
+    camera: "48MP Main + 12MP Ultra Wide",
+    battery: "Up to 29hrs video playback",
     rating: 4.7,
     reviews: 89,
     section: "New Arrivals",
@@ -88,24 +85,27 @@ export const products: Product[] = [
     id: "3",
     name: "iPhone 17",
     price: 1200000,
-    originalPrice: 1350000,
-    image: productPhone,
+    image: "https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1512054502232-10a0a035d672?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Apple",
     condition: "Brand New",
-    description: "Latest iPhone with cutting edge features.",
+    description: "Latest iPhone with cutting edge features. Sealed in box. Full warranty included.",
     features: [
-      "A18 Pro chip",
-      "Advanced camera system",
-      "Titanium design",
-      "All-day battery life"
+      "A19 chip with next-generation neural engine for AI-powered features",
+      "Redesigned camera bar with 48MP main and 48MP ultra-wide lenses",
+      "Thinner and lighter aluminium design with new colour options",
+      "Wi-Fi 7 and Bluetooth 5.4 for ultra-fast wireless connectivity",
+      "Brand new, sealed in original Apple packaging with full warranty"
     ],
-    colors: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
-    storage: ["256GB", "512GB", "1TB"],
+    storage: "256GB",
+    screenSize: "6.3\"",
+    camera: "48MP Dual Camera",
+    battery: "Up to 27hrs video playback",
     rating: 4.9,
     reviews: 45,
-    section: "New Arrivals",
+    // section REMOVED – this product will NOT appear on Products page
     inStock: true,
     tags: ["Flagship", "New"]
   },
@@ -113,307 +113,30 @@ export const products: Product[] = [
     id: "4",
     name: "iPhone 17 Air",
     price: 980000,
-    originalPrice: 1100000,
-    image: productPhone,
+    image: "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1574755393849-623942496936?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Apple",
     condition: "Brand New",
-    description: "Ultra-thin design with powerful performance.",
+    description: "Ultra-thin design with powerful performance. The thinnest iPhone ever.",
     features: [
-      "Thinnest iPhone ever",
-      "A18 chip",
-      "48MP camera",
-      "USB-C charging"
+      "Just 5.5mm thin — the thinnest Apple product ever, thinner than the iPod nano",
+      "A19 chip delivers performance that rivals the Pro lineup in a slim body",
+      "48MP main camera with computational photography for stunning clarity",
+      "USB-C with USB 3 speeds for fast transfers and DisplayPort output",
+      "Splash, water, and dust resistant with IP68 rating"
     ],
-    colors: ["Midnight", "Starlight", "Blue", "Purple", "Yellow"],
-    storage: ["128GB", "256GB", "512GB"],
+    storage: "256GB",
+    screenSize: "6.6\"",
+    camera: "48MP Camera",
+    battery: "Up to 22hrs video playback",
     rating: 4.6,
     reviews: 32,
     section: "New Arrivals",
     inStock: true,
-    tags: ["Flagship", "New"]
+    tags: ["Flagship", "New", "Ultra-thin"]
   },
-  // Popular Products (section)
-  {
-    id: "5",
-    name: "iPhone 16 pro max",
-    price: 1050000,
-    originalPrice: 1150000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "Brand New",
-    description: "The ultimate iPhone experience.",
-    features: [
-      "A18 Pro chip",
-      "5x optical zoom",
-      "Action button",
-      "Titanium frame"
-    ],
-    colors: ["Natural Titanium", "Blue Titanium", "White Titanium", "Black Titanium"],
-    storage: ["256GB", "512GB", "1TB"],
-    rating: 4.9,
-    reviews: 156,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Flagship", "New"]
-  },
-  {
-    id: "6",
-    name: "iMobile 14 pro",
-    price: 720000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "UK Used",
-    description: "(UK Used), 256GB, 89% battery health, very neat condition, all parts original and fully functional.",
-    features: [
-      "ProMotion display",
-      "48MP main camera",
-      "A16 Bionic",
-      "Ceramic Shield"
-    ],
-    colors: ["Space Black", "Silver", "Gold"],
-    storage: ["128GB", "256GB", "512GB"],
-    rating: 4.5,
-    reviews: 78,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["UK Used"]
-  },
-  {
-    id: "7",
-    name: "iPhone 12 mini",
-    price: 380000,
-    originalPrice: 420000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "UK Used",
-    description: "Compact powerhouse.",
-    features: [
-      "A14 Bionic chip",
-      "Dual camera system",
-      "5G capable",
-      "Ceramic Shield"
-    ],
-    colors: ["Black", "White", "Blue", "Green", "Red"],
-    storage: ["64GB", "128GB", "256GB"],
-    rating: 4.4,
-    reviews: 234,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Compact", "UK Used"]
-  },
-  {
-    id: "8",
-    name: "iPhone 13 pro",
-    price: 580000,
-    originalPrice: 650000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "UK Used",
-    description: "Professional camera system in a compact form.",
-    features: [
-      "A15 Bionic chip",
-      "ProMotion display",
-      "Macro photography",
-      "Cinematic mode"
-    ],
-    colors: ["Graphite", "Gold", "Silver", "Sierra Blue"],
-    storage: ["128GB", "256GB", "512GB", "1TB"],
-    rating: 4.6,
-    reviews: 189,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Flagship", "UK Used"]
-  },
-  // Laptops
-  {
-    id: "9",
-    name: "MacBook Pro 14",
-    price: 1850000,
-    originalPrice: 2100000,
-    image: productLaptop,
-    category: "Laptops",
-    type: "laptop",
-    brand: "Apple",
-    condition: "Brand New",
-    description: "Professional laptop for power users.",
-    features: [
-      "M3 Pro chip",
-      "Liquid Retina XDR display",
-      "18-hour battery life",
-      "MagSafe charging"
-    ],
-    colors: ["Space Black", "Silver"],
-    storage: ["512GB", "1TB", "2TB"],
-    rating: 4.9,
-    reviews: 67,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Professional", "New"]
-  },
-  {
-    id: "10",
-    name: "Dell Inspiron 15 5000",
-    price: 425000,
-    originalPrice: 480000,
-    image: productLaptop,
-    category: "Laptops",
-    type: "laptop",
-    brand: "Dell",
-    condition: "Brand New",
-    description: "Versatile everyday laptop.",
-    features: [
-      "Intel Core i7",
-      "8GB RAM, 512GB SSD",
-      "15.6\" FHD display",
-      "Windows 11"
-    ],
-    colors: ["Silver", "Black"],
-    storage: ["256GB", "512GB", "1TB"],
-    rating: 4.3,
-    reviews: 145,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Budget", "Windows"]
-  },
-  // Tablets
-  {
-    id: "11",
-    name: "iPad Pro 12.9",
-    price: 980000,
-    originalPrice: 1100000,
-    image: productTablet,
-    category: "Tablets",
-    type: "tablet",
-    brand: "Apple",
-    condition: "Brand New",
-    description: "The ultimate iPad experience.",
-    features: [
-      "M2 chip",
-      "Liquid Retina XDR display",
-      "Face ID",
-      "Apple Pencil support"
-    ],
-    colors: ["Space Gray", "Silver"],
-    storage: ["128GB", "256GB", "512GB", "1TB", "2TB"],
-    rating: 4.8,
-    reviews: 89,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Pro", "New"]
-  },
-  // Accessories
-  {
-    id: "12",
-    name: "Apple AirPods Pro",
-    price: 125000,
-    originalPrice: 145000,
-    image: productAccessories,
-    category: "Accessories",
-    type: "earbuds",
-    brand: "Apple",
-    condition: "Brand New",
-    description: "Active Noise Cancellation, Wireless Charging Case, white.",
-    features: [
-      "Active Noise Cancellation",
-      "Transparency mode",
-      "Personalized Spatial Audio",
-      "MagSafe Charging Case"
-    ],
-    colors: ["White"],
-    rating: 4.7,
-    reviews: 312,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Noise Cancelling", "Wireless"]
-  },
-  {
-    id: "13",
-    name: "iPhone 13 Pro Max",
-    price: 650000,
-    originalPrice: 720000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "UK Used",
-    description: "Excellent condition, battery health 92%.",
-    features: [
-      "A15 Bionic chip",
-      "ProMotion display",
-      "Cinematic mode",
-      "All-day battery"
-    ],
-    colors: ["Graphite", "Gold", "Silver", "Sierra Blue", "Alpine Green"],
-    storage: ["128GB", "256GB", "512GB", "1TB"],
-    rating: 4.7,
-    reviews: 267,
-    section: "Popular Products",
-    inStock: true,
-    tags: ["Flagship", "UK Used"]
-  },
-  {
-    id: "14",
-    name: "Open Box iPhone 11",
-    price: 295000,
-    originalPrice: 340000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "Open Box",
-    description: "Like new condition with warranty.",
-    features: [
-      "A13 Bionic chip",
-      "Dual camera system",
-      "Night mode",
-      "Water resistant"
-    ],
-    colors: ["Black", "White", "Green", "Yellow", "Purple", "Red"],
-    storage: ["64GB", "128GB", "256GB"],
-    rating: 4.4,
-    reviews: 178,
-    section: "Sweet Deals",
-    inStock: true,
-    tags: ["Open Box", "Value"]
-  },
-  {
-    id: "15",
-    name: "iPhone 8",
-    price: 145000,
-    originalPrice: 175000,
-    image: productPhone,
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "UK Used",
-    description: "Good condition, fully functional.",
-    features: [
-      "A11 Bionic chip",
-      "Touch ID",
-      "Wireless charging",
-      "Retina HD display"
-    ],
-    colors: ["Space Gray", "Silver", "Gold"],
-    storage: ["64GB", "128GB", "256GB"],
-    rating: 4.2,
-    reviews: 456,
-    section: "Sweet Deals",
-    inStock: true,
-    tags: ["Budget", "UK Used"]
-  },
-
-  // ============ PRODUCTS FROM Products.tsx (allProducts) ============
-  // New Arrivals
   {
     id: "16",
     name: "iPhone 16 Pro",
@@ -427,16 +150,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.8,
     reviews: 128,
-    storage: ["256GB"],
-    screenSize: "6.7\"",
+    storage: "256GB",
+    screenSize: "6.3\"",
     camera: "48MP Triple Camera",
-    colors: ["Titanium", "White", "Natural"],
+    battery: "Up to 27hrs video playback",
+    description: "Brand new iPhone 16 Pro with the most advanced camera system ever in an iPhone.",
+    features: [
+      "Camera Control — a dedicated hardware button for quick, intuitive photo and video capture",
+      "48MP Fusion + 48MP Ultra Wide + 12MP 5x Telephoto triple camera system",
+      "A18 Pro chip with 6-core GPU delivers up to 20% faster graphics than A17 Pro",
+      "4K 120fps Dolby Vision recording for cinema-quality slow motion video",
+      "Supports Apple Intelligence for on-device AI writing, images, and summaries"
+    ],
     tags: ["Flagship", "New"],
     section: "New Arrivals"
   },
   {
     id: "17",
-    name: "MacBook Pro 16-inch",
+    name: "MacBook Pro 16-inch M3 Pro",
     price: 1899995,
     image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=400&fit=crop",
@@ -447,11 +178,18 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.9,
     reviews: 245,
-    storage: ["1TB SSD"],
-    ram: "32GB",
-    processor: "M3 Pro Chip",
-    colors: ["Space Gray", "Silver"],
-    tags: ["Professional", "Creative"],
+    storage: "1TB SSD",
+    screenSize: "16.2\"",
+    battery: "Up to 22hrs battery",
+    description: "The most powerful MacBook Pro ever for professional workflows.",
+    features: [
+      "M3 Pro chip with 12-core CPU and 18-core GPU handles the most demanding pro workloads",
+      "16.2-inch Liquid Retina XDR display with 1000 nits sustained brightness and ProMotion",
+      "Up to 22 hours of battery life — the longest ever in a MacBook Pro",
+      "Three Thunderbolt 4 ports, HDMI, SD card slot, and MagSafe 3 charging",
+      "Advanced thermal system sustains full performance during extended heavy use"
+    ],
+    tags: ["Professional", "New"],
     section: "New Arrivals"
   },
   {
@@ -467,17 +205,25 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.7,
     reviews: 189,
-    storage: ["512GB"],
+    storage: "512GB",
     screenSize: "6.8\"",
     camera: "200MP Pro Camera",
-    colors: ["Titanium Gray", "Titanium Black"],
-    tags: ["Best Camera", "Premium"],
+    battery: "5000mAh — 45W fast charge",
+    description: "The ultimate Galaxy with built-in S Pen and 200MP camera.",
+    features: [
+      "200MP pro-grade camera with 100x Space Zoom and 5x optical telephoto lens",
+      "Built-in S Pen stored inside the phone — write, draw, and annotate naturally",
+      "Galaxy AI features: Live Translate, Note Assist, Circle to Search",
+      "Titanium frame with Corning Gorilla Armor for extreme durability",
+      "7 years of OS and security updates guaranteed by Samsung"
+    ],
+    tags: ["Best Camera", "Premium", "S Pen"],
     section: "New Arrivals"
   },
   {
     id: "19",
-    name: "AirPods Pro 2",
-    price: 24995,
+    name: "AirPods Pro 2nd Gen",
+    price: 149995,
     image: "https://images.unsplash.com/photo-1591370874773-6702e8f12fd8?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -487,19 +233,272 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 312,
-    battery: "30hrs with case",
-    features: ["Active Noise Cancellation"],
-    colors: ["White"],
+    battery: "30hrs with MagSafe case",
+    description: "World-class noise cancellation meets spatial audio in a tiny form.",
+    features: [
+      "Up to 2x more Active Noise Cancellation than the previous generation",
+      "Transparency mode lets you hear the world around you while listening",
+      "Personalised Spatial Audio with dynamic head tracking for immersive sound",
+      "Conversation Awareness automatically lowers volume when you start speaking",
+      "H2 chip powers computational audio and real-time adaptive processing"
+    ],
     tags: ["Noise Cancelling", "Premium"],
     section: "New Arrivals"
   },
-  // Popular Products
+
+  // ── POPULAR PRODUCTS ────────────────────────────────────────────────────────
   {
-    id: "20",
-    name: "iPad Pro 12.9-inch",
-    price: 899995,
+    id: "5",
+    name: "iPhone 16 Pro Max",
+    price: 1050000,
+    image: "https://images.unsplash.com/photo-1696446702183-079240a7e77d?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "Brand New",
+    description: "The ultimate iPhone experience with the largest screen and best battery life.",
+    features: [
+      "A18 Pro chip with 6-core GPU — the most powerful chip ever in a smartphone",
+      "5x optical zoom with 48MP Telephoto for stunning detail at any distance",
+      "6.9-inch ProMotion LTPO display — the largest iPhone screen ever",
+      "All-day battery with up to 33hrs video playback on a single charge",
+      "Camera Control hardware button and Apple Intelligence AI features built in"
+    ],
+    storage: "256GB",
+    screenSize: "6.9\"",
+    camera: "48MP Triple Camera — 5x Optical Zoom",
+    battery: "Up to 33hrs video playback",
+    rating: 4.9,
+    reviews: 156,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "New"]
+  },
+  {
+    id: "6",
+    name: "iPhone 14 Pro",
+    price: 720000,
+    image: "https://images.unsplash.com/photo-1664478546384-d57ffe74a78c?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1556656793-08538906a9f8?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "UK Used",
+    description: "(UK Used), 256GB, 89% battery health, very neat condition, all parts original.",
+    features: [
+      "Dynamic Island replaces the notch with a versatile interactive pill-shaped cutout",
+      "48MP main camera with four-lens optical zoom up to 3x telephoto",
+      "Always-On display that shows time and notifications without tapping the screen",
+      "A16 Bionic chip, the world's fastest smartphone chip at its launch",
+      "UK used, thoroughly inspected with original display and original battery verified"
+    ],
+    storage: "256GB",
+    screenSize: "6.1\"",
+    camera: "48MP Main Camera",
+    battery: "Up to 23hrs video playback",
+    rating: 4.5,
+    reviews: 78,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["UK Used"]
+  },
+  {
+    id: "7",
+    name: "iPhone 12 Mini",
+    price: 380000,
+    image: "https://images.unsplash.com/photo-1604671368394-2240d0b1bb6c?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1607936854279-55e8a4c64888?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "UK Used",
+    description: "Compact powerhouse — smallest 5G iPhone ever made.",
+    features: [
+      "5G connectivity in the most compact iPhone form factor — fits any pocket",
+      "A14 Bionic chip, still one of the fastest chips in any smartphone today",
+      "Dual 12MP camera system with Night mode on every lens including front camera",
+      "Ceramic Shield front cover — 4x better drop performance than any iPhone before it",
+      "UK used, battery replaced and certified, all original parts and display confirmed"
+    ],
+    storage: "128GB",
+    screenSize: "5.4\"",
+    camera: "12MP Dual Camera",
+    battery: "Up to 17hrs video playback",
+    rating: 4.4,
+    reviews: 234,
+    // section REMOVED – this product will NOT appear on Products page
+    inStock: true,
+    tags: ["Compact", "UK Used"]
+  },
+  {
+    id: "8",
+    name: "iPhone 13 Pro",
+    price: 580000,
+    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1635450405664-f8aee4d26c4a?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "UK Used",
+    description: "Professional camera system in a compact form. Excellent UK used condition.",
+    features: [
+      "ProMotion 120Hz display with Always-On capability and 1000 nits outdoor brightness",
+      "Macro photography with the Ultra Wide camera — get as close as 2cm to your subject",
+      "Cinematic mode records video with shallow depth of field and automatic focus shifts",
+      "A15 Bionic — 50% faster CPU and 30% faster GPU than the A13 chip",
+      "UK used with 91% battery health confirmed, all original Apple components"
+    ],
+    storage: "256GB",
+    screenSize: "6.1\"",
+    camera: "12MP Triple Camera — 3x Optical Zoom",
+    battery: "Up to 22hrs video playback",
+    rating: 4.6,
+    reviews: 189,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
+  },
+  {
+    id: "9",
+    name: "MacBook Pro 14-inch M3",
+    price: 1850000,
+    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Apple",
+    condition: "Brand New",
+    description: "Professional laptop for power users. Sealed in box with warranty.",
+    features: [
+      "M3 Pro chip with 11-core CPU and 14-core GPU handles video editing and 3D rendering",
+      "14.2-inch Liquid Retina XDR display with 1600 nits peak brightness",
+      "Up to 18 hours of battery life for full-day professional use",
+      "Six speakers with force-cancelling woofers and Spatial Audio support",
+      "Hardware-accelerated ray tracing for real-time 3D rendering in creative apps"
+    ],
+    storage: "512GB",
+    screenSize: "14.2\"",
+    battery: "Up to 18hrs battery",
+    rating: 4.9,
+    reviews: 67,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Professional", "New"]
+  },
+  {
+    id: "10",
+    name: "Dell Inspiron 15 5000",
+    price: 425000,
+    image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&h=400&fit=crop",
+    category: "Laptops",
+    type: "laptop",
+    brand: "Dell",
+    condition: "Brand New",
+    description: "Versatile everyday laptop. Great for work, school, and entertainment.",
+    features: [
+      "Intel Core i7-1355U processor with 10 cores for fast multitasking performance",
+      "15.6-inch FHD IPS anti-glare display — bright and comfortable for long sessions",
+      "8GB DDR4 RAM and 512GB NVMe SSD — fast boot and snappy everyday performance",
+      "Wi-Fi 6 and Bluetooth 5.2 for stable, fast wireless connections",
+      "Windows 11 Home pre-installed with one year of Microsoft 365 included"
+    ],
+    storage: "512GB",
+    screenSize: "15.6\"",
+    battery: "Up to 7hrs battery",
+    rating: 4.3,
+    reviews: 145,
+    // section REMOVED – this product will NOT appear on Products page
+    inStock: true,
+    tags: ["Budget", "Windows"]
+  },
+  {
+    id: "11",
+    name: "iPad Pro 12.9-inch M2",
+    price: 980000,
     image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    category: "Tablets",
+    type: "tablet",
+    brand: "Apple",
+    condition: "Brand New",
+    description: "The ultimate iPad experience with the most advanced display ever.",
+    features: [
+      "M2 chip delivers performance that rivals a laptop in a portable tablet form",
+      "12.9-inch Liquid Retina XDR display with 2732×2048 resolution and ProMotion 120Hz",
+      "Apple Pencil hover — sense the Pencil up to 12mm above the display before touching",
+      "5G with 40Gb/s Wi-Fi 6E for ultra-fast connectivity anywhere",
+      "Face ID, USB 3 Thunderbolt, and support for the Magic Keyboard with trackpad"
+    ],
+    storage: "256GB",
+    screenSize: "12.9\"",
+    battery: "Up to 10hrs battery",
+    rating: 4.8,
+    reviews: 89,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Pro", "New"]
+  },
+  {
+    id: "12",
+    name: "Apple AirPods Pro 2 (USB-C)",
+    price: 125000,
+    image: "https://images.unsplash.com/photo-1659499704654-26e5c4db2e0a?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1672007049244-4c18cba3b3ca?w=400&h=400&fit=crop",
+    category: "Accessories",
+    type: "earbuds",
+    brand: "Apple",
+    condition: "Brand New",
+    description: "Active Noise Cancellation, USB-C MagSafe case, Adaptive Audio.",
+    features: [
+      "Adaptive Audio dynamically blends ANC and Transparency for any environment",
+      "Personalised Volume automatically adjusts audio based on your environment",
+      "Conversation Awareness reduces media volume when you begin speaking",
+      "USB-C MagSafe Charging Case with up to 30 total hours of listening time",
+      "Vision Pro support for seamless lossless audio switching"
+    ],
+    battery: "30hrs with case / 6hrs ANC",
+    rating: 4.7,
+    reviews: 312,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Noise Cancelling", "Wireless"]
+  },
+  {
+    id: "13",
+    name: "iPhone 13 Pro Max",
+    price: 650000,
+    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1635450405664-f8aee4d26c4a?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "UK Used",
+    description: "Excellent condition, battery health 92%. The biggest and most capable 13 Pro.",
+    features: [
+      "6.7-inch Super Retina XDR ProMotion display — the largest iPhone screen at the time",
+      "A15 Bionic chip with a 5-core GPU for console-quality gaming performance",
+      "3x optical zoom telephoto lens plus Ultra Wide for 6x optical zoom range",
+      "ProRes video recording — the same format used by professional filmmakers",
+      "UK used, battery health confirmed at 92%, zero dead pixels, fully original"
+    ],
+    storage: "256GB",
+    screenSize: "6.7\"",
+    camera: "12MP Triple Camera — 3x Optical Zoom",
+    battery: "Up to 28hrs video playback",
+    rating: 4.7,
+    reviews: 267,
+    section: "Popular Products",
+    inStock: true,
+    tags: ["Flagship", "UK Used"]
+  },
+  {
+    id: "20",
+    name: "iPad Pro 12.9-inch M1",
+    price: 899995,
+    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1601462904263-f2fa0c851cb9?w=400&h=400&fit=crop",
     category: "Tablets",
     type: "tablet",
     brand: "Apple",
@@ -507,16 +506,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.8,
     reviews: 289,
-    storage: ["256GB"],
+    storage: "256GB",
     screenSize: "12.9\"",
-    colors: ["Space Gray", "Silver"],
+    battery: "Up to 10hrs battery",
+    description: "The most versatile iPad ever. Works like a computer, feels like magic.",
+    features: [
+      "M1 chip — up to 50% faster CPU and up to 40% faster graphics than A12Z Bionic",
+      "Liquid Retina XDR display with mini-LED backlighting for extreme contrast",
+      "Thunderbolt port with 40Gb/s data transfer for fast studio-grade workflows",
+      "Center Stage automatically keeps you in frame during FaceTime video calls",
+      "Compatible with Apple Pencil 2nd gen and Magic Keyboard for full laptop experience"
+    ],
     tags: ["Pro Display", "Creative"],
     section: "Popular Products"
   },
   {
     id: "21",
     name: "Sony WH-1000XM5",
-    price: 34995,
+    price: 210000,
     image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -526,18 +533,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.9,
     reviews: 421,
-    battery: "30hrs battery",
-    features: ["Industry-leading ANC"],
-    colors: ["Black", "Silver"],
+    battery: "30hrs — 3-min charge gives 3hrs",
+    description: "Industry-leading noise cancelling with exceptional sound quality.",
+    features: [
+      "Eight microphones and two processors combine for the best noise cancelling ever",
+      "30-hour battery life with quick charging — 3 minutes gives 3 hours of playback",
+      "Multipoint connection lets you pair to two devices and switch between them automatically",
+      "Precise Voice Pickup Technology filters background noise during calls",
+      "Wear Detection automatically pauses playback when you remove the headphones"
+    ],
     tags: ["Best ANC", "Comfort"],
     section: "Popular Products"
   },
   {
     id: "22",
-    name: "Dell XPS 15",
+    name: "Dell XPS 15 (2024)",
     price: 1599995,
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
     category: "Laptops",
     type: "laptop",
     brand: "Dell",
@@ -545,17 +558,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.7,
     reviews: 178,
-    storage: ["1TB SSD"],
-    ram: "32GB",
-    processor: "Intel i9 13th Gen",
-    colors: ["Platinum Silver"],
+    storage: "1TB SSD",
+    screenSize: "15.6\"",
+    battery: "Up to 13hrs battery",
+    description: "The most powerful XPS ever. For creators and professionals.",
+    features: [
+      "Intel Core i9-14900H with 24 cores for extreme multitasking and content creation",
+      "NVIDIA GeForce RTX 4070 GPU for 4K video editing and ray-traced rendering",
+      "15.6-inch 3.5K OLED display with 100% DCI-P3 colour accuracy and VESA True Black",
+      "CNC-machined aluminium chassis with carbon fibre palm rest — rigid and light",
+      "Thunderbolt 4 x2, USB-A, SD card reader, and HDMI 2.1 all built in"
+    ],
     tags: ["Design", "Content Creation"],
     section: "Popular Products"
   },
   {
     id: "23",
     name: "Apple Watch Series 9",
-    price: 54995,
+    price: 325000,
     image: "https://images.unsplash.com/photo-1434493650001-5d43a6fea0a6?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -565,9 +585,15 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 256,
-    battery: "18hrs battery",
-    features: ["Always-On Display"],
-    colors: ["Midnight", "Starlight", "Product Red"],
+    battery: "18hrs / 36hrs low power mode",
+    description: "Smarter. Brighter. Faster. The most powerful Apple Watch yet.",
+    features: [
+      "Double Tap gesture lets you control the watch without touching the display",
+      "S9 SiP chip is 60% faster and enables on-device Siri processing for better privacy",
+      "Brighter always-on Retina display — up to 2000 nits in sunlight",
+      "Precision Finding for iPhone locates your phone with haptics and directional arrows",
+      "Advanced health sensors: blood oxygen, ECG, crash detection, and temperature"
+    ],
     tags: ["Health Tracking", "Premium"],
     section: "Popular Products"
   },
@@ -575,8 +601,8 @@ export const products: Product[] = [
     id: "24",
     name: "Samsung Galaxy Tab S9",
     price: 799995,
-    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
     category: "Tablets",
     type: "tablet",
     brand: "Samsung",
@@ -584,39 +610,112 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 189,
-    storage: ["256GB"],
+    storage: "256GB",
     screenSize: "11\"",
-    colors: ["Graphite", "Beige"],
+    battery: "8400mAh — up to 15hrs",
+    description: "The most powerful Android tablet. IP68 rated and S Pen included.",
+    features: [
+      "Dynamic AMOLED 2X display with 120Hz and Vision Booster for outdoor visibility",
+      "IP68 water and dust resistance — the first Galaxy Tab to earn this rating",
+      "S Pen included in the box with 2.8ms latency for natural writing and drawing",
+      "Snapdragon 8 Gen 2 for Galaxy — fastest mobile processor available in a tablet",
+      "Multi-Active Window allows running three apps simultaneously in split-screen"
+    ],
     tags: ["Large Screen", "S Pen"],
     section: "Popular Products"
   },
   {
     id: "25",
-    name: "Google Pixel 8 Pro",
-    price: 799995,
-    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    name: "Google Pixel 9 Pro",
+    price: 899995,
+    image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Google",
     condition: "New",
     inStock: true,
-    rating: 4.4,
+    rating: 4.6,
     reviews: 156,
-    storage: ["256GB"],
-    screenSize: "6.7\"",
-    camera: "50MP AI Camera",
-    colors: ["Obsidian", "Porcelain"],
+    storage: "256GB",
+    screenSize: "6.3\"",
+    camera: "50MP Quad Camera",
+    battery: "4700mAh — 45W fast charge",
+    description: "Google's smartest phone yet, powered by Gemini AI.",
+    features: [
+      "Gemini AI built in — on-device for smarter suggestions, search, and writing",
+      "50MP Quad camera with 5x optical zoom and 30x Super Res Zoom",
+      "Magic Eraser, Best Take, and Photo Unblur use AI to perfect every shot",
+      "Tensor G4 chip with a dedicated security processor for private on-device AI",
+      "7 years of OS, security, and Pixel Drop feature updates guaranteed by Google"
+    ],
     tags: ["AI Powered", "Best Camera"],
-    section: "Popular Products"
+    // section REMOVED – this product will NOT appear on Products page
   },
-  // Sweet Deals
+
+  // ── SWEET DEALS ─────────────────────────────────────────────────────────────
+  {
+    id: "14",
+    name: "Open Box iPhone 11",
+    price: 295000,
+    image: "https://images.unsplash.com/photo-1574755393849-623942496936?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1580910051074-3eb694886505?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "Open Box",
+    description: "Like new condition with original box, charger, and accessories.",
+    features: [
+      "A13 Bionic chip — still faster than most Android flagships released today",
+      "Dual 12MP camera system with Night mode that brightens dark shots automatically",
+      "IP68 water resistance rated at 2 metres depth for up to 30 minutes",
+      "Face ID — the most secure facial authentication system on any smartphone",
+      "Open box with complete original accessories and 6 months AbyGadgets warranty"
+    ],
+    storage: "128GB",
+    screenSize: "6.1\"",
+    camera: "12MP Dual Camera",
+    battery: "Up to 17hrs video playback",
+    rating: 4.4,
+    reviews: 178,
+    section: "Sweet Deals",
+    inStock: true,
+    tags: ["Open Box", "Value"]
+  },
+  {
+    id: "15",
+    name: "iPhone 8 Plus",
+    price: 145000,
+    image: "https://images.unsplash.com/photo-1512054502232-10a0a035d672?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1530819568329-97653eafbbfa?w=400&h=400&fit=crop",
+    category: "Phones",
+    type: "smartphone",
+    brand: "Apple",
+    condition: "UK Used",
+    description: "Great budget pick. Good condition and fully functional.",
+    features: [
+      "A11 Bionic chip with neural engine — still handles everyday tasks with ease",
+      "Touch ID fingerprint sensor for fast and reliable unlocking and Apple Pay",
+      "Wireless Qi charging support — place on any compatible pad to charge",
+      "4K video recording at 60fps with optical image stabilisation",
+      "UK used, battery recently replaced, all original parts including back glass"
+    ],
+    storage: "128GB",
+    screenSize: "5.5\"",
+    camera: "12MP Dual Camera",
+    battery: "Up to 21hrs video playback",
+    rating: 4.2,
+    reviews: 456,
+    // section REMOVED – this product will NOT appear on Products page
+    inStock: true,
+    tags: ["Budget", "UK Used"]
+  },
   {
     id: "26",
     name: "Refurbished MacBook Air M1",
     price: 699995,
-    image: "https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
     category: "Laptops",
     type: "laptop",
     brand: "Apple",
@@ -624,10 +723,17 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 89,
-    storage: ["512GB SSD"],
-    ram: "16GB",
-    processor: "M1 Chip",
-    colors: ["Space Gray", "Gold"],
+    storage: "512GB SSD",
+    screenSize: "13.3\"",
+    battery: "Up to 18hrs battery",
+    description: "Certified refurbished MacBook Air with M1 chip. Best value Mac available.",
+    features: [
+      "M1 chip is up to 3.5x faster CPU and 5x faster GPU than the previous Intel MacBook Air",
+      "Up to 18 hours of battery life — more than any other Mac laptop ever made",
+      "Fanless silent design — no vents, no fans, no noise, even under heavy load",
+      "Retina display with True Tone automatically adjusts white balance to ambient light",
+      "Certified refurbished — tested, cleaned, and repackaged with a full warranty"
+    ],
     tags: ["Refurbished", "Value"],
     section: "Sweet Deals"
   },
@@ -635,8 +741,8 @@ export const products: Product[] = [
     id: "27",
     name: "UK Used Samsung S23 Ultra",
     price: 599995,
-    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Samsung",
@@ -644,19 +750,27 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.3,
     reviews: 134,
-    storage: ["512GB"],
+    storage: "512GB",
     screenSize: "6.8\"",
     camera: "200MP Pro Camera",
-    colors: ["Phantom Black"],
-    tags: ["UK Used", "Value"],
+    battery: "5000mAh — 45W fast charge",
+    description: "UK used Samsung S23 Ultra with built-in S Pen. Excellent value flagship.",
+    features: [
+      "200MP camera with 10x optical zoom and 100x Space Zoom on the telephoto",
+      "Built-in S Pen with 2.8ms latency stored in the phone body at no extra cost",
+      "Snapdragon 8 Gen 2 runs all apps, games, and tasks without breaking a sweat",
+      "Gorilla Glass Victus 2 on front and back for industry-leading drop resistance",
+      "UK used, thoroughly tested and inspected, battery above 85% capacity confirmed"
+    ],
+    tags: ["UK Used", "Value", "S Pen"],
     section: "Sweet Deals"
   },
   {
     id: "28",
-    name: "Open Box iPad Air",
+    name: "Open Box iPad Air 5",
     price: 549995,
     image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1542751110-97427bbecf20?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1601462904263-f2fa0c851cb9?w=400&h=400&fit=crop",
     category: "Tablets",
     type: "tablet",
     brand: "Apple",
@@ -664,18 +778,26 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.4,
     reviews: 67,
-    storage: ["256GB"],
+    storage: "256GB",
     screenSize: "10.9\"",
-    colors: ["Space Gray"],
+    battery: "Up to 10hrs battery",
+    description: "Open box iPad Air with M1 chip. Complete with all accessories.",
+    features: [
+      "M1 chip delivers pro-level performance for demanding creative apps and games",
+      "10.9-inch Liquid Retina display with True Tone and P3 wide colour",
+      "Center Stage uses the ultra-wide camera to keep you in frame on video calls",
+      "USB-C with USB 3 speeds plus support for Thunderbolt external displays",
+      "Open box with all original accessories, same specs as sealed retail unit"
+    ],
     tags: ["Open Box", "Value"],
     section: "Sweet Deals"
   },
   {
     id: "29",
     name: "Sony PlayStation 5",
-    price: 349995,
-    image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    price: 449995,
+    image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
     category: "Gaming",
     type: "gaming",
     brand: "Sony",
@@ -683,18 +805,25 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.9,
     reviews: 512,
-    storage: ["825GB SSD"],
-    features: ["4K 120fps Gaming"],
-    colors: ["White"],
+    storage: "825GB Custom SSD",
+    battery: "DualSense wireless controller",
+    description: "The ultimate gaming console. Experience lightning-fast loading.",
+    features: [
+      "Custom SSD loads game levels and assets dramatically faster than any HDD console",
+      "4K gaming at up to 120 frames per second with ray tracing for cinematic graphics",
+      "DualSense controller with haptic feedback and adaptive triggers for physical immersion",
+      "3D Audio engine creates a sphere of sound around you for precise spatial awareness",
+      "PS5 backwards compatible with the vast majority of the PS4 library"
+    ],
     tags: ["4K Gaming", "Exclusive Games"],
     section: "Sweet Deals"
   },
   {
     id: "30",
     name: "Xbox Series X",
-    price: 299995,
-    image: "https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    price: 399995,
+    image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=400&h=400&fit=crop",
     category: "Gaming",
     type: "gaming",
     brand: "Microsoft",
@@ -702,16 +831,22 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.8,
     reviews: 389,
-    storage: ["1TB SSD"],
-    features: ["4K Gaming"],
-    colors: ["Black"],
+    storage: "1TB Custom NVMe SSD",
+    description: "World's most powerful console. 4K gaming with Game Pass.",
+    features: [
+      "12 teraflops of GPU performance — the most of any console ever made at launch",
+      "4K at 60fps, up to 120fps in supported games with Variable Rate Shading",
+      "Quick Resume lets you instantly switch between multiple suspended games",
+      "Xbox Game Pass gives access to over 100 games for one monthly subscription",
+      "DirectStorage loads game assets almost instantly from the 1TB custom SSD"
+    ],
     tags: ["4K Gaming", "Game Pass"],
-    section: "Sweet Deals"
+    // section REMOVED – this product will NOT appear on Products page
   },
   {
     id: "31",
     name: "Bose QuietComfort 45",
-    price: 29995,
+    price: 175000,
     image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1484704849700-f032a568e944?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -721,9 +856,15 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.7,
     reviews: 245,
-    battery: "24hrs battery",
-    features: ["Noise Cancelling"],
-    colors: ["Black", "White"],
+    battery: "24hrs — 15-min charge gives 3hrs",
+    description: "World-class noise cancellation with all-day comfort.",
+    features: [
+      "Bose Quiet Mode cancels distracting noise so you can focus anywhere",
+      "Aware Mode lets in the sounds around you when you need situational awareness",
+      "TriPort acoustic architecture produces full, balanced, natural sound",
+      "24-hour battery with quick charge — 15 minutes gives 3 hours of playback",
+      "Lightweight and foldable with an 8.2mm slim folded profile for easy travel"
+    ],
     tags: ["Noise Cancelling", "Comfort"],
     section: "Sweet Deals"
   },
@@ -740,18 +881,25 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 178,
-    storage: ["64GB"],
-    features: ["OLED Display"],
-    colors: ["White", "Neon"],
+    storage: "64GB Internal",
+    battery: "4.5 to 9hrs gameplay",
+    description: "Play at home or on the go with the best Switch display ever.",
+    features: [
+      "7-inch OLED screen with vibrant colours and deep blacks for stunning handheld play",
+      "Wide adjustable stand works on any flat surface in any angle for tabletop mode",
+      "64GB internal storage — twice the storage of the original Nintendo Switch",
+      "Enhanced audio through the built-in speakers for richer handheld sound",
+      "Seamlessly switch between TV mode, tabletop mode, and handheld mode"
+    ],
     tags: ["Portable Gaming", "OLED"],
     section: "Sweet Deals"
   },
   {
     id: "33",
-    name: "Samsung Galaxy Watch 6",
-    price: 39995,
-    image: "https://images.unsplash.com/photo-1434493650001-5d43a6fea0a6?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    name: "Samsung Galaxy Watch 6 Classic",
+    price: 175000,
+    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1434493650001-5d43a6fea0a6?w=400&h=400&fit=crop",
     category: "Accessories",
     type: "smartwatch",
     brand: "Samsung",
@@ -759,16 +907,22 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 156,
-    battery: "40hrs battery",
-    features: ["Health Tracking"],
-    colors: ["Graphite", "Silver"],
+    battery: "40hrs — 5-min charge gives 1hr",
+    description: "Premium smartwatch with a rotating bezel and advanced health features.",
+    features: [
+      "Rotating bezel provides intuitive, tactile navigation through menus and apps",
+      "Advanced sleep coaching with 6 stages of sleep tracking and personalised guidance",
+      "Body composition analysis measures BMI, skeletal muscle, body fat, and more",
+      "BioActive sensor tracks heart rate, blood oxygen, and ECG in one compact unit",
+      "Sapphire crystal glass display is 7x harder than regular glass against scratches"
+    ],
     tags: ["Health Tracking", "Smartwatch"],
     section: "Sweet Deals"
   },
   {
     id: "34",
-    name: "GoPro Hero 12",
-    price: 49995,
+    name: "GoPro Hero 12 Black",
+    price: 195000,
     image: "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1510127034890-ba27508e9f1c?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -778,15 +932,22 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.7,
     reviews: 89,
-    features: ["5.3K Video"],
-    colors: ["Black"],
+    battery: "Up to 70mins 5.3K30",
+    description: "The most versatile GoPro ever. Capture every adventure in stunning quality.",
+    features: [
+      "5.3K video at 60fps and 27MP photos for the highest quality footage ever from GoPro",
+      "HyperSmooth 6.0 stabilisation delivers the smoothest footage even in rough action",
+      "Enduro battery dramatically improves performance in cold weather conditions",
+      "HDR video captures the brightest and darkest details in challenging lighting",
+      "Waterproof to 10 metres without a housing — just grab it and jump in"
+    ],
     tags: ["Action Camera", "Waterproof"],
     section: "Sweet Deals"
   },
   {
     id: "35",
     name: "DJI Mini 3 Pro",
-    price: 89995,
+    price: 395000,
     image: "https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1529900748604-07564a03e7a6?w=400&h=400&fit=crop",
     category: "Accessories",
@@ -796,17 +957,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.8,
     reviews: 134,
-    features: ["4K HDR Video"],
-    colors: ["Gray"],
+    battery: "34mins flight time",
+    description: "Under 249g so no registration required. Professional results made simple.",
+    features: [
+      "4K HDR video and 48MP photos with a 1/1.3-inch CMOS sensor",
+      "Tri-directional obstacle sensing prevents crashes from front, back, and below",
+      "Vertical shooting mode designed specifically for social media portrait content",
+      "Under 249g takeoff weight — no registration required in most countries",
+      "Intelligent shooting modes: MasterShots, QuickShots, Hyperlapse, and more"
+    ],
     tags: ["Drone", "4K Video"],
-    section: "Sweet Deals"
+    // section REMOVED – this product will NOT appear on Products page
   },
   {
     id: "36",
-    name: "Amazon Kindle Paperwhite",
-    price: 19995,
+    name: "Kindle Paperwhite 16GB",
+    price: 65000,
     image: "https://images.unsplash.com/photo-1544716278-e513176f20b5?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1524985069026-dd778a71c7b4?w=400&h=400&fit=crop",
     category: "Accessories",
     type: "e-reader",
     brand: "Amazon",
@@ -814,214 +982,23 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.6,
     reviews: 278,
-    storage: ["32GB"],
-    features: ["Waterproof"],
-    colors: ["Black"],
+    storage: "16GB",
+    battery: "Up to 12 weeks per charge",
+    description: "The thinnest and lightest Kindle. Reads like paper, even in sunlight.",
+    features: [
+      "300ppi glare-free display looks and feels like real paper even in direct sunlight",
+      "IP68 waterproof rating — read safely by the pool or in the bath",
+      "16GB storage holds thousands of books, magazines, and audiobooks",
+      "Up to 12 weeks of battery life on a single charge with wireless off",
+      "Adjustable warm light lets you shift the screen colour temperature at night"
+    ],
     tags: ["E-Reader", "Waterproof"],
     section: "Sweet Deals"
   },
-
-  // ============ PRODUCTS FROM Categories.tsx (allGadgets) ============
-  // Converted to NGN (multiply original USD cents by 10)
-  {
-    id: "37",
-    name: "iPhone 16 Pro",
-    price: 1299990,          // converted: 129999 * 10
-    image: "https://images.unsplash.com/photo-1610945265064-0e34e5519bbf?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
-    category: "Phones",
-    type: "smartphone",
-    brand: "Apple",
-    condition: "New",
-    inStock: true,
-    rating: 4.8,
-    reviews: 342,
-    storage: ["256GB"],
-    screenSize: "6.7\"",
-    camera: "48MP Triple Camera",
-    colors: ["Titanium", "White", "Natural"],
-    tags: ["Flagship", "New"],
-    categories: ["iphone", "flagship", "new"]
-  },
-  {
-    id: "38",
-    name: "Samsung Galaxy S24 Ultra",
-    price: 1199990,
-    image: "https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop",
-    category: "Phones",
-    type: "smartphone",
-    brand: "Samsung",
-    condition: "New",
-    inStock: true,
-    rating: 4.8,
-    reviews: 289,
-    storage: ["512GB"],
-    screenSize: "6.8\"",
-    camera: "200MP Pro Camera",
-    colors: ["Titanium Gray", "Titanium Black", "Titanium Violet"],
-    tags: ["Best Camera", "Premium"],
-    categories: ["samsung", "flagship", "gaming"]
-  },
-  {
-    id: "39",
-    name: "Google Pixel 8 Pro",
-    price: 899990,
-    image: "https://images.unsplash.com/photo-1598327105666-5b89351aff97?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
-    category: "Phones",
-    type: "smartphone",
-    brand: "Google",
-    condition: "New",
-    inStock: true,
-    rating: 4.6,
-    reviews: 189,
-    storage: ["256GB"],
-    screenSize: "6.7\"",
-    camera: "50MP AI Camera",
-    colors: ["Obsidian", "Porcelain", "Bay"],
-    tags: ["AI Powered", "Best Camera"],
-    categories: ["android", "flagship"]
-  },
-  {
-    id: "40",
-    name: "MacBook Pro 16\" M3",
-    price: 3499990,
-    image: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1545235617-9465d2a55698?w=400&h=400&fit=crop",
-    category: "Laptops",
-    type: "laptop",
-    brand: "Apple",
-    condition: "New",
-    inStock: true,
-    rating: 4.9,
-    reviews: 456,
-    storage: ["1TB"],
-    ram: "64GB",
-    processor: "M3 Max 16-core",
-    colors: ["Space Black", "Silver"],
-    tags: ["Professional", "Creative Work"],
-    categories: ["laptop", "flagship", "apple"]
-  },
-  {
-    id: "41",
-    name: "Dell XPS 15",
-    price: 1999990,
-    image: "https://images.unsplash.com/photo-1593642632823-8f785ba67e45?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1545235617-9465d2a55698?w=400&h=400&fit=crop",
-    category: "Laptops",
-    type: "laptop",
-    brand: "Dell",
-    condition: "New",
-    inStock: true,
-    rating: 4.7,
-    reviews: 312,
-    storage: ["1TB"],
-    ram: "32GB",
-    processor: "Intel i9 13th Gen",
-    colors: ["Platinum Silver", "Frost"],
-    tags: ["Design", "Content Creation"],
-    categories: ["laptop", "premium"]
-  },
-  {
-    id: "42",
-    name: "iPad Pro 12.9\" M2",
-    price: 1299990,
-    image: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
-    category: "Tablets",
-    type: "tablet",
-    brand: "Apple",
-    condition: "New",
-    inStock: true,
-    rating: 4.8,
-    reviews: 278,
-    storage: ["256GB"],
-    screenSize: "12.9\"",
-    colors: ["Space Gray", "Silver"],
-    tags: ["Pro Display", "Creative"],
-    categories: ["tablet", "apple", "premium"]
-  },
-  {
-    id: "43",
-    name: "Samsung Galaxy Tab S9 Ultra",
-    price: 1199990,
-    image: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&h=400&fit=crop",
-    category: "Tablets",
-    type: "tablet",
-    brand: "Samsung",
-    condition: "New",
-    inStock: true,
-    rating: 4.7,
-    reviews: 189,
-    storage: ["512GB"],
-    screenSize: "14.6\"",
-    colors: ["Graphite", "Beige"],
-    tags: ["Large Screen", "S Pen"],
-    categories: ["tablet", "samsung", "premium"]
-  },
-  {
-    id: "44",
-    name: "Apple AirPods Pro 2",
-    price: 249990,
-    image: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
-    category: "Accessories",
-    type: "earbuds",
-    brand: "Apple",
-    condition: "New",
-    inStock: true,
-    rating: 4.8,
-    reviews: 891,
-    battery: "30hrs with case",
-    features: ["Active Noise Cancellation"],
-    colors: ["White"],
-    tags: ["Noise Cancelling", "Premium"],
-    categories: ["audio", "apple", "wireless"]
-  },
-  {
-    id: "45",
-    name: "Sony WH-1000XM5",
-    price: 349990,
-    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1589003077984-894e133dabab?w=400&h=400&fit=crop",
-    category: "Accessories",
-    type: "headphones",
-    brand: "Sony",
-    condition: "New",
-    inStock: true,
-    rating: 4.9,
-    reviews: 672,
-    battery: "30hrs battery",
-    features: ["Industry-leading ANC"],
-    colors: ["Black", "Silver"],
-    tags: ["Best ANC", "Comfort"],
-    categories: ["audio", "headphones", "premium"]
-  },
-  {
-    id: "46",
-    name: "Apple Watch Series 9",
-    price: 429990,
-    image: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=400&fit=crop",
-    category: "Accessories",
-    type: "smartwatch",
-    brand: "Apple",
-    condition: "New",
-    inStock: true,
-    rating: 4.7,
-    reviews: 445,
-    battery: "18hrs battery",
-    features: ["Always-On Display"],
-    colors: ["Midnight", "Starlight", "Product Red"],
-    tags: ["Health Tracking", "Premium"],
-    categories: ["wearable", "apple", "smartwatch"]
-  },
   {
     id: "47",
-    name: "PlayStation 5",
-    price: 499990,
+    name: "PlayStation 5 Slim",
+    price: 480000,
     image: "https://images.unsplash.com/photo-1607853202273-797f1c22a38e?w=400&h=400&fit=crop",
     image2: "https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=400&h=400&fit=crop",
     category: "Gaming",
@@ -1031,37 +1008,25 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.8,
     reviews: 923,
-    storage: ["825GB SSD"],
-    features: ["4K 120fps Gaming"],
-    colors: ["White"],
-    tags: ["4K Gaming", "Exclusive Games"],
-    categories: ["gaming", "console"]
-  },
-  {
-    id: "48",
-    name: "AbygGadget Basic 2026",
-    price: 149990,
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
-    category: "Phones",
-    type: "smartphone",
-    brand: "AbygGadget",
-    condition: "New",
-    inStock: true,
-    rating: 4.2,
-    reviews: 89,
-    storage: ["64GB"],
-    screenSize: "6.1\"",
-    colors: ["Black", "Blue"],
-    tags: ["Budget", "Best Seller"],
-    categories: ["budget", "smartphone"]
+    storage: "1TB Custom SSD",
+    battery: "DualSense wireless controller",
+    description: "30% smaller than the original PS5 with the same performance.",
+    features: [
+      "1TB internal storage — 20% more than the original PS5 for more games",
+      "30% smaller volume and 18–24% lighter than the original PS5 console",
+      "Detachable disc drive option — choose digital or disc at purchase",
+      "4K 120fps gaming with VRR for buttery smooth visuals in supported titles",
+      "Wi-Fi 7 for faster and more reliable online multiplayer connections"
+    ],
+    tags: ["4K Gaming", "Slim"],
+    section: "Sweet Deals"
   },
   {
     id: "49",
     name: "Amazon Echo Studio",
-    price: 199990,
+    price: 185000,
     image: "https://images.unsplash.com/photo-1546435770-a3e426bf472b?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1546054451-aa264c0c1eb4?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1512446816042-444d641267d4?w=400&h=400&fit=crop",
     category: "Accessories",
     type: "speaker",
     brand: "Amazon",
@@ -1069,17 +1034,24 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 234,
-    features: ["Hi-Fi 3D Audio"],
-    colors: ["Black", "White"],
-    tags: ["Smart Home", "High Quality"],
-    categories: ["audio", "smart", "speaker"]
+    battery: "Mains powered",
+    description: "The most immersive Echo sound ever. True spatial audio in your home.",
+    features: [
+      "Five built-in speakers including a 5.25-inch woofer for deep, rich bass",
+      "Dolby Atmos and Sony 360 Reality Audio support for spatial music playback",
+      "Automatic room adaptation uses built-in microphones to tune sound to your space",
+      "Alexa built in — control smart home devices, set timers, and play any music service",
+      "3D audio processing creates a rich, immersive soundstage that fills the entire room"
+    ],
+    tags: ["Smart Home", "Hi-Fi"],
+    section: "Sweet Deals"
   },
   {
     id: "50",
-    name: "iPhone 13 Pro",
+    name: "iPhone 13 Pro Refurbished",
     price: 499990,
-    image: "https://images.unsplash.com/photo-1592910147752-5b3a9a5e1f6e?w=400&h=400&fit=crop",
-    image2: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop",
+    image: "https://images.unsplash.com/photo-1632661674596-df8be070a5c5?w=400&h=400&fit=crop",
+    image2: "https://images.unsplash.com/photo-1635450405664-f8aee4d26c4a?w=400&h=400&fit=crop",
     category: "Phones",
     type: "smartphone",
     brand: "Apple",
@@ -1087,31 +1059,36 @@ export const products: Product[] = [
     inStock: true,
     rating: 4.5,
     reviews: 178,
-    storage: ["256GB"],
+    storage: "256GB",
     screenSize: "6.1\"",
-    colors: ["Graphite", "Gold", "Silver"],
+    camera: "12MP Triple Camera",
+    battery: "Up to 22hrs video playback",
+    description: "Certified refurbished — tested and restored to like-new condition.",
+    features: [
+      "A15 Bionic chip still faster than most Android flagships released in 2024",
+      "ProMotion 120Hz display with macro photography and Cinematic mode",
+      "Battery replaced and certified above 90% — performs like a brand-new iPhone",
+      "All original Apple components — display, Face ID, and cameras intact and verified",
+      "Certified refurbished with 6 months AbyGadgets warranty and 30-day returns"
+    ],
     tags: ["Refurbished", "Value"],
-    categories: ["refurbished", "apple", "budget"]
-  }
+    // section REMOVED – this product will NOT appear on Products page
+  },
 ];
 
-// ============ HELPER FUNCTIONS ============
-export const getProductById = (id: string): Product | undefined => {
-  return products.find((p) => p.id === id);
-};
+// ── Helper functions ──────────────────────────────────────────────────────────
+export const getProductById = (id: string): Product | undefined =>
+  products.find((p) => p.id === id);
 
-export const getProductsByCategory = (category: string): Product[] => {
-  return products.filter((p) => p.category === category);
-};
+export const getProductsByCategory = (category: string): Product[] =>
+  products.filter((p) => p.category === category);
 
-export const getProductsByType = (type: string): Product[] => {
-  return products.filter((p) => p.type === type);
-};
+export const getProductsByType = (type: string): Product[] =>
+  products.filter((p) => p.type === type);
 
-export const getProductsBySection = (section: "New Arrivals" | "Popular Products" | "Sweet Deals"): Product[] => {
-  return products.filter((p) => p.section === section);
-};
+export const getProductsBySection = (
+  section: "New Arrivals" | "Popular Products" | "Sweet Deals"
+): Product[] => products.filter((p) => p.section === section);
 
-export const formatPrice = (price: number): string => {
-  return `₦${price.toLocaleString("en-NG")}`;
-};
+export const formatPrice = (price: number): string =>
+  `₦${price.toLocaleString("en-NG")}`;
