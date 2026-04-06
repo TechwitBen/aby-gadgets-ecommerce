@@ -6,14 +6,14 @@ import {
   getAllOrders,
   updateOrderStatus,
 } from "../controllers/order.controllers.js";
-import { isAuthenticated, isAdmin } from "../middleware/auth.middleware.js";
+import { isAuthenticated, isAdmin } from "../middlewares/auth.middleware.js";
 
-const router = Router();
+const orderRouter = Router();
 
-router.post("/", isAuthenticated, createOrder); // POST /api/orders
-router.get("/my-orders", isAuthenticated, getMyOrders); // GET /api/orders/my-orders
-router.get("/:id", isAuthenticated, getOrderById); // GET /api/orders/:id
-router.get("/", isAdmin, getAllOrders); // GET /api/orders (admin)
-router.patch("/:id/status", isAdmin, updateOrderStatus); // PATCH /api/orders/:id/status
+orderRouter.post("/", isAuthenticated, createOrder); // POST /api/orders
+orderRouter.get("/my-orders", isAuthenticated, getMyOrders); // GET /api/orders/my-orders
+orderRouter.get("/:id", isAuthenticated, getOrderById); // GET /api/orders/:id
+orderRouter.get("/", isAdmin, getAllOrders); // GET /api/orders (admin)
+orderRouter.patch("/:id/status", isAdmin, updateOrderStatus); // PATCH /api/orders/:id/status
 
-export default router;
+export default orderRouter;

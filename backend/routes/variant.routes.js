@@ -5,7 +5,7 @@ import {
   updateVariant,
   deleteVariant,
 } from "../controllers/variant.controllers.js";
-import { isAdmin } from "../middleware/auth.middleware.js";
+import { isAdmin } from "../middlewares/auth.middleware.js";
 
 const router = Router();
 

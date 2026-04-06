@@ -31,9 +31,22 @@ const ProductSchema = new Schema(
       unique: true,
       lowercase: true,
     },
-    category: { type: String, enum: ["phone", "laptop"], required: true },
+    category: {
+      type: String,
+      enum: ["phone", "laptop", "tablets", "accessory", "gadget", "weareable"],
+      required: true,
+    },
+    tags: [{ type: String }],
     description: { type: String },
-    specs: { type: SpecSchema },
+    specs: {
+      type: new Schema(
+        {
+          brand: { type: String, required: true },
+          model: { type: String, required: true },
+        },
+        { _id: false, strict: false },
+      ),
+    },
     images: [{ type: String }],
     is_active: { type: Boolean, default: true },
   },

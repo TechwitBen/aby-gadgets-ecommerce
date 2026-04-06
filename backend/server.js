@@ -1,7 +1,12 @@
 import express from "express";
 // import morgan from "morgan";
 import { authRouter } from "./routes/auth.routes.js";
+import orderRouter from "./routes/orders.routes.js";
 import productRouter from "./routes/product.routes.js";
+import cartRouter from "./routes/cart.routes.js";
+import checkoutRouter from "./routes/checkout.routes.js";
+import reviewRouter from "./routes/review.routes.js";
+import variantRouter from "./routes/variant.routes.js";
 import { connect } from "./db.js";
 import User from "./models/user.model.js";
 import passport from "passport";
@@ -60,6 +65,11 @@ const startServer = async () => {
 
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/products", productRouter);
+  app.use("/api/v1/orders", orderRouter);
+  app.use("/api/v1/cart", cartRouter);
+  app.use("/api/v1/review", reviewRouter);
+  app.use("/api/v1/checkout", checkoutRouter);
+  app.use("/api/v1/variant", variantRouter);
 
   app.listen(port, () => {
     console.log(`server is running on localhost ${port}`);

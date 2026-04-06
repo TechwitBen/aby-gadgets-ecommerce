@@ -1,16 +1,12 @@
 import mongoose from "mongoose";
-import { Order } from "../models/order.model.js";
-import { Product } from "../models/product.model.js";
+import Order from "../models/order.model.js";
+import Variant from "../models/variant.model.js";
 
 /**
  * @desc    Create new order
  * @route   POST /api/orders
  * @access  Private
  */
-
-import mongoose from "mongoose";
-import { Order } from "../models/order.model.js";
-import Variant from "../models/variant.model.js";
 
 export const createOrder = async (req, res) => {
   const session = await mongoose.startSession();
@@ -53,7 +49,7 @@ export const createOrder = async (req, res) => {
       populatedItems.push({
         variant: variant._id,
         quantity: item.quantity,
-        price: variant.price, // snapshot price at time of order
+        price: variant.price,
       });
     }
 

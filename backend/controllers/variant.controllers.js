@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import Variant from "../models/variant.model.js";
-import { Product } from "../models/product.model.js";
+import Product from "../models/product.model.js";
 
 export const getVariantsByProduct = async (req, res) => {
   try {

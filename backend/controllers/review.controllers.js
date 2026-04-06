@@ -1,5 +1,5 @@
 import Review from "../models/review.model.js";
-import { Order } from "../models/order.model.js"; // optional for verified purchase
+import Order from "../models/order.model.js"; // optional for verified purchase
 import mongoose from "mongoose";
 
 export const getReviewsByProduct = async (req, res) => {
