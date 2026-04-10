@@ -1,10 +1,15 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Edit, Plus, ArrowLeft, X, Trash2, Tag } from "lucide-react";
-import { productsData, categories, brands, conditions } from "@/pages/admin/data/mockData";
+import { Edit, Plus, ArrowLeft, X, Trash2, Tag, Check, ChevronDown, Loader2 } from "lucide-react";
+import { categories, brands, conditions } from "@/pages/admin/data/mockData";
+import {
+  productService,
+  variantService,
+  type Product,
+  type Variant,
+} from "@/services/Products.service";
 
-const storageOptions = ["64GB", "128GB", "256GB", "512GB", "1TB"];
 const sectionOptions = ["New Arrivals", "Popular Products", "Sweet Deals"] as const;
 type SectionOption = "" | (typeof sectionOptions)[number];
 
@@ -50,65 +55,172 @@ const DeleteConfirmModal = ({
   );
 };
 
+// ── Variant Delete Confirmation Modal ─────────────────────────────────────────
+const DeleteVariantModal = ({
+  open, sku, onConfirm, onCancel,
+}: {
+  open: boolean; sku: string; onConfirm: () => void; onCancel: () => void;
+}) => {
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
+    >
+      <div className="bg-popover text-popover-foreground rounded-2xl w-full max-w-sm shadow-xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center">
+              <Trash2 size={16} className="text-destructive" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">Remove Variant</p>
+          </div>
+          <button onClick={onCancel} className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-secondary">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-6 py-5">
+          <p className="text-sm text-muted-foreground">
+            Remove variant <span className="font-semibold text-foreground">{sku}</span>? This will
+            deactivate it on the backend and cannot be undone easily.
+          </p>
+        </div>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
+          <Button variant="outline" size="sm" onClick={onCancel}>Cancel</Button>
+          <Button size="sm" onClick={onConfirm} className="bg-destructive text-destructive-foreground hover:opacity-90 gap-1.5">
+            <Trash2 size={14} /> Remove Variant
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ── Editable Variant row shape ────────────────────────────────────────────────
+interface VariantDraft {
+  id: string;
+  product: string;
+  color: string;
+  storage: string;
+  ram: string;
+  sku: string;
+  price: string;
+  compare_at_price: string;
+  stock: string;
+  is_active: boolean;
+  isNew: boolean;
+}
+
+const toVariantDraft = (v: Variant): VariantDraft => ({
+  id:               v.id,
+  product:          v.product,
+  color:            v.color            ?? "",
+  storage:          v.storage          ?? "",
+  ram:              v.ram              ?? "",
+  sku:              v.sku,
+  price:            v.price.toLocaleString(),
+  compare_at_price: v.compare_at_price?.toLocaleString() ?? "",
+  stock:            String(v.stock),
+  is_active:        v.is_active,
+  isNew:            false,
+});
+
+const emptyVariantDraft = (productId: string): VariantDraft => ({
+  id: "", product: productId, color: "", storage: "", ram: "", sku: "",
+  price: "", compare_at_price: "", stock: "", is_active: true, isNew: true,
+});
+
+// ── Helpers to build form from a fetched Product ──────────────────────────────
+const buildForm = (product: Product) => ({
+  name:           product.name        ?? "",
+  category:       product.category    ?? "Phones",
+  brand:          product.brand       ?? "Apple",
+  condition:      product.condition   ?? "Brand New",
+  description:    product.description ?? "",
+  deliveryFee:    product.deliveryFee?.toLocaleString() ?? "",
+  type:           product.type        ?? "",
+  section:        (product.section    ?? "") as SectionOption,
+  image:          product.images?.[0] ?? product.image  ?? "",
+  image2:         product.images?.[1] ?? product.image2 ?? "",
+  rating:         product.rating  != null ? String(product.rating)  : "",
+  reviews:        product.reviews != null ? String(product.reviews) : "",
+  tagsInput:      product.tags?.join(", ") ?? "",
+  specCamera:     product.specs?.camera     ?? "",
+  specBattery:    product.specs?.battery    ?? "",
+  specScreenSize: product.specs?.screenSize ?? "",
+});
+
+const buildImages = (product: Product): (string | null)[] =>
+  Array(6).fill(null).map((_, i) =>
+    i === 0 ? (product.images?.[0] ?? product.image ?? null)
+    : i === 1 ? (product.images?.[1] ?? product.image2 ?? null)
+    : null
+  );
+
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductDetailPage = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
+  const { slug } = useParams<{ slug: string }>();
+  const navigate  = useNavigate();
 
-  const product = productsData.find((p) => p.id === id);
+  // ── Fetch product from API ────────────────────────────────────────────────
+  const [product, setProduct]     = useState<Product | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
-  const [isEditing, setIsEditing]           = useState(false);
-  const [saveSuccess, setSaveSuccess]       = useState(false);
-  const [openDropdown, setOpenDropdown]     = useState<string | null>(null);
+  useEffect(() => {
+    if (!slug) return;
+    setIsLoading(true);
+    productService
+      .getBySlug(slug)
+      .then((data) => {
+        setProduct(data);
+        // Initialise all derived state once we have the product
+        setForm(buildForm(data));
+        setImages(buildImages(data));
+        setFeatures(data.features?.length ? data.features : [""]);
+        setVariants(data.variants?.map(toVariantDraft) ?? []);
+      })
+      .catch(() => setFetchError("Could not load product. Please try again."))
+      .finally(() => setIsLoading(false));
+  }, [slug]);
+
+  // ── Page state ────────────────────────────────────────────────────────────
+  const [isEditing, setIsEditing]   = useState(false);
+  const [isSaving, setIsSaving]     = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError]   = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deletingVariantIdx, setDeletingVariantIdx] = useState<number | null>(null);
 
-  // Image state
-  const [images, setImages] = useState<(string | null)[]>(
-    product
-      ? Array(6).fill(null).map((_, i) => (i < product.images.length ? "placeholder" : null))
-      : Array(6).fill(null)
-  );
-  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  // Features — dynamic list (seeded from product if available)
-  const [features, setFeatures] = useState<string[]>(
-    product?.features?.length ? product.features : [""]
-  );
-
-  const buildInitialForm = () => ({
-    // ── Existing fields ──
-    name:         product?.name        ?? "",
-    category:     product?.category    ?? "Phones",
-    brand:        product?.brand       ?? "Apple",
-    condition:    product?.condition   ?? "Brand New",
-    storage:      product?.storage     ?? "",
-   
-    description:  product?.description ?? "",
-    price:        product?.price?.toLocaleString() ?? "",
-    quantity:     String(product?.stock ?? ""),
-    deliveryFee:  "5,000",
-
-    // ── New fields (mirrored from AddProductPage) ──
-    type:        product?.type        ?? "",
-    section:     (product?.section    ?? "") as SectionOption,
-    image:       product?.image       ?? "",
-    image2:      product?.image2      ?? "",
-    screenSize:  product?.screenSize  ?? "",
-    camera:      product?.camera      ?? "",
-    battery:     product?.battery     ?? "",
-    inStock:     product?.inStock     ?? true,
-    rating:      product?.rating      != null ? String(product.rating)  : "",
-    reviews:     product?.reviews     != null ? String(product.reviews) : "",
-    tagsInput:       product?.tags?.join(", ")       ?? "",
-    categoriesInput: product?.categories?.join(", ") ?? "",
+  // ── Derived state (populated once product loads) ──────────────────────────
+  const [images, setImages]   = useState<(string | null)[]>(Array(6).fill(null));
+  const [features, setFeatures] = useState<string[]>([""]);
+  const [variants, setVariants] = useState<VariantDraft[]>([]);
+  const [deletedVariantIds, setDeletedVariantIds] = useState<string[]>([]);
+  const [form, setForm]       = useState<ReturnType<typeof buildForm>>({
+    name: "", category: "Phones", brand: "Apple", condition: "Brand New",
+    description: "", deliveryFee: "", type: "", section: "", image: "",
+    image2: "", rating: "", reviews: "", tagsInput: "",
+    specCamera: "", specBattery: "", specScreenSize: "",
   });
 
-  const [form, setForm] = useState<ReturnType<typeof buildInitialForm>>(buildInitialForm);
+  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  if (!product) {
+  // ── Loading / error states ────────────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-32 text-muted-foreground gap-3">
+        <Loader2 size={20} className="animate-spin" />
+        <span className="text-sm">Loading product…</span>
+      </div>
+    );
+  }
+
+  if (fetchError || !product) {
     return (
       <div className="text-foreground p-8">
-        <p className="mb-4">Product not found.</p>
+        <p className="mb-4 text-destructive">{fetchError ?? "Product not found."}</p>
         <Button onClick={() => navigate(-1)} variant="outline" className="gap-2">
           <ArrowLeft size={16} /> Go Back
         </Button>
@@ -117,27 +229,33 @@ const ProductDetailPage = () => {
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const withNaira = (val: string) => `₦${val}`;
+  const formatNum = (v: string) => {
+    const n = v.replace(/[^0-9]/g, "");
+    return n ? Number(n).toLocaleString() : "";
+  };
 
   const handleChange = (field: keyof typeof form, value: string | boolean) =>
     setForm((prev) => ({ ...prev, [field]: value }));
 
-  const handleSave = () => {
-    setSaveSuccess(true);
-    setTimeout(() => { setSaveSuccess(false); setIsEditing(false); }, 1500);
-  };
-
   const handleCancel = () => {
-    setForm(buildInitialForm());
-    setFeatures(product?.features?.length ? product.features : [""]);
-    setImages(Array(6).fill(null).map((_, i) => (i < product.images.length ? "placeholder" : null)));
+    setForm(buildForm(product));
+    setFeatures(product.features?.length ? product.features : [""]);
+    setImages(buildImages(product));
+    setVariants(product.variants?.map(toVariantDraft) ?? []);
+    setDeletedVariantIds([]);
     setIsEditing(false);
     setOpenDropdown(null);
+    setSaveError(null);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     setShowDeleteModal(false);
-    navigate(-1);
+    try {
+      await productService.delete(product._id);
+      navigate(-1);
+    } catch {
+      setSaveError("Failed to delete product. Please try again.");
+    }
   };
 
   // ── Image handlers ────────────────────────────────────────────────────────
@@ -168,6 +286,23 @@ const ProductDetailPage = () => {
   const removeFeature = (i: number) =>
     setFeatures((prev) => prev.filter((_, idx) => idx !== i));
 
+  // ── Variant helpers ───────────────────────────────────────────────────────
+  const addVariant = () =>
+    setVariants((prev) => [...prev, emptyVariantDraft(product._id)]);
+
+  const updateVariant = (i: number, field: keyof VariantDraft, value: string | boolean) =>
+    setVariants((prev) => { const next = [...prev]; next[i] = { ...next[i], [field]: value }; return next; });
+
+  const formatVariantPrice = (i: number, field: "price" | "compare_at_price", raw: string) =>
+    updateVariant(i, field, formatNum(raw));
+
+  const handleRemoveVariant = (i: number) => {
+    const v = variants[i];
+    if (!v.isNew && v.id) setDeletedVariantIds((prev) => [...prev, v.id]);
+    setVariants((prev) => prev.filter((_, idx) => idx !== i));
+    setDeletingVariantIdx(null);
+  };
+
   // ── Dropdown helpers ──────────────────────────────────────────────────────
   const toggleDropdown = (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -176,9 +311,83 @@ const ProductDetailPage = () => {
   };
   const closeAllDropdowns = () => setOpenDropdown(null);
 
+  // ── Save ──────────────────────────────────────────────────────────────────
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      // Step 1 — patch the product
+      await productService.patch(product._id, {
+        name:        form.name,
+        category:    form.category,
+        brand:       form.brand,
+        condition:   form.condition,
+        description: form.description || undefined,
+        type:        form.type        || undefined,
+        section:     form.section     || undefined,
+        image:       images[0] || form.image   || undefined,
+        image2:      images[1] || form.image2  || undefined,
+        deliveryFee: form.deliveryFee
+          ? Number(form.deliveryFee.replace(/[^0-9]/g, ""))
+          : undefined,
+        rating:   form.rating  ? Number(form.rating)  : undefined,
+        reviews:  form.reviews ? Number(form.reviews) : undefined,
+        features: features.filter((f) => f.trim()),
+        tags:     form.tagsInput
+          ? form.tagsInput.split(",").map((t) => t.trim()).filter(Boolean)
+          : undefined,
+        specs: {
+          camera:     form.specCamera     || undefined,
+          battery:    form.specBattery    || undefined,
+          screenSize: form.specScreenSize || undefined,
+        },
+      });
+
+      // Step 2 — delete removed variants
+      await Promise.all(
+        deletedVariantIds.map((vid) => variantService.delete(vid))
+      );
+
+      // Step 3 — update existing / create new variants
+      await Promise.all(
+        variants.map((v) => {
+          const shared = {
+            color:            v.color            || undefined,
+            storage:          v.storage          || undefined,
+            ram:              v.ram              || undefined,
+            sku:              v.sku,
+            price:            Number(v.price.replace(/[^0-9]/g, "")),
+            compare_at_price: v.compare_at_price
+              ? Number(v.compare_at_price.replace(/[^0-9]/g, ""))
+              : undefined,
+            stock:     Number(v.stock),
+            is_active: v.is_active,
+          };
+          return v.isNew
+            ? variantService.create({ productId: product._id, ...shared })
+            : variantService.update(v.id, shared);
+        })
+      );
+
+      setSaveSuccess(true);
+      setTimeout(() => {
+        setSaveSuccess(false);
+        setIsEditing(false);
+        setDeletedVariantIds([]);
+      }, 1500);
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to save. Please try again.";
+      setSaveError(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // ── Shared CSS ────────────────────────────────────────────────────────────
-  const lavInput = "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
+  const lavInput  = "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
   const mintInput = "w-full bg-mint text-mint-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
+  const dropBtnCls = "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm text-left flex justify-between items-center";
 
   // ── Reusable dropdown ─────────────────────────────────────────────────────
   const Dropdown = ({
@@ -188,10 +397,10 @@ const ProductDetailPage = () => {
       <button
         onClick={(e) => toggleDropdown(name, e)}
         style={{ cursor: isEditing ? "pointer" : "default" }}
-        className="w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm text-left flex justify-between items-center"
+        className={dropBtnCls}
       >
         {value || <span className="text-muted-foreground">Select…</span>}
-        <span className="text-muted-foreground text-xs">▼</span>
+        <ChevronDown size={14} className={`text-muted-foreground transition-transform ${openDropdown === name ? "rotate-180" : ""}`} />
       </button>
       {isEditing && openDropdown === name && (
         <div
@@ -199,13 +408,8 @@ const ProductDetailPage = () => {
           onClick={(e) => e.stopPropagation()}
         >
           {options.map((opt) => (
-            <button
-              key={opt}
-              onClick={() => { handleChange(field, opt); setOpenDropdown(null); }}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-lavender/50 ${
-                value === opt ? "text-primary font-medium" : "text-popover-foreground"
-              }`}
-            >
+            <button key={opt} onClick={() => { handleChange(field, opt); setOpenDropdown(null); }}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-lavender/50 ${value === opt ? "text-primary font-medium" : "text-popover-foreground"}`}>
               {opt}
             </button>
           ))}
@@ -214,36 +418,28 @@ const ProductDetailPage = () => {
     </div>
   );
 
-  // Optional "None" dropdown (for section)
   const SectionDropdown = () => (
     <div className="relative">
       <button
         onClick={(e) => toggleDropdown("section", e)}
         style={{ cursor: isEditing ? "pointer" : "default" }}
-        className="w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm text-left flex justify-between items-center"
+        className={dropBtnCls}
       >
         {form.section || <span className="text-muted-foreground">None</span>}
-        <span className="text-muted-foreground text-xs">▼</span>
+        <ChevronDown size={14} className={`text-muted-foreground transition-transform ${openDropdown === "section" ? "rotate-180" : ""}`} />
       </button>
       {isEditing && openDropdown === "section" && (
         <div
           className="absolute top-full left-0 right-0 bg-popover border border-border rounded-lg mt-1 shadow-lg z-20"
           onClick={(e) => e.stopPropagation()}
         >
-          <button
-            onClick={() => { handleChange("section", ""); setOpenDropdown(null); }}
-            className="w-full text-left px-4 py-2 text-sm text-muted-foreground hover:bg-lavender/50"
-          >
+          <button onClick={() => { handleChange("section", ""); setOpenDropdown(null); }}
+            className="w-full text-left px-4 py-2 text-sm text-muted-foreground hover:bg-lavender/50">
             None
           </button>
           {sectionOptions.map((sec) => (
-            <button
-              key={sec}
-              onClick={() => { handleChange("section", sec); setOpenDropdown(null); }}
-              className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-lavender/50 ${
-                form.section === sec ? "text-primary font-medium" : "text-popover-foreground"
-              }`}
-            >
+            <button key={sec} onClick={() => { handleChange("section", sec); setOpenDropdown(null); }}
+              className={`w-full text-left px-4 py-2 text-sm transition-colors hover:bg-lavender/50 ${form.section === sec ? "text-primary font-medium" : "text-popover-foreground"}`}>
               {sec}
             </button>
           ))}
@@ -252,37 +448,33 @@ const ProductDetailPage = () => {
     </div>
   );
 
-  // ── Plain text / textarea field ───────────────────────────────────────────
   const PlainField = ({
     field, bg = "bg-lavender", fg = "text-lavender-foreground", type = "text",
   }: { field: keyof typeof form; bg?: string; fg?: string; type?: string }) =>
     isEditing ? (
-      <input
-        type={type}
-        value={String(form[field])}
+      <input type={type} value={String(form[field])}
         onChange={(e) => handleChange(field, e.target.value)}
-        className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
-      />
+        className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
     ) : (
-      <div className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm`}>{String(form[field])}</div>
+      <div className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm`}>
+        {String(form[field]) || <span className="text-muted-foreground/60">—</span>}
+      </div>
     );
 
-  // ── Price field ───────────────────────────────────────────────────────────
   const PriceField = ({
     field, bg = "bg-lavender", fg = "text-lavender-foreground",
-  }: { field: "price" | "deliveryFee"; bg?: string; fg?: string }) =>
+  }: { field: "deliveryFee"; bg?: string; fg?: string }) =>
     isEditing ? (
-      <input
-        type="text"
-        value={withNaira(form[field])}
+      <input type="text" value={form[field] ? `₦${form[field]}` : ""} placeholder="₦0"
         onChange={(e) => {
           const raw = e.target.value.replace(/[^0-9]/g, "");
           setForm((prev) => ({ ...prev, [field]: raw ? Number(raw).toLocaleString() : "" }));
         }}
-        className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
-      />
+        className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary`} />
     ) : (
-      <div className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm`}>{withNaira(form[field])}</div>
+      <div className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm`}>
+        {form[field] ? `₦${form[field]}` : "—"}
+      </div>
     );
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -293,22 +485,34 @@ const ProductDetailPage = () => {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-foreground">Product Information</h1>
         <div className="flex items-center gap-2">
-          <Button
-            size="sm" variant="outline"
+          <Button size="sm" variant="outline"
             className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-            onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}
-          >
+            onClick={(e) => { e.stopPropagation(); setShowDeleteModal(true); }}>
             <Trash2 size={14} /> Delete
           </Button>
           {isEditing ? (
-            <Button size="sm" variant="outline" onClick={handleCancel}>Cancel</Button>
+            <Button size="sm" variant="outline" onClick={handleCancel} disabled={isSaving}>
+              Cancel
+            </Button>
           ) : (
-            <Button size="sm" className="gap-1 bg-primary text-primary-foreground hover:opacity-90" onClick={() => setIsEditing(true)}>
+            <Button size="sm" className="gap-1 bg-primary text-primary-foreground hover:opacity-90"
+              onClick={() => setIsEditing(true)}>
               <Edit size={14} /> Edit Product
             </Button>
           )}
         </div>
       </div>
+
+      {/* Save error banner */}
+      {saveError && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          <X size={15} className="flex-shrink-0" />
+          {saveError}
+          <button type="button" onClick={() => setSaveError(null)} className="ml-auto hover:opacity-70">
+            <X size={13} />
+          </button>
+        </div>
+      )}
 
       {/* Image grid */}
       <div className="grid grid-cols-6 gap-3 mb-8">
@@ -322,14 +526,14 @@ const ProductDetailPage = () => {
               <div
                 onClick={() => handleImageClick(i)}
                 className={`w-full h-full rounded-lg flex flex-col items-center justify-center overflow-hidden transition-colors ${
-                  img ? "bg-secondary border border-border"
-                  : isEditing ? "border-2 border-dashed border-border bg-card hover:border-primary cursor-pointer"
-                  : "border-2 border-dashed border-border bg-card"
+                  img
+                    ? "bg-secondary border border-border"
+                    : isEditing
+                    ? "border-2 border-dashed border-border bg-card hover:border-primary cursor-pointer"
+                    : "border-2 border-dashed border-border bg-card"
                 } ${isEditing && img ? "cursor-pointer hover:opacity-80" : ""}`}
               >
-                {img === "placeholder" ? (
-                  <span className="text-3xl">📱</span>
-                ) : img ? (
+                {img ? (
                   <img src={img} alt={`Product ${i + 1}`} className="w-full h-full object-cover" />
                 ) : (
                   <div className="flex flex-col items-center">
@@ -351,9 +555,9 @@ const ProductDetailPage = () => {
         })}
       </div>
 
-      {/* Image URL fallbacks */}
+      {/* Image URLs */}
       <div className="mb-8">
-        <h2 className="text-base font-medium text-foreground mb-2">Image URLs</h2>
+        <h2 className="text-base font-medium text-foreground mb-1">Image URLs</h2>
         <p className="text-xs text-muted-foreground mb-3">
           Uploads above fill these automatically. You can also paste URLs directly.
         </p>
@@ -394,7 +598,7 @@ const ProductDetailPage = () => {
             <Dropdown name="category" value={form.category} options={categories} field="category" />
           </div>
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Brands</label>
+            <label className="text-xs text-muted-foreground block mb-1">Brand</label>
             <Dropdown name="brand" value={form.brand} options={brands} field="brand" />
           </div>
         </div>
@@ -416,28 +620,23 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Product Description */}
+      {/* Description */}
       <div className="mb-8">
-        <div className="flex justify-between items-center mb-1">
-          <label className="text-xs text-muted-foreground">
-            Product Description <span className="text-destructive">Required</span>
-          </label>
-        </div>
+        <label className="text-xs text-muted-foreground block mb-1">
+          Product Description <span className="text-destructive">Required</span>
+        </label>
         {isEditing ? (
-          <textarea
-            value={form.description}
+          <textarea value={form.description} rows={4}
             onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
-            rows={4}
-            className="w-full bg-mint text-mint-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
-          />
+            className="w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none" />
         ) : (
-          <div className="w-full bg-mint text-mint-foreground rounded-lg p-3 text-sm min-h-[90px]">
-            {form.description}
+          <div className="w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm min-h-[90px]">
+            {form.description || <span className="text-muted-foreground/60">—</span>}
           </div>
         )}
       </div>
 
-      {/* Key Features — dynamic list */}
+      {/* Key Features */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-medium text-foreground">Key Features</h2>
@@ -456,7 +655,7 @@ const ProductDetailPage = () => {
                 <input type="text" placeholder={`Feature ${i + 1}…`} value={feature}
                   onChange={(e) => updateFeature(i, e.target.value)} className={lavInput} />
               ) : (
-                <div className={`${lavInput}`}>{feature || <span className="text-muted-foreground">—</span>}</div>
+                <div className={lavInput}>{feature || <span className="text-muted-foreground/60">—</span>}</div>
               )}
               {isEditing && features.length > 1 && (
                 <button type="button" onClick={() => removeFeature(i)}
@@ -472,108 +671,167 @@ const ProductDetailPage = () => {
       {/* Specifications */}
       <div className="mb-8">
         <h2 className="text-base font-medium text-foreground mb-3">Specifications</h2>
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Storage</label>
-            <Dropdown name="storage" value={form.storage} options={storageOptions} field="storage" />
-          </div>
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Screen Size</label>
-            <PlainField field="screenSize" bg="bg-mint" fg="text-mint-foreground" />
+            <PlainField field="specScreenSize" bg="bg-mint" fg="text-mint-foreground" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Camera</label>
-            <PlainField field="camera" bg="bg-mint" fg="text-mint-foreground" />
+            <PlainField field="specCamera" bg="bg-mint" fg="text-mint-foreground" />
           </div>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Battery</label>
-            <PlainField field="battery" bg="bg-mint" fg="text-mint-foreground" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Battery Health</label>
-            <PlainField field="batteryHealth" bg="bg-mint" fg="text-mint-foreground" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Color</label>
-            <PlainField field="color" bg="bg-mint" fg="text-mint-foreground" />
+            <PlainField field="specBattery" bg="bg-mint" fg="text-mint-foreground" />
           </div>
         </div>
       </div>
 
-      {/* Tags & Categories */}
+      {/* Tags */}
       <div className="mb-8">
-        <h2 className="text-base font-medium text-foreground mb-1">Tags &amp; Categories</h2>
-        <p className="text-xs text-muted-foreground mb-4">Separate multiple values with commas.</p>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-              <Tag size={12} /> Tags
-            </label>
-            {isEditing ? (
-              <input type="text" placeholder="Flagship, UK Used, New…"
-                value={form.tagsInput} onChange={(e) => handleChange("tagsInput", e.target.value)}
-                className={lavInput} />
-            ) : (
-              <div className={lavInput}>{form.tagsInput || "—"}</div>
-            )}
-            {form.tagsInput && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {form.tagsInput.split(",").map((t) => t.trim()).filter(Boolean).map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-              <Tag size={12} /> Extra Categories
-            </label>
-            {isEditing ? (
-              <input type="text" placeholder="Phones, Accessories…"
-                value={form.categoriesInput} onChange={(e) => handleChange("categoriesInput", e.target.value)}
-                className={lavInput} />
-            ) : (
-              <div className={lavInput}>{form.categoriesInput || "—"}</div>
-            )}
-            {form.categoriesInput && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {form.categoriesInput.split(",").map((c) => c.trim()).filter(Boolean).map((cat) => (
-                  <span key={cat} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
-                    {cat}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
+        <h2 className="text-base font-medium text-foreground mb-1">Tags</h2>
+        <p className="text-xs text-muted-foreground mb-3">Separate multiple values with commas.</p>
+        <div>
+          <label className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+            <Tag size={12} /> Tags
+          </label>
+          {isEditing ? (
+            <input type="text" placeholder="Flagship, UK Used, New…"
+              value={form.tagsInput} onChange={(e) => handleChange("tagsInput", e.target.value)}
+              className={lavInput} />
+          ) : (
+            <div className={lavInput}>{form.tagsInput || "—"}</div>
+          )}
+          {form.tagsInput && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {form.tagsInput.split(",").map((t) => t.trim()).filter(Boolean).map((tag) => (
+                <span key={tag} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs font-medium">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Pricing and Stock */}
+      {/* Variants */}
       <div className="mb-8">
-        <h2 className="text-base font-medium text-foreground mb-3">Pricing and Stock</h2>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Price <span className="text-destructive">Required</span>
-            </label>
-            <PriceField field="price" />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Quantity Available</label>
-            {isEditing ? (
-              <input type="number" min="0" value={form.quantity}
-                onChange={(e) => handleChange("quantity", e.target.value)} className={mintInput} />
-            ) : (
-              <div className={mintInput}>{form.quantity}</div>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-medium text-foreground">Variants</h2>
+          {isEditing && (
+            <button type="button" onClick={addVariant}
+              className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity">
+              <Plus size={14} /> Add Variant
+            </button>
+          )}
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        {variants.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed border-border rounded-lg">
+            {isEditing
+              ? <>No variants. Click <span className="text-primary font-medium">+ Add Variant</span> to add one.</>
+              : "No variants configured for this product."}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {variants.map((v, i) => (
+            <div key={i} className="p-4 bg-card border border-border rounded-xl">
+              {/* Header row */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    Variant {i + 1}
+                  </span>
+                  {v.isNew && (
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">New</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button type="button" role="switch" aria-checked={v.is_active}
+                    onClick={() => isEditing && updateVariant(i, "is_active", !v.is_active)}
+                    style={{ cursor: isEditing ? "pointer" : "default" }}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${v.is_active ? "bg-primary" : "bg-border"}`}>
+                    <span className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${v.is_active ? "translate-x-5" : "translate-x-1"}`} />
+                  </button>
+                  <span className={`text-xs ${v.is_active ? "text-primary" : "text-muted-foreground"}`}>
+                    {v.is_active ? "Active" : "Inactive"}
+                  </span>
+                  {isEditing && (
+                    <button type="button" onClick={() => setDeletingVariantIdx(i)}
+                      className="w-6 h-6 rounded-md bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center transition-colors ml-1">
+                      <X size={11} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Fields grid */}
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                {(["color", "ram", "storage"] as const).map((field) => (
+                  <div key={field}>
+                    <label className="text-xs text-muted-foreground block mb-1 capitalize">{field}</label>
+                    {isEditing ? (
+                      <input type="text" placeholder={field === "color" ? "e.g. Black" : field === "ram" ? "e.g. 8GB" : "e.g. 256GB"}
+                        value={v[field]}
+                        onChange={(e) => updateVariant(i, field, e.target.value)}
+                        className={lavInput} />
+                    ) : (
+                      <div className={lavInput}>{v[field] || "—"}</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">SKU <span className="text-destructive">*</span></label>
+                  {isEditing ? (
+                    <input type="text" placeholder="APL-IP15-BLK-256" value={v.sku}
+                      onChange={(e) => updateVariant(i, "sku", e.target.value)} className={lavInput} />
+                  ) : (
+                    <div className={lavInput}>{v.sku || "—"}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Price <span className="text-destructive">*</span></label>
+                  {isEditing ? (
+                    <input type="text" placeholder="₦0" value={v.price ? `₦${v.price}` : ""}
+                      onChange={(e) => formatVariantPrice(i, "price", e.target.value.replace(/[^0-9]/g, ""))}
+                      className={lavInput} />
+                  ) : (
+                    <div className={lavInput}>{v.price ? `₦${v.price}` : "—"}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Compare At</label>
+                  {isEditing ? (
+                    <input type="text" placeholder="₦0" value={v.compare_at_price ? `₦${v.compare_at_price}` : ""}
+                      onChange={(e) => formatVariantPrice(i, "compare_at_price", e.target.value.replace(/[^0-9]/g, ""))}
+                      className={mintInput} />
+                  ) : (
+                    <div className={mintInput}>{v.compare_at_price ? `₦${v.compare_at_price}` : "—"}</div>
+                  )}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground block mb-1">Stock</label>
+                  {isEditing ? (
+                    <input type="number" min="0" placeholder="0" value={v.stock}
+                      onChange={(e) => updateVariant(i, "stock", e.target.value)} className={mintInput} />
+                  ) : (
+                    <div className={mintInput}>{v.stock || "0"}</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Pricing & Metrics */}
+      <div className="mb-8">
+        <h2 className="text-base font-medium text-foreground mb-3">Pricing & Metrics</h2>
+        <div className="grid grid-cols-3 gap-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Delivery Fee</label>
             <PriceField field="deliveryFee" />
@@ -599,54 +857,34 @@ const ProductDetailPage = () => {
             )}
           </div>
         </div>
+      </div>
 
-        {/* In Stock toggle */}
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={form.inStock as boolean}
-            onClick={() => isEditing && handleChange("inStock", !form.inStock)}
-            style={{ cursor: isEditing ? "pointer" : "default" }}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 ${
-              form.inStock ? "bg-primary" : "bg-border"
-            }`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${
-              form.inStock ? "translate-x-6" : "translate-x-1"
-            }`} />
-          </button>
-          <label
-            className="text-sm text-foreground select-none"
-            style={{ cursor: isEditing ? "pointer" : "default" }}
-            onClick={() => isEditing && handleChange("inStock", !form.inStock)}
-          >
-            In Stock
-            <span className={`ml-2 text-xs font-medium ${form.inStock ? "text-primary" : "text-muted-foreground"}`}>
-              {form.inStock ? "Yes" : "No"}
-            </span>
-          </label>
+      {/* Footer */}
+      {isEditing && (
+        <div className="flex justify-end pt-4 border-t border-border">
+          <Button onClick={handleSave} disabled={isSaving}
+            className={`gap-1 disabled:opacity-60 text-primary-foreground ${saveSuccess ? "bg-green-500 hover:bg-green-500" : "bg-primary hover:opacity-90"}`}>
+            {saveSuccess ? (
+              <><Check size={16} /> Saved!</>
+            ) : isSaving ? "Saving…" : (
+              <><Plus size={16} /> Save Changes</>
+            )}
+          </Button>
         </div>
-      </div>
+      )}
 
-      {/* Footer action */}
-      <div className="flex justify-end pt-4 border-t border-border">
-        <Button
-          onClick={isEditing ? handleSave : undefined}
-          className={`gap-1 ${
-            saveSuccess ? "bg-green-500 hover:bg-green-500" : "bg-primary hover:opacity-90"
-          } text-primary-foreground`}
-        >
-          <Plus size={16} />
-          {saveSuccess ? "Saved!" : isEditing ? "Save Changes" : "Publish Products"}
-        </Button>
-      </div>
-
+      {/* Modals */}
       <DeleteConfirmModal
         open={showDeleteModal}
         name={product.name}
         onConfirm={handleConfirmDelete}
         onCancel={() => setShowDeleteModal(false)}
+      />
+      <DeleteVariantModal
+        open={deletingVariantIdx !== null}
+        sku={deletingVariantIdx !== null ? (variants[deletingVariantIdx]?.sku || `Variant ${deletingVariantIdx + 1}`) : ""}
+        onConfirm={() => deletingVariantIdx !== null && handleRemoveVariant(deletingVariantIdx)}
+        onCancel={() => setDeletingVariantIdx(null)}
       />
     </div>
   );

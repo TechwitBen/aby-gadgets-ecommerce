@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, X, ChevronDown, Check } from "lucide-react";
 import { categories, brands, conditions } from "@/pages/admin/data/mockData";
+import { productService, variantService } from "@/services/Products.service";
 
 const sectionOptions = ["New Arrivals", "Popular Products", "Sweet Deals"] as const;
 
-// Predefined tag options grouped by category for discoverability
 const TAG_OPTIONS = [
   { group: "Condition",  tags: ["UK Used", "Brand New", "Open Box", "Refurbished", "Fairly Used"] },
   { group: "Tier",       tags: ["Flagship", "Budget", "Mid-range", "Premium", "Value"] },
@@ -36,9 +36,7 @@ const TagDropdown = ({
 
   const addCustom = () => {
     const trimmed = customInput.trim();
-    if (trimmed && !selected.includes(trimmed)) {
-      onChange([...selected, trimmed]);
-    }
+    if (trimmed && !selected.includes(trimmed)) onChange([...selected, trimmed]);
     setCustomInput("");
   };
 
@@ -48,7 +46,6 @@ const TagDropdown = ({
 
   return (
     <div className="relative" ref={ref}>
-      {/* Trigger */}
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); setOpen((p) => !p); }}
@@ -60,13 +57,11 @@ const TagDropdown = ({
         <ChevronDown size={14} className={`text-muted-foreground transition-transform flex-shrink-0 ${open ? "rotate-180" : ""}`} />
       </button>
 
-      {/* Panel */}
       {open && (
         <div
           className="absolute top-full left-0 right-0 mt-1 bg-popover border border-border rounded-xl shadow-xl z-30 overflow-hidden"
           onClick={(e) => e.stopPropagation()}
         >
-          {/* Custom input */}
           <div className="p-3 border-b border-border">
             <div className="flex gap-2">
               <input
@@ -88,7 +83,6 @@ const TagDropdown = ({
             </div>
           </div>
 
-          {/* Grouped options */}
           <div className="max-h-60 overflow-y-auto p-3 space-y-4">
             {TAG_OPTIONS.map(({ group, tags }) => (
               <div key={group}>
@@ -117,14 +111,9 @@ const TagDropdown = ({
             ))}
           </div>
 
-          {/* Footer */}
           <div className="px-3 py-2 border-t border-border flex items-center justify-between">
             <span className="text-xs text-muted-foreground">{selected.length} selected</span>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              className="text-xs font-medium text-primary hover:opacity-80"
-            >
+            <button type="button" onClick={() => setOpen(false)} className="text-xs font-medium text-primary hover:opacity-80">
               Done
             </button>
           </div>
@@ -133,6 +122,21 @@ const TagDropdown = ({
     </div>
   );
 };
+
+// ── Variant shape ─────────────────────────────────────────────────────────────
+interface Variant {
+  color: string;
+  storage: string;
+  ram: string;
+  price: string;
+  stock: string;
+  sku: string;
+  is_active: boolean;
+}
+
+const emptyVariant = (): Variant => ({
+  color: "", storage: "", ram: "", price: "", stock: "", sku: "", is_active: true,
+});
 
 // ── Main Component ────────────────────────────────────────────────────────────
 const AddProductPage = () => {
@@ -144,35 +148,30 @@ const AddProductPage = () => {
     brand: "Apple",
     condition: "Brand New",
     description: "",
-    price: "",
-    quantity: "",
     deliveryFee: "",
     type: "",
     section: "" as "" | "New Arrivals" | "Popular Products" | "Sweet Deals",
     image: "",
     image2: "",
-    storage: "",
-    screenSize: "",
-    camera: "",
-    battery: "",
-    inStock: true,
     rating: "",
     reviews: "",
+    specs: { storage: "", screenSize: "", camera: "", battery: "" },
   });
 
-  // Tags — now an array, not a raw string
+  const [variants, setVariants]       = useState<Variant[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [features, setFeatures]       = useState<string[]>([""]);
+  const [images, setImages]           = useState<(string | null)[]>(Array(6).fill(null));
+  const fileInputRefs                 = useRef<(HTMLInputElement | null)[]>([]);
 
-  const [features, setFeatures] = useState<string[]>([""]);
-  const [images, setImages] = useState<(string | null)[]>(Array(6).fill(null));
-  const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
-  const [showBrandDropdown, setShowBrandDropdown]       = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown]   = useState(false);
+  const [showBrandDropdown, setShowBrandDropdown]         = useState(false);
   const [showConditionDropdown, setShowConditionDropdown] = useState(false);
-  const [showSectionDropdown, setShowSectionDropdown]   = useState(false);
+  const [showSectionDropdown, setShowSectionDropdown]     = useState(false);
 
-  const [errors, setErrors] = useState<{ name?: string; description?: string; price?: string }>({});
+  const [errors, setErrors]           = useState<{ name?: string; description?: string; variants?: string }>({});
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ── Image handling ──────────────────────────────────────────────────────────
   const handleImageClick  = (i: number) => fileInputRefs.current[i]?.click();
@@ -192,24 +191,39 @@ const AddProductPage = () => {
     setImages((prev) => { const next = [...prev]; next[i] = null; return next; });
   };
 
-  // ── Price formatting ────────────────────────────────────────────────────────
+  // ── Formatting ──────────────────────────────────────────────────────────────
   const formatNum = (v: string) => {
     const n = v.replace(/[^0-9]/g, "");
     return n ? Number(n).toLocaleString() : "";
   };
 
-  const handlePriceChange = (field: "price" | "deliveryFee", v: string) =>
-    setFormData({ ...formData, [field]: formatNum(v) });
+  const handleDeliveryFeeChange = (v: string) =>
+    setFormData({ ...formData, deliveryFee: formatNum(v) });
+
+  // ── Variant helpers ─────────────────────────────────────────────────────────
+  const addVariant    = () => setVariants((p) => [...p, emptyVariant()]);
+  const removeVariant = (i: number) => setVariants((p) => p.filter((_, idx) => idx !== i));
+
+  const updateVariant = (i: number, field: keyof Variant, value: string | boolean) =>
+    setVariants((p) => { const next = [...p]; next[i] = { ...next[i], [field]: value }; return next; });
+
+  const formatVariantPrice = (i: number, raw: string) => {
+    const cleaned   = raw.replace(/[^0-9]/g, "");
+    const formatted = cleaned ? Number(cleaned).toLocaleString() : "";
+    updateVariant(i, "price", formatted);
+  };
 
   // ── Features ────────────────────────────────────────────────────────────────
   const addFeature    = () => setFeatures((p) => [...p, ""]);
   const updateFeature = (i: number, v: string) =>
     setFeatures((p) => { const n = [...p]; n[i] = v; return n; });
-  const removeFeature = (i: number) =>
-    setFeatures((p) => p.filter((_, idx) => idx !== i));
+  const removeFeature = (i: number) => setFeatures((p) => p.filter((_, idx) => idx !== i));
 
-  const handleChange = (field: keyof typeof formData, value: string | boolean) =>
+  const handleChange = (field: keyof Omit<typeof formData, "specs">, value: string | boolean) =>
     setFormData((p) => ({ ...p, [field]: value }));
+
+  const handleSpecChange = (field: keyof typeof formData.specs, value: string) =>
+    setFormData((p) => ({ ...p, specs: { ...p.specs, [field]: value } }));
 
   const closeAllDropdowns = () => {
     setShowCategoryDropdown(false);
@@ -218,52 +232,79 @@ const AddProductPage = () => {
     setShowSectionDropdown(false);
   };
 
-  // ── Validation & submit ─────────────────────────────────────────────────────
+  // ── Validation ──────────────────────────────────────────────────────────────
   const validate = () => {
     const e: typeof errors = {};
     if (!formData.name.trim())        e.name        = "Product name is required.";
     if (!formData.description.trim()) e.description = "Description is required.";
-    if (!formData.price.trim())       e.price       = "Price is required.";
+    if (variants.length === 0)        e.variants    = "Add at least one variant with a price.";
     return e;
   };
 
-  const handleSubmit = () => {
+  // ── Submit ──────────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setErrors({});
+    setSubmitError(null);
+    setIsSubmitting(true);
 
-    const payload = {
-      name:        formData.name,
-      price:       Number(formData.price.replace(/[^0-9]/g, "")),
-      image:       images[0] || formData.image,
-      image2:      images[1] || formData.image2 || undefined,
-      category:    formData.category,
-      type:        formData.type        || undefined,
-      brand:       formData.brand,
-      condition:   formData.condition,
-      description: formData.description || undefined,
-      features:    features.filter((f) => f.trim()),
-      section:     formData.section     || undefined,
-      storage:     formData.storage     || undefined,
-      screenSize:  formData.screenSize  || undefined,
-      camera:      formData.camera      || undefined,
-      battery:     formData.battery     || undefined,
-      inStock:     formData.inStock,
-      rating:      formData.rating  ? Number(formData.rating)  : undefined,
-      reviews:     formData.reviews ? Number(formData.reviews) : undefined,
-      tags:        selectedTags.length ? selectedTags : undefined,
-      quantity:    formData.quantity,
-      deliveryFee: formData.deliveryFee,
-    };
+    try {
+      // Step 1 — create the product
+      const newProduct = await productService.create({
+        name:        formData.name,
+        category:    formData.category,
+        brand:       formData.brand,
+        condition:   formData.condition,
+        description: formData.description || undefined,
+        type:        formData.type        || undefined,
+        section:     formData.section     || undefined,
+        image:       images[0] || formData.image   || undefined,
+        image2:      images[1] || formData.image2  || undefined,
+        deliveryFee: formData.deliveryFee
+          ? Number(formData.deliveryFee.replace(/[^0-9]/g, ""))
+          : undefined,
+        rating:   formData.rating  ? Number(formData.rating)  : undefined,
+        reviews:  formData.reviews ? Number(formData.reviews) : undefined,
+        features: features.filter((f) => f.trim()),
+        tags:     selectedTags.length ? selectedTags : undefined,
+        specs: {
+          storage:    formData.specs.storage    || undefined,
+          screenSize: formData.specs.screenSize || undefined,
+          camera:     formData.specs.camera     || undefined,
+          battery:    formData.specs.battery    || undefined,
+        },
+      });
 
-    console.log("Publishing product:", payload);
-    navigate("products");
+      // Step 2 — create each variant
+      await Promise.all(
+        variants.map((v) =>
+          variantService.create({
+            productId: newProduct._id,
+            color:     v.color   || undefined,
+            storage:   v.storage || undefined,
+            ram:       v.ram     || undefined,
+            sku:       v.sku,
+            price:     Number(v.price.replace(/[^0-9]/g, "")),
+            stock:     Number(v.stock),
+            is_active: v.is_active,
+          })
+        )
+      );
+
+      navigate("products");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Something went wrong. Please try again.";
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // ── Shared input classes ────────────────────────────────────────────────────
-  const inputCls  = (err = false) =>
+  // ── Shared CSS ──────────────────────────────────────────────────────────────
+  const inputCls   = (err = false) =>
     `w-full bg-lavender text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${err ? "ring-2 ring-destructive" : ""}`;
-  const mintCls   = "w-full bg-mint text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
+  const mintCls    = "w-full bg-mint text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
   const dropBtnCls = "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm text-left flex justify-between items-center";
 
   // ── Reusable dropdown ───────────────────────────────────────────────────────
@@ -279,8 +320,10 @@ const AddProductPage = () => {
         {value} <ChevronDown size={14} className={`text-muted-foreground transition-transform ${show ? "rotate-180" : ""}`} />
       </button>
       {show && (
-        <div className="absolute top-full left-0 right-0 bg-popover border border-border rounded-lg mt-1 shadow-lg z-10 max-h-48 overflow-y-auto"
-          onClick={(e) => e.stopPropagation()}>
+        <div
+          className="absolute top-full left-0 right-0 bg-popover border border-border rounded-lg mt-1 shadow-lg z-10 max-h-48 overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
           {options.map((opt) => (
             <button key={opt} onClick={() => onSelect(opt)}
               className={`w-full text-left px-4 py-2 text-sm hover:bg-lavender/50 transition-colors ${value === opt ? "text-primary font-medium" : "text-popover-foreground"}`}>
@@ -297,10 +340,25 @@ const AddProductPage = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-semibold text-foreground">Product Information</h1>
-        <Button onClick={handleSubmit} className="gap-1 bg-primary text-primary-foreground hover:opacity-90">
-          <Plus size={16} /> Publish Product
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="gap-1 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          <Plus size={16} /> {isSubmitting ? "Publishing…" : "Publish Product"}
         </Button>
       </div>
+
+      {/* Global submit error banner */}
+      {submitError && (
+        <div className="mb-6 flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+          <X size={15} className="flex-shrink-0" />
+          {submitError}
+          <button type="button" onClick={() => setSubmitError(null)} className="ml-auto hover:opacity-70 transition-opacity">
+            <X size={13} />
+          </button>
+        </div>
+      )}
 
       {/* Image Upload */}
       <div className="grid grid-cols-6 gap-4 mb-8">
@@ -374,7 +432,6 @@ const AddProductPage = () => {
             onToggle={() => { setShowConditionDropdown(!showConditionDropdown); setShowCategoryDropdown(false); setShowBrandDropdown(false); setShowSectionDropdown(false); }}
             onSelect={(v) => { handleChange("condition", v); setShowConditionDropdown(false); }} />
 
-          {/* Section with "None" option */}
           <div className="relative">
             <label className="text-xs text-muted-foreground block mb-1">Section</label>
             <button onClick={(e) => { e.stopPropagation(); setShowSectionDropdown(!showSectionDropdown); setShowCategoryDropdown(false); setShowBrandDropdown(false); setShowConditionDropdown(false); }} className={dropBtnCls}>
@@ -448,23 +505,23 @@ const AddProductPage = () => {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Storage</label>
-            <input type="text" placeholder="e.g. 256GB" value={formData.storage}
-              onChange={(e) => handleChange("storage", e.target.value)} className={inputCls()} />
+            <input type="text" placeholder="e.g. 256GB" value={formData.specs.storage}
+              onChange={(e) => handleSpecChange("storage", e.target.value)} className={inputCls()} />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Screen Size</label>
-            <input type="text" placeholder='e.g. 6.1"' value={formData.screenSize}
-              onChange={(e) => handleChange("screenSize", e.target.value)} className={inputCls()} />
+            <input type="text" placeholder='e.g. 6.1"' value={formData.specs.screenSize}
+              onChange={(e) => handleSpecChange("screenSize", e.target.value)} className={inputCls()} />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Camera</label>
-            <input type="text" placeholder="e.g. 48MP Triple Camera" value={formData.camera}
-              onChange={(e) => handleChange("camera", e.target.value)} className={inputCls()} />
+            <input type="text" placeholder="e.g. 48MP Triple Camera" value={formData.specs.camera}
+              onChange={(e) => handleSpecChange("camera", e.target.value)} className={inputCls()} />
           </div>
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Battery</label>
-            <input type="text" placeholder="e.g. Up to 22hrs video playback" value={formData.battery}
-              onChange={(e) => handleChange("battery", e.target.value)} className={inputCls()} />
+            <input type="text" placeholder="e.g. Up to 22hrs video playback" value={formData.specs.battery}
+              onChange={(e) => handleSpecChange("battery", e.target.value)} className={inputCls()} />
           </div>
         </div>
       </div>
@@ -502,26 +559,71 @@ const AddProductPage = () => {
 
       {/* Pricing and Stock */}
       <div className="mb-8">
-        <h2 className="text-lg font-medium text-foreground mb-4">Pricing and Stock</h2>
-        <div className="grid grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Price <span className="text-destructive">Required</span></label>
-            <input type="text" placeholder="₦234,000" value={formData.price ? `₦${formData.price}` : ""}
-              onChange={(e) => { handlePriceChange("price", e.target.value.replace(/[^0-9]/g, "")); if (errors.price) setErrors({ ...errors, price: undefined }); }}
-              className={inputCls(!!errors.price)} />
-            {errors.price && <p className="text-xs text-destructive mt-1">{errors.price}</p>}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Quantity Available</label>
-            <input type="number" min="0" placeholder="0" value={formData.quantity}
-              onChange={(e) => handleChange("quantity", e.target.value)} className={mintCls} />
-          </div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-medium text-foreground">Pricing and Stock</h2>
+          <button type="button" onClick={addVariant}
+            className="flex items-center gap-1 text-xs text-primary hover:opacity-80 transition-opacity">
+            <Plus size={14} /> Add Variant
+          </button>
         </div>
-        <div className="grid grid-cols-3 gap-4 mb-4">
+
+        {errors.variants && <p className="text-xs text-destructive mb-3">{errors.variants}</p>}
+
+        {variants.length === 0 && (
+          <p className="text-sm text-muted-foreground py-4 text-center border-2 border-dashed border-border rounded-lg">
+            No variants yet. Click <span className="text-primary font-medium">+ Add Variant</span> to add a color / storage / RAM option.
+          </p>
+        )}
+
+        <div className="space-y-3">
+          {variants.map((v, i) => (
+            <div key={i} className="grid grid-cols-6 gap-3 items-end p-3 bg-card border border-border rounded-lg">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Color</label>
+                <input type="text" placeholder="e.g. Black" value={v.color}
+                  onChange={(e) => updateVariant(i, "color", e.target.value)} className={inputCls()} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">RAM</label>
+                <input type="text" placeholder="e.g. 8GB" value={v.ram}
+                  onChange={(e) => updateVariant(i, "ram", e.target.value)} className={inputCls()} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Storage</label>
+                <input type="text" placeholder="e.g. 256GB" value={v.storage}
+                  onChange={(e) => updateVariant(i, "storage", e.target.value)} className={inputCls()} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">SKU <span className="text-destructive">*</span></label>
+                <input type="text" placeholder="e.g. APL-IP15-BLK-256" value={v.sku}
+                  onChange={(e) => updateVariant(i, "sku", e.target.value)} className={inputCls()} />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Price <span className="text-destructive">*</span></label>
+                <input type="text" placeholder="₦0" value={v.price ? `₦${v.price}` : ""}
+                  onChange={(e) => formatVariantPrice(i, e.target.value.replace(/[^0-9]/g, ""))}
+                  className={inputCls()} />
+              </div>
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground block mb-1">Stock</label>
+                  <input type="number" min="0" placeholder="0" value={v.stock}
+                    onChange={(e) => updateVariant(i, "stock", e.target.value)} className={mintCls} />
+                </div>
+                <button type="button" onClick={() => removeVariant(i)}
+                  className="flex-shrink-0 w-8 h-[42px] rounded-lg bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center transition-colors">
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 mt-6">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Delivery Fee</label>
             <input type="text" placeholder="₦0" value={formData.deliveryFee ? `₦${formData.deliveryFee}` : ""}
-              onChange={(e) => handlePriceChange("deliveryFee", e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={(e) => handleDeliveryFeeChange(e.target.value.replace(/[^0-9]/g, ""))}
               className={inputCls()} />
           </div>
           <div>
@@ -535,28 +637,16 @@ const AddProductPage = () => {
               onChange={(e) => handleChange("reviews", e.target.value)} className={mintCls} />
           </div>
         </div>
-
-        {/* In Stock toggle */}
-        <div className="flex items-center gap-3">
-          <button type="button" role="switch" aria-checked={formData.inStock}
-            onClick={() => handleChange("inStock", !formData.inStock)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-primary ${formData.inStock ? "bg-primary" : "bg-border"}`}>
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform ${formData.inStock ? "translate-x-6" : "translate-x-1"}`} />
-          </button>
-          <label className="text-sm text-foreground cursor-pointer select-none"
-            onClick={() => handleChange("inStock", !formData.inStock)}>
-            In Stock
-            <span className={`ml-2 text-xs font-medium ${formData.inStock ? "text-primary" : "text-muted-foreground"}`}>
-              {formData.inStock ? "Yes" : "No"}
-            </span>
-          </label>
-        </div>
       </div>
 
       {/* Footer */}
       <div className="flex justify-end pt-4 border-t border-border">
-        <Button onClick={handleSubmit} className="gap-1 bg-primary text-primary-foreground hover:opacity-90">
-          <Plus size={16} /> Publish Product
+        <Button
+          onClick={handleSubmit}
+          disabled={isSubmitting}
+          className="gap-1 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60"
+        >
+          <Plus size={16} /> {isSubmitting ? "Publishing…" : "Publish Product"}
         </Button>
       </div>
     </div>
