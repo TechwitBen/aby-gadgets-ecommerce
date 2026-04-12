@@ -3,7 +3,7 @@ import { ArrowLeft, Minus, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatPrice } from "@/data/products";
+import { formatPrice } from "@/services/Products.service";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();
@@ -20,9 +20,7 @@ const Cart = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      <div className="bg-white border-b border-border">
-      
-      </div>
+      <div className="bg-white border-b border-border" />
 
       {/* Back link */}
       <div className="container mx-auto px-4 py-5">
@@ -57,8 +55,9 @@ const Cart = () => {
 
                 <div className="space-y-3">
                   {items.map((item) => (
+                    // Key on variantId so two variants of the same product are distinct rows
                     <div
-                      key={item.id}
+                      key={item.variantId}
                       className="bg-white rounded-xl p-4 flex gap-4 items-center"
                     >
                       {/* Thumbnail */}
@@ -78,16 +77,16 @@ const Cart = () => {
                             {item.name}
                           </h3>
                           <button
-                            onClick={() => removeFromCart(item.id)}
+                            onClick={() => removeFromCart(item.variantId)}
                             className="text-muted-foreground hover:text-destructive transition-colors shrink-0 mt-0.5"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
 
-                        {/* Specs */}
+                        {/* Specs — color / storage / sku */}
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {[item.storage, item.color, "Fully tested."]
+                          {[item.color, item.storage, item.ram, item.sku && `SKU: ${item.sku}`]
                             .filter(Boolean)
                             .join(" • ")}
                         </p>
@@ -104,7 +103,7 @@ const Cart = () => {
                           {/* Quantity pill */}
                           <div className="flex items-center bg-[#F3EEFF] rounded-full px-1 py-0.5 gap-1">
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                              onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                               className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors text-foreground"
                             >
                               <Minus className="w-2.5 h-2.5" />
@@ -113,7 +112,7 @@ const Cart = () => {
                               {item.quantity}
                             </span>
                             <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                              onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                               className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-primary/20 transition-colors text-foreground"
                             >
                               <Plus className="w-2.5 h-2.5" />
@@ -180,7 +179,6 @@ const Cart = () => {
           </div>
         )}
       </div>
-
     </div>
   );
 };
