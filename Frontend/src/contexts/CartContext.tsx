@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import { cartService, type CartDoc } from "@/services/cart.service";
+import { cartService, type CartDoc } from "@/services/Cart.service";
 
 // ── CartItem — the shape stored locally and used by UI ────────────────────────
 export interface CartItem {

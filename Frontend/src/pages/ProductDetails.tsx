@@ -7,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   productService, formatPrice, type Product, type Variant,
-} from "@/services/products.service";
+} from "@/services/Products.service";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useToast } from "@/hooks/use-toast";
