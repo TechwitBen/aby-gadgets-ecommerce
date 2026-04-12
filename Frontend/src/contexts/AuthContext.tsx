@@ -1,106 +1,90 @@
-// src/contexts/AuthContext.tsx
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-interface User {
-  id: string;
-  username: string;
-  email: string;
-}
+import { createContext, useContext, useState, ReactNode } from 'react';
+import { authAPI, AuthUser } from '@/services/api';
+import axios from 'axios';
 
 interface AuthContextType {
-  user: User | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  setUserManually: (user: User) => void;
+  setUserManually: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// ── localStorage keys ─────────────────────────────────────────────────────────
-const USERS_KEY   = "abygadget_users";
-const SESSION_KEY = "abygadget_session";
-
-interface StoredUser extends User {
-  password: string;
-}
-
-const getStoredUsers = (): StoredUser[] => {
-  try { return JSON.parse(localStorage.getItem(USERS_KEY) ?? "[]"); }
-  catch { return []; }
-};
-
-const saveStoredUsers = (users: StoredUser[]) =>
-  localStorage.setItem(USERS_KEY, JSON.stringify(users));
-
-const getSession = (): User | null => {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
-};
-
-const saveSession = (user: User) =>
-  localStorage.setItem(SESSION_KEY, JSON.stringify(user));
-
-const clearSession = () =>
-  localStorage.removeItem(SESSION_KEY);
-
-// ── Provider ──────────────────────────────────────────────────────────────────
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser]         = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading] = useState(false);
 
-  // Rehydrate session on mount
+  // NOTE: Uncomment once backend adds GET /api/v1/auth/me
+  /*
   useEffect(() => {
-    const session = getSession();
-    if (session) setUser(session);
-    setIsLoading(false);
+    checkAuth();
   }, []);
 
+  const checkAuth = async () => {
+    try {
+      const currentUser = await authAPI.getCurrentUser();
+      setUser(currentUser);
+    } catch {
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  */
+
   const register = async (username: string, email: string, password: string) => {
-    const users = getStoredUsers();
-
-    if (users.some((u) => u.email.toLowerCase() === email.toLowerCase()))
-      throw new Error("An account with this email already exists.");
-
-    if (users.some((u) => u.username.toLowerCase() === username.toLowerCase()))
-      throw new Error("This username is already taken.");
-
-    const newUser: StoredUser = { id: crypto.randomUUID(), username, email, password };
-    saveStoredUsers([...users, newUser]);
-
-    const session: User = { id: newUser.id, username, email };
-    saveSession(session);
-    setUser(session);
+    try {
+      await authAPI.register({ username, email, password });
+      // Backend auto-logs in after register but returns no user object yet.
+      // Populate what we know from the form until /me is available.
+      setUser({ id: '', username, email });
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        throw new Error(err.response?.data?.error || 'Registration failed');
+      }
+      throw err;
+    }
   };
 
   const login = async (username: string, password: string) => {
-    const users = getStoredUsers();
-
-    const match = users.find(
-      (u) =>
-        (u.username.toLowerCase() === username.toLowerCase() ||
-          u.email.toLowerCase() === username.toLowerCase()) &&
-        u.password === password
-    );
-
-    if (!match) throw new Error("Invalid username/email or password.");
-
-    const session: User = { id: match.id, username: match.username, email: match.email };
-    saveSession(session);
-    setUser(session);
+    try {
+      const result = await authAPI.login({ username, password });
+      // Backend returns the full user under `data`
+      if (result.data) {
+        setUser({
+          id:        result.data._id ?? result.data.id ?? '',
+          username: result.data.username ?? username,
+          email:    result.data.email ?? '',
+          name:     result.data.name,
+          provider: result.data.provider,
+        });
+      } else {
+        // Fallback until /me is available
+        setUser({ id: '', username, email: '' });
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        throw new Error(err.response?.data?.error || 'Login failed');
+      }
+      throw err;
+    }
   };
 
   const logout = async () => {
-    clearSession();
-    setUser(null);
+    try {
+      await authAPI.logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setUser(null);
+    }
   };
 
-  const setUserManually = (userData: User) => {
-    saveSession(userData);
+  const setUserManually = (userData: AuthUser) => {
     setUser(userData);
   };
 
