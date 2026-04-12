@@ -1,5 +1,9 @@
-// src/services/api.ts
-const API_BASE_URL = 'http://localhost:3000/api/v1';
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'http://localhost:3000/api/v1',
+  withCredentials: true, // sends session cookies automatically
+});
 
 interface RegisterData {
   username: string;
@@ -12,112 +16,43 @@ interface LoginData {
   password: string;
 }
 
+export interface AuthUser {
+  id: string;
+  username: string;
+  email: string;
+  name?: string;
+  provider?: string;
+}
+
 interface ApiResponse {
   success: boolean;
   message?: string;
   error?: string;
-  user?: {
-    id: string;
-    username: string;
-    email: string;
-    name?: string;
-    provider?: string;
-  };
+  data?: AuthUser;   // login returns { success, data: req.user }
+  user?: AuthUser;   // kept for any future /me endpoint
 }
 
 export const authAPI = {
   register: async (data: RegisterData): Promise<ApiResponse> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include', // Important for cookies/sessions
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Registration failed');
-      }
-
-      return result;
-    } catch (error: any) {
-      console.error('Registration error:', error);
-      throw error;
-    }
+    // Backend returns { success: true, message: "Signup successful" } — no user object
+    const res = await api.post<ApiResponse>('/auth/register', data);
+    return res.data;
   },
 
   login: async (data: LoginData): Promise<ApiResponse> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Login failed');
-      }
-
-      return result;
-    } catch (error: any) {
-      console.error('Login error:', error);
-      throw error;
-    }
+    // Backend returns { success: true, message: "Login successful", data: req.user }
+    const res = await api.post<ApiResponse>('/auth/login', data);
+    return res.data;
   },
 
   logout: async (): Promise<ApiResponse> => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-
-      const result = await response.json();
-      
-      if (!result.success) {
-        throw new Error(result.error || 'Logout failed');
-      }
-
-      return result;
-    } catch (error: any) {
-      console.error('Logout error:', error);
-      throw error;
-    }
+    const res = await api.post<ApiResponse>('/auth/logout');
+    return res.data;
   },
 
-  // COMMENTED OUT - Backend needs to implement this endpoint
-  // Once backend adds GET /api/v1/auth/me endpoint, uncomment this
-  /*
-  getCurrentUser: async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/me`, {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        return null;
-      }
-
-      const result = await response.json();
-      
-      if (result.success && result.user) {
-        return result.user;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Get current user error:', error);
-      return null;
-    }
-  },
-  */
+  // Uncomment once backend adds GET /api/v1/auth/me
+  // getCurrentUser: async (): Promise<AuthUser | null> => {
+  //   const res = await api.get<ApiResponse>('/auth/me');
+  //   return res.data.user ?? null;
+  // },
 };
