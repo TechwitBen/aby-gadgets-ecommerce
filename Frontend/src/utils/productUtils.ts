@@ -7,7 +7,7 @@ import {
   Gamepad, Speaker, Camera, HardDrive, BatteryCharging,
   Zap, type LucideIcon,
 } from "lucide-react";
-import type { Product } from "@/data/products";
+import type { Product } from "@/services/Products.service";
 
 // ─── Type icon ────────────────────────────────────────────────────────────────
 export const getTypeIcon = (type: string = "smartphone"): LucideIcon => {
@@ -59,12 +59,12 @@ export const getTwoSpecs = (product: Product): Spec[] => {
     specs.push({ label: "Storage", value: product.storage, icon: HardDrive });
   }
 
-  if (product.camera) {
-    specs.push({ label: "Camera", value: product.camera, icon: Camera });
-  } else if (product.screenSize) {
-    specs.push({ label: "Display", value: product.screenSize, icon: Monitor });
-  } else if (product.battery) {
-    specs.push({ label: "Battery", value: product.battery, icon: BatteryCharging });
+  if (product.specs?.camera) {
+    specs.push({ label: "Camera", value: product.specs.camera, icon: Camera });
+  } else if (product.specs?.screenSize) {
+    specs.push({ label: "Display", value: product.specs.screenSize, icon: Monitor });
+  } else if (product.specs?.battery) {
+    specs.push({ label: "Battery", value: product.specs.battery, icon: BatteryCharging });
   } else if (product.features && product.features.length > 0) {
     specs.push({ label: "Feature", value: product.features[0], icon: Zap });
   }

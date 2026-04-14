@@ -16,6 +16,7 @@ export const createOrder = async (req, res) => {
     // Destructuring using shipping_address as requested
     const { orderItems, shipping_address, paymentMethod } = req.body;
 
+
     // 1. Validation
     if (!orderItems || orderItems.length === 0) {
       await session.abortTransaction();
@@ -111,7 +112,8 @@ export const createOrder = async (req, res) => {
 export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id })
-      .populate("orderItems.product", "name price")
+      .populate("items.product", "name images")
+  .populate("items.variant", "color storage ram price sku")
       .sort({ createdAt: -1 });
 
     res.status(200).json(orders);
@@ -131,8 +133,8 @@ export const getMyOrders = async (req, res) => {
 export const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id)
-      .populate("user", "name email")
-      .populate("orderItems.product", "name price");
+      .populate("items.product", "name images condition")
+     .populate("items.variant", "color storage ram price sku")
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -140,11 +142,11 @@ export const getOrderById = async (req, res) => {
 
     // Prevent users from viewing other users' orders
     if (
-      order.user._id.toString() !== req.user._id.toString() &&
-      !req.user.isAdmin
-    ) {
-      return res.status(403).json({ message: "Not authorized" });
-    }
+  order.user._id.toString() !== req.user._id.toString() &&
+  req.user.role !== "admin"  // ✅ Matches user.model.js
+) {
+  return res.status(403).json({ message: "Not authorized to view this order" });
+}
 
     res.status(200).json(order);
   } catch (error) {
@@ -180,24 +182,142 @@ export const getAllOrders = async (req, res) => {
  * @route   PATCH /api/orders/:id/status
  * @access  Admin
  */
+/**
+ * @desc    Update order status & handle stock restoration on cancellation
+ * @route   PATCH /api/orders/:id/status
+ * @access  Admin
+ */
 export const updateOrderStatus = async (req, res) => {
   try {
-    const { status } = req.body;
-
+    const { status: newStatus } = req.body;
     const order = await Order.findById(req.params.id);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    order.status = status || order.status;
+    // 1. Handle Stock Restoration if the order is being Cancelled
+    // We check if the NEW status is 'cancelled' AND the CURRENT status is not already 'cancelled'
+    if (newStatus === "cancelled" && order.status !== "cancelled") {
+      
+      // If the order was already delivered, we typically don't restore stock 
+      // because the item is physically gone.
+      if (order.status !== "delivered") {
+        for (const item of order.items) {
+          await Variant.findByIdAndUpdate(item.variant, {
+            $inc: { stock: item.quantity },
+          });
+        }
+        console.log(`Order ${order._id} cancelled: Stock returned to inventory.`);
+      }
+    }
 
+    // 2. Update and Save
+    order.status = newStatus || order.status;
     const updatedOrder = await order.save();
 
     res.status(200).json(updatedOrder);
   } catch (error) {
     res.status(500).json({
       message: "Failed to update order status",
+      error: error.message,
+    });
+  }
+};;
+
+
+/**
+ * Add this function to your existing order.controllers.js
+ *
+ * @desc    Update order payment status (Admin only)
+ * @route   PATCH /api/orders/:id/payment-status
+ * @access  Admin
+ */
+export const updateOrderPaymentStatus = async (req, res) => {
+  try {
+    const { payment_status } = req.body;
+ 
+    const validStatuses = ["unpaid", "paid", "refunded"];
+    if (!payment_status || !validStatuses.includes(payment_status)) {
+      return res.status(400).json({
+        message: `payment_status must be one of: ${validStatuses.join(", ")}`,
+      });
+    }
+ 
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+ 
+    order.payment_status = payment_status;
+    const updatedOrder = await order.save();
+ 
+    res.status(200).json(updatedOrder);
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to update payment status",
+      error: error.message,
+    });
+  }
+};
+ 
+
+
+
+/**
+ * @desc    Delete order & conditionally restore stock
+ * @route   DELETE /api/orders/:id
+ * @access  Admin
+ */
+export const deleteOrder = async (req, res) => {
+  try {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+ // Log deletion for audit trail:
+    console.log({
+      action: "DELETE_ORDER",
+      orderId: order._id,
+      deletedBy: req.user._id,
+      timestamp: new Date(),
+      orderStatus: order.status,
+      paymentStatus: order.payment_status,
+      total: order.total,
+    });
+
+    /**
+     * STOCK RESTORATION LOGIC
+     * 1. If 'delivered': The item is gone. Do NOT restore.
+     * 2. If 'cancelled': Stock should have been restored when the status changed. 
+     * Do NOT restore again to avoid double-counting.
+     */
+    const shouldRestoreStock = order.status !== "delivered" && order.status !== "cancelled";
+
+    if (shouldRestoreStock) {
+      for (const item of order.items) {
+        await Variant.findByIdAndUpdate(item.variant, {
+          $inc: { stock: item.quantity },
+        });
+      }
+      console.log(`Order ${order._id} deleted: Stock restored to inventory.`);
+    } else {
+      console.log(
+        `Order ${order._id} deleted: No stock restored (Status: ${order.status}).`
+      );
+    }
+
+    // Permanently remove the record from the database
+    await Order.findByIdAndDelete(req.params.id);
+
+    res.status(200).json({ 
+      message: "Order deleted successfully",
+      stockRestored: shouldRestoreStock 
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to delete order",
       error: error.message,
     });
   }

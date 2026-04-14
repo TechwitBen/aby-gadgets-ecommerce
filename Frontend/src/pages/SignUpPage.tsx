@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { User, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { oauthHelpers } from "@/utils/oauth";
+import { Spinner } from "@/components/ui/Spinner";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
@@ -167,14 +168,13 @@ const SignUpPage = () => {
             </Link>
           </p>
 
-          <Button
-            type="submit"
-            variant="outline"
-            className="w-full border-primary text-primary hover:bg-primary hover:text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? "CREATING ACCOUNT..." : "CREATE ACCOUNT"}
-          </Button>
+          <Button type="submit" variant="outline" className="w-full" disabled={isLoading}>
+  {isLoading ? (
+    <span className="flex items-center gap-2">
+      <Spinner size="sm" /> Creating account...
+    </span>
+  ) : "CREATE ACCOUNT"}
+</Button>
 
           <Button
             type="button"

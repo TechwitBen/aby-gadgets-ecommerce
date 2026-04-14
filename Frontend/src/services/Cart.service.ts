@@ -95,5 +95,5 @@ export const cartService = {
 
   /** DELETE /api/v1/cart — remove all items */
   clearCart: (): Promise<CartDoc> =>
-    axios.delete<CartDoc>(BASE).then((r) => r.data),
+    axios.delete<CartDoc>(`${BASE}/clear`).then((r) => r.data),
 };

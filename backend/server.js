@@ -1,5 +1,11 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
-// import morgan from "morgan";
+import cors from "cors";
+import session from "express-session";
+import passport from "passport";
+
 import { authRouter } from "./routes/auth.routes.js";
 import orderRouter from "./routes/orders.routes.js";
 import productRouter from "./routes/product.routes.js";
@@ -8,35 +14,36 @@ import checkoutRouter from "./routes/checkout.routes.js";
 import reviewRouter from "./routes/review.routes.js";
 import variantRouter from "./routes/variant.routes.js";
 import paymentRouter from "./routes/payment.routes.js";
+
 import { connect } from "./db.js";
 import User from "./models/user.model.js";
-import passport from "passport";
-import session from "express-session";
-import cors from "cors";
 import { SESSION_SECRET } from "./configs/.env.configs.js";
 
 const app = express();
-
 const port = 3000;
 
 const startServer = async () => {
   await connect();
 
-  // CRITICAL: Middleware order is important!
-  
-  // 1. CORS must come first (before session)
+  // =========================
+  // 1. CORS (ONLY ONCE)
+  // =========================
   app.use(
     cors({
-      origin: "http://localhost:5173",
+      origin: ["http://localhost:5173", "http://localhost:8080"],
       credentials: true,
     })
   );
 
-  // 2. Body parsers
+  // =========================
+  // 2. BODY PARSERS
+  // =========================
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
-  // 3. Session MUST come before Passport
+  // =========================
+  // 3. SESSION
+  // =========================
   app.use(
     session({
       secret: SESSION_SECRET,
@@ -44,27 +51,20 @@ const startServer = async () => {
       saveUninitialized: false,
       name: "connect.sid",
       cookie: {
-        maxAge: 60 * 60 * 1000,
+        maxAge: 60 * 60 * 1000, // 1 hour
         sameSite: "lax",
-        secure: false,
+        secure: false, // set true in production (HTTPS)
         httpOnly: true,
       },
-    }),
-  );
-  app.use(passport.initialize());
-  app.use(passport.session());
-  app.use(
-    cors({
-      origin: "http://localhost:5173",
-      credentials: true,
-    }),
+    })
   );
 
-  // 4. Passport initialization (must come after session)
+  // =========================
+  // 4. PASSPORT (ONLY ONCE)
+  // =========================
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // 5. Passport serialization
   passport.serializeUser((user, done) => {
     done(null, user.id);
   });
@@ -78,7 +78,9 @@ const startServer = async () => {
     }
   });
 
-  // 6. Routes come last
+  // =========================
+  // 5. ROUTES
+  // =========================
   app.get("/", (req, res) => {
     res.send("server side is working");
   });
@@ -92,8 +94,11 @@ const startServer = async () => {
   app.use("/api/v1/checkout", checkoutRouter);
   app.use("/api/v1/variant", variantRouter);
 
+  // =========================
+  // 6. START SERVER
+  // =========================
   app.listen(port, () => {
-    console.log(`server is running on localhost ${port}`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 };
 

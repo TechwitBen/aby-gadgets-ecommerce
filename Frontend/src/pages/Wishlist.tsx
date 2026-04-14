@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/data/products";
+import { formatPrice } from "@/services/Products.service";
 
 const Wishlist = () => {
   const { wishlistProducts, removeFromWishlist } = useWishlist();
@@ -43,12 +43,13 @@ const Wishlist = () => {
 
   const handleAddToCart = (product: (typeof wishlistProducts)[number]) => {
     addToCart({
-      id: product.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-      storage: product.storage ?? undefined,
+      id:        product.id,
+    variantId: product.id,      // ← add this — use product id as fallback
+    name:      product.name,
+    price:     product.price,
+    image:     product.image,
+    quantity:  1,
+    storage:   product.storage ?? undefined,
     });
     toast({
       title: "Added to cart",

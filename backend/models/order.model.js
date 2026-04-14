@@ -42,10 +42,12 @@ const OrderSchema = new Schema(
       enum: ["unpaid", "paid", "refunded"],
       default: "unpaid",
     },
-    payment_method: { 
-      type: String, 
-      required: true,
-      enum: ["card", "transfer", "cod", "paystack"], // Example options
+    // CORRECT:
+payment_method: { 
+  type: String, 
+  required: true,
+  enum: ["paystack", "pod"], // ✅ Matches frontend
+  default: "pod", // Example options
     },
     payment_reference: { type: String }, // from Paystack/Flutterwave etc.
     subtotal: { type: Number, required: true },

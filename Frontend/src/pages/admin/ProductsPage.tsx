@@ -5,7 +5,7 @@ import { StatsCard } from "@/components/ui/stats-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import { Plus, ChevronDown, Trash2, X, SlidersHorizontal, ArrowUpDown, Loader2, RefreshCw } from "lucide-react";
-import { productService, getStockStatus, formatPrice, type Product } from "@/services/products.service";
+import { productService, getStockStatus, formatPrice, type Product } from "@/services/Products.service";
 
 // ── Delete Modal ──────────────────────────────────────────────────────────────
 const DeleteConfirmModal = ({

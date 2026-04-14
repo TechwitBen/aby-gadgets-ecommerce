@@ -1,25 +1,24 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { authAPI, AuthUser } from '@/services/api';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { authAPI, toAuthUser, type AuthUser } from '@/services/api';
 import axios from 'axios';
+import { LoadingScreen } from "@/components/ui/loading-screen";
 
 interface AuthContextType {
-  user: AuthUser | null;
-  isLoading: boolean;
+  user:            AuthUser | null;
+  isLoading:       boolean;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  login:           (username: string, password: string) => Promise<void>;
+  register:        (username: string, email: string, password: string) => Promise<void>;
+  logout:          () => Promise<void>;
   setUserManually: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading] = useState(false);
+  const [user,      setUser]      = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // true until /me resolves
 
-  // NOTE: Uncomment once backend adds GET /api/v1/auth/me
-  /*
   useEffect(() => {
     checkAuth();
   }, []);
@@ -34,13 +33,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoading(false);
     }
   };
-  */
 
   const register = async (username: string, email: string, password: string) => {
     try {
       await authAPI.register({ username, email, password });
-      // Backend auto-logs in after register but returns no user object yet.
-      // Populate what we know from the form until /me is available.
       setUser({ id: '', username, email });
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -53,17 +49,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (username: string, password: string) => {
     try {
       const result = await authAPI.login({ username, password });
-      // Backend returns the full user under `data`
       if (result.data) {
-        setUser({
-          id:        result.data._id ?? result.data.id ?? '',
-          username: result.data.username ?? username,
-          email:    result.data.email ?? '',
-          name:     result.data.name,
-          provider: result.data.provider,
-        });
+        setUser(toAuthUser(result.data));
       } else {
-        // Fallback until /me is available
         setUser({ id: '', username, email: '' });
       }
     } catch (err) {
@@ -84,9 +72,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const setUserManually = (userData: AuthUser) => {
-    setUser(userData);
-  };
+  const setUserManually = (userData: AuthUser) => setUser(userData);
+
+  // Block render until session check completes — prevents flash of logged-out UI
+ if (isLoading) return <LoadingScreen message="Checking session..." />;
 
   return (
     <AuthContext.Provider

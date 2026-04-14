@@ -40,10 +40,10 @@ const Products = () => {
   const { toast }                       = useToast();
 
   // ── API data ───────────────────────────────────────────────────────────────
-  const [newArrivalsAll, setNewArrivalsAll]       = useState<Product[]>([]);
+  const [newArrivalsAll,     setNewArrivalsAll]     = useState<Product[]>([]);
   const [popularProductsAll, setPopularProductsAll] = useState<Product[]>([]);
-  const [sweetDealsAll, setSweetDealsAll]         = useState<Product[]>([]);
-  const [isLoading, setIsLoading]                 = useState(true);
+  const [sweetDealsAll,      setSweetDealsAll]      = useState<Product[]>([]);
+  const [isLoading,          setIsLoading]          = useState(true);
 
   useEffect(() => {
     setIsLoading(true);
@@ -53,9 +53,14 @@ const Products = () => {
       productService.getBySection("Sweet Deals"),
     ])
       .then(([na, pp, sd]) => {
-        setNewArrivalsAll(na);
-        setPopularProductsAll(pp);
-        setSweetDealsAll(sd);
+        setNewArrivalsAll(na ?? []);
+        setPopularProductsAll(pp ?? []);
+        setSweetDealsAll(sd ?? []);
+      })
+      .catch(() => {
+        setNewArrivalsAll([]);
+        setPopularProductsAll([]);
+        setSweetDealsAll([]);
       })
       .finally(() => setIsLoading(false));
   }, []);
@@ -87,15 +92,24 @@ const Products = () => {
   useEffect(() => {
     if (!location.hash) return;
     const tryScroll = () => {
-      if (location.hash === "#new-arrivals"  && newArrivalsRef.current) { newArrivalsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); return true; }
-      if (location.hash === "#sweet-deals"   && sweetDealsRef.current)  { sweetDealsRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); return true; }
+      if (location.hash === "#new-arrivals" && newArrivalsRef.current) {
+        newArrivalsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        return true;
+      }
+      if (location.hash === "#sweet-deals" && sweetDealsRef.current) {
+        sweetDealsRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        return true;
+      }
       return false;
     };
-    if (!tryScroll()) { const t = setTimeout(tryScroll, 300); return () => clearTimeout(t); }
+    if (!tryScroll()) {
+      const t = setTimeout(tryScroll, 300);
+      return () => clearTimeout(t);
+    }
   }, [location.hash]);
 
   // ── Derive filter option lists from all loaded products ────────────────────
-  const allLoaded = [...newArrivalsAll, ...popularProductsAll, ...sweetDealsAll];
+  const allLoaded  = [...newArrivalsAll, ...popularProductsAll, ...sweetDealsAll];
   const brands     = ["All", ...new Set(allLoaded.map((p) => p.brand))];
   const categories = ["All", ...new Set(allLoaded.map((p) => p.category))];
   const conditions = ["All", ...new Set(allLoaded.map((p) => p.condition))];
@@ -126,12 +140,23 @@ const Products = () => {
     selectedCondition !== "All" || priceRange[0] !== 0 || priceRange[1] !== 2_000_000;
 
   const resetFilters = () => {
-    setSearchQuery(""); setSelectedBrand("All"); setSelectedCategory("All");
-    setSelectedCondition("All"); setPriceRange([0, 2_000_000]);
+    setSearchQuery("");
+    setSelectedBrand("All");
+    setSelectedCategory("All");
+    setSelectedCondition("All");
+    setPriceRange([0, 2_000_000]);
   };
 
   const handleAddToCart = (product: Product) => {
-    addToCart({ id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1, storage: product.storage ?? undefined });
+    addToCart({
+      id:        product.id,
+      variantId: product.id,
+      name:      product.name,
+      price:     product.price,
+      image:     product.image,
+      quantity:  1,
+      storage:   product.storage ?? undefined,
+    });
     toast({ title: "Added to cart", description: `${product.name} has been added to your cart.` });
   };
 
@@ -144,8 +169,11 @@ const Products = () => {
     const specs      = getTwoSpecs(product);
 
     return (
-      <div className="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
-        onMouseEnter={() => setIsHovered(true)} onMouseLeave={() => setIsHovered(false)}>
+      <div
+        className="group relative bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
         <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
           <img src={product.image} alt={product.name}
             className={`absolute inset-0 w-full h-full object-contain p-4 transition-all duration-500 ${isHovered ? "opacity-0" : "opacity-100"}`} />
@@ -165,19 +193,25 @@ const Products = () => {
             {product.condition === "Refurbished" && <span className="bg-green-500  text-white px-3 py-1 rounded-full text-xs font-bold">REFURBISHED</span>}
             {product.section   === "New Arrivals"&& <span className="bg-red-500    text-white px-3 py-1 rounded-full text-xs font-bold w-fit">NEW</span>}
           </div>
-          <button onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
-            className="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all border border-gray-200 z-10">
+          <button
+            onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+            className="absolute top-3 right-3 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white hover:scale-110 transition-all border border-gray-200 z-10"
+          >
             <Heart className={`w-5 h-5 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
           </button>
           {isHovered && product.inStock && (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all">
               <div className="flex flex-col gap-3">
-                <Button className="bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold"
-                  onClick={() => handleAddToCart(product)}>
+                <Button
+                  className="bg-white text-blue-600 hover:bg-gray-100 px-6 py-3 rounded-lg font-semibold"
+                  onClick={() => handleAddToCart(product)}
+                >
                   <ShoppingCart className="w-4 h-4 mr-2" /> Quick Add to Cart
                 </Button>
-                <Link to={`/products/${product.slug}`}
-                  className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold text-center">
+                <Link
+                  to={`/products/${product.slug}`}
+                  className="bg-blue-600 text-white hover:bg-blue-700 px-6 py-3 rounded-lg font-semibold text-center"
+                >
                   View Details
                 </Link>
               </div>
@@ -210,7 +244,9 @@ const Products = () => {
           </div>
           <div className="flex items-center justify-between mb-4 pt-3 border-t border-gray-100">
             <div className="text-xl font-bold text-blue-600">{formatPrice(product.price)}</div>
-            <div className="text-xs text-gray-500">Condition: <span className="font-medium text-gray-700">{product.condition}</span></div>
+            <div className="text-xs text-gray-500">
+              Condition: <span className="font-medium text-gray-700">{product.condition}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -223,13 +259,16 @@ const Products = () => {
     const TypeIcon   = getTypeIcon(product.type);
     const typeColor  = getTypeColor(product.type);
     const specs      = getTwoSpecs(product);
+
     return (
       <div className="group bg-white rounded-xl border border-gray-200 hover:border-blue-300 hover:shadow-xl transition-all p-6">
         <div className="flex items-start gap-6">
           <div className="w-32 h-32 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0 relative">
             <img src={product.image} alt={product.name} className="w-24 h-24 object-contain" />
-            <button onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
-              className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md border border-gray-200">
+            <button
+              onClick={(e) => { e.preventDefault(); toggleWishlist(product.id); }}
+              className="absolute top-2 right-2 w-8 h-8 bg-white/90 rounded-full flex items-center justify-center shadow-md border border-gray-200"
+            >
               <Heart className={`w-4 h-4 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
             </button>
           </div>
@@ -242,7 +281,9 @@ const Products = () => {
                     <span>{product.type?.charAt(0).toUpperCase()}{product.type?.slice(1)}</span>
                   </div>
                   <span className="text-xs font-semibold px-3 py-1 bg-gray-100 text-gray-700 rounded-full">{product.brand}</span>
-                  {product.section === "New Arrivals" && <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">NEW</span>}
+                  {product.section === "New Arrivals" && (
+                    <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">NEW</span>
+                  )}
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-2">{product.name}</h3>
                 <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
@@ -262,7 +303,9 @@ const Products = () => {
                     {product.reviews > 0 && <span className="text-xs text-gray-500">({product.reviews})</span>}
                   </div>
                 )}
-                <div className="text-xs text-gray-500 mb-2">Condition: <span className="font-medium text-gray-700">{product.condition}</span></div>
+                <div className="text-xs text-gray-500 mb-2">
+                  Condition: <span className="font-medium text-gray-700">{product.condition}</span>
+                </div>
                 <div className="flex gap-2 justify-end">
                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={() => handleAddToCart(product)}>
                     <ShoppingCart className="w-4 h-4 mr-2" />Add to Cart
@@ -282,27 +325,42 @@ const Products = () => {
   const EmptyState = ({ onReset }: { onReset?: () => void }) => (
     <div className="text-center py-8 bg-gray-50 rounded-xl border border-gray-200">
       <p className="text-gray-500">No products match your filters</p>
-      {onReset && <Button variant="ghost" onClick={onReset} className="mt-2 text-blue-600">Reset filters</Button>}
+      {onReset && (
+        <Button variant="ghost" onClick={onReset} className="mt-2 text-blue-600">
+          Reset filters
+        </Button>
+      )}
     </div>
   );
 
   const SectionBlock = ({
     title, id, ref: sectionRef, list, visible, setVisible,
   }: {
-    title: string; id: string; ref: React.RefObject<HTMLDivElement>;
-    list: Product[]; visible: number; setVisible: React.Dispatch<React.SetStateAction<number>>;
+    title: string;
+    id: string;
+    ref: React.RefObject<HTMLDivElement>;
+    list: Product[];
+    visible: number;
+    setVisible: React.Dispatch<React.SetStateAction<number>>;
   }) => (
     <div ref={sectionRef} id={id} className="mb-12 scroll-mt-20">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <p className="text-gray-600 mt-1">Showing {Math.min(visible, list.length)} of {list.length} products</p>
+          <p className="text-gray-600 mt-1">
+            Showing {Math.min(visible, list.length)} of {list.length} products
+          </p>
         </div>
         {list.length > 4 && (
-          <Button variant="ghost" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            onClick={() => setVisible((p) => (p >= list.length ? 4 : list.length))}>
+          <Button
+            variant="ghost"
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            onClick={() => setVisible((p) => (p >= list.length ? 4 : list.length))}
+          >
             {visible >= list.length ? "View Less" : `View More (${visible}/${list.length})`}
-            {visible >= list.length ? <ChevronUp className="w-4 h-4 ml-2" /> : <ChevronDownIcon className="w-4 h-4 ml-2" />}
+            {visible >= list.length
+              ? <ChevronUp className="w-4 h-4 ml-2" />
+              : <ChevronDownIcon className="w-4 h-4 ml-2" />}
           </Button>
         )}
       </div>
@@ -316,7 +374,9 @@ const Products = () => {
             {list.slice(0, visible).map((p) => <ProductListItem key={p.id} product={p} />)}
           </div>
         )
-      ) : <EmptyState onReset={resetFilters} />}
+      ) : (
+        <EmptyState onReset={resetFilters} />
+      )}
     </div>
   );
 
@@ -334,29 +394,45 @@ const Products = () => {
           </p>
           <div className="relative">
             <div className="overflow-hidden">
-              <div className="flex transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateX(-${currentSlide * (100 / bannerCards.length) * CARDS_PER_SLIDE}%)`, width: `${(bannerCards.length / CARDS_PER_SLIDE) * 100}%` }}>
+              <div
+                className="flex transition-transform duration-500 ease-in-out"
+                style={{
+                  transform: `translateX(-${currentSlide * (100 / bannerCards.length) * CARDS_PER_SLIDE}%)`,
+                  width: `${(bannerCards.length / CARDS_PER_SLIDE) * 100}%`,
+                }}
+              >
                 {bannerCards.map((card) => (
                   <div key={card.id} className="px-2" style={{ width: `${100 / bannerCards.length}%` }}>
                     <div className="relative rounded-2xl overflow-hidden h-[140px] md:h-[160px] group hover:shadow-2xl transition-all">
-                      <img src={card.image} alt={card.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <img
+                        src={card.image}
+                        alt={card.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-            <button onClick={() => setCurrentSlide((p) => (p - 1 + TOTAL_SLIDES) % TOTAL_SLIDES)}
-              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white border border-gray-300 z-20">
+            <button
+              onClick={() => setCurrentSlide((p) => (p - 1 + TOTAL_SLIDES) % TOTAL_SLIDES)}
+              className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white border border-gray-300 z-20"
+            >
               <ChevronLeft className="w-4 h-4 text-gray-700" />
             </button>
-            <button onClick={() => setCurrentSlide((p) => (p + 1) % TOTAL_SLIDES)}
-              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white border border-gray-300 z-20">
+            <button
+              onClick={() => setCurrentSlide((p) => (p + 1) % TOTAL_SLIDES)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:bg-white border border-gray-300 z-20"
+            >
               <ChevronRight className="w-4 h-4 text-gray-700" />
             </button>
             <div className="flex items-center justify-center gap-2 mt-4">
               {Array.from({ length: TOTAL_SLIDES }).map((_, i) => (
-                <button key={i} onClick={() => setCurrentSlide(i)}
-                  className={`rounded-full transition-all ${currentSlide === i ? "w-6 h-2.5 bg-blue-600" : "w-2.5 h-2.5 bg-gray-300"}`} />
+                <button
+                  key={i}
+                  onClick={() => setCurrentSlide(i)}
+                  className={`rounded-full transition-all ${currentSlide === i ? "w-6 h-2.5 bg-blue-600" : "w-2.5 h-2.5 bg-gray-300"}`}
+                />
               ))}
             </div>
           </div>
@@ -369,11 +445,18 @@ const Products = () => {
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div className="relative flex-1 max-w-2xl">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input type="text" placeholder="Search gadgets by name, brand, or type..."
+              <input
+                type="text"
+                placeholder="Search gadgets by name, brand, or type..."
                 className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
               {searchQuery && (
-                <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
                   <X className="w-4 h-4" />
                 </button>
               )}
@@ -390,14 +473,17 @@ const Products = () => {
             <div className="mt-4 pt-4 border-t border-gray-200">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {[
-                  { label: "Brand",     value: selectedBrand,     onChange: setSelectedBrand,     options: brands },
+                  { label: "Brand",     value: selectedBrand,     onChange: setSelectedBrand,     options: brands     },
                   { label: "Category",  value: selectedCategory,  onChange: setSelectedCategory,  options: categories },
                   { label: "Condition", value: selectedCondition, onChange: setSelectedCondition, options: conditions },
                 ].map(({ label, value, onChange, options }) => (
                   <div key={label}>
                     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-                    <select className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      value={value} onChange={(e) => onChange(e.target.value)}>
+                    <select
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
+                    >
                       {options.map((o) => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
@@ -408,7 +494,13 @@ const Products = () => {
                   </label>
                   <div className="space-y-2">
                     {([0, 1] as const).map((idx) => (
-                      <input key={idx} type="range" min="0" max="2000000" step="10000" value={priceRange[idx]}
+                      <input
+                        key={idx}
+                        type="range"
+                        min="0"
+                        max="2000000"
+                        step="10000"
+                        value={priceRange[idx]}
                         onChange={(e) => {
                           const v = parseInt(e.target.value);
                           setPriceRange((prev) => {
@@ -418,7 +510,8 @@ const Products = () => {
                             return next;
                           });
                         }}
-                        className="w-full" />
+                        className="w-full"
+                      />
                     ))}
                   </div>
                 </div>
@@ -434,13 +527,24 @@ const Products = () => {
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-600">
               {isLoading ? "Loading products…" : (
-                <>Showing <span className="font-semibold text-gray-900">{newArrivals.length + popularProducts.length + sweetDeals.length}</span> filtered gadgets</>
+                <>
+                  Showing{" "}
+                  <span className="font-semibold text-gray-900">
+                    {newArrivals.length + popularProducts.length + sweetDeals.length}
+                  </span>{" "}
+                  filtered gadgets
+                </>
               )}
             </p>
             <div className="flex items-center gap-2">
               {(["grid", "list"] as const).map((mode) => (
-                <Button key={mode} variant={viewMode === mode ? "default" : "outline"} size="sm"
-                  onClick={() => setViewMode(mode)} className="flex items-center gap-2">
+                <Button
+                  key={mode}
+                  variant={viewMode === mode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode(mode)}
+                  className="flex items-center gap-2"
+                >
                   {mode === "grid" ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
                   {mode.charAt(0).toUpperCase() + mode.slice(1)}
                 </Button>
@@ -455,12 +559,18 @@ const Products = () => {
           </div>
         ) : (
           <>
-            <SectionBlock title="New Arrivals"     id="new-arrivals" ref={newArrivalsRef}
-              list={newArrivals} visible={newArrivalsVisible} setVisible={setNewArrivalsVisible} />
-            <SectionBlock title="Popular Products" id="popular"      ref={{ current: null }}
-              list={popularProducts} visible={popularVisible} setVisible={setPopularVisible} />
-            <SectionBlock title="Sweet Deals"      id="sweet-deals"  ref={sweetDealsRef}
-              list={sweetDeals} visible={sweetDealsVisible} setVisible={setSweetDealsVisible} />
+            <SectionBlock
+              title="New Arrivals"     id="new-arrivals" ref={newArrivalsRef}
+              list={newArrivals}       visible={newArrivalsVisible} setVisible={setNewArrivalsVisible}
+            />
+            <SectionBlock
+              title="Popular Products" id="popular"      ref={{ current: null }}
+              list={popularProducts}   visible={popularVisible}     setVisible={setPopularVisible}
+            />
+            <SectionBlock
+              title="Sweet Deals"      id="sweet-deals"  ref={sweetDealsRef}
+              list={sweetDeals}        visible={sweetDealsVisible}  setVisible={setSweetDealsVisible}
+            />
           </>
         )}
 

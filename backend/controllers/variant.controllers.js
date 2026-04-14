@@ -43,6 +43,30 @@ export const createVariant = async (req, res) => {
       });
     }
 
+
+    // ADD VALIDATION:
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: "Valid product ID is required" });
+    }
+
+    if (!price || typeof price !== "number" || price <= 0) {
+      return res.status(400).json({ message: "Price must be a positive number" });
+    }
+
+    if (!sku || typeof sku !== "string" || !sku.trim()) {
+      return res.status(400).json({ message: "SKU is required and must be non-empty" });
+    }
+
+    if (stock === undefined || stock < 0) {
+      return res.status(400).json({ message: "Stock must be 0 or greater" });
+    }
+
+    if (compare_at_price && compare_at_price <= price) {
+      return res.status(400).json({ 
+        message: "Compare price must be greater than selling price" 
+      });
+    }
+
     // Ensure product exists
     const productExists = await Product.findById(productId);
 
@@ -58,15 +82,16 @@ export const createVariant = async (req, res) => {
       });
     }
 
-    const variant = await Variant.create({
+   const variant = await Variant.create({
       product: productId,
-      color,
-      storage,
-      ram,
+      color:    color   || undefined,
+      storage:  storage || undefined,
+      ram:      ram     || undefined,
       price,
-      compare_at_price,
-      stock,
+      compare_at_price: compare_at_price || undefined,
+      stock:    stock ?? 0,
       sku,
+      is_active: is_active !== false, // Default to true
     });
 
     res.status(201).json(variant);
@@ -102,6 +127,42 @@ export const updateVariant = async (req, res) => {
       sku,
       is_active,
     } = req.body;
+
+    // ADD VALIDATION:
+    if (price !== undefined) {
+      if (typeof price !== "number" || price <= 0) {
+        return res.status(400).json({ message: "Price must be a positive number" });
+      }
+      variant.price = price;
+    }
+
+    if (stock !== undefined) {
+      if (stock < 0) {
+        return res.status(400).json({ message: "Stock cannot be negative" });
+      }
+      variant.stock = stock;
+    }
+
+    if (compare_at_price !== undefined) {
+      if (compare_at_price > 0 && compare_at_price <= variant.price) {
+        return res.status(400).json({ 
+          message: "Compare price must be greater than selling price" 
+        });
+      }
+      variant.compare_at_price = compare_at_price || null;
+    }
+
+    if (sku !== undefined) {
+      if (!sku || !sku.trim()) {
+        return res.status(400).json({ message: "SKU cannot be empty" });
+      }
+      // Check for duplicate SKU (excluding current variant)
+      const existingSku = await Variant.findOne({ sku, _id: { $ne: variant._id } });
+      if (existingSku) {
+        return res.status(400).json({ message: "SKU already exists" });
+      }
+      variant.sku = sku;
+    }
 
     if (color !== undefined) variant.color = color;
     if (storage !== undefined) variant.storage = storage;

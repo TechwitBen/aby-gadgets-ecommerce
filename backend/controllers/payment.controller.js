@@ -26,11 +26,21 @@ export const initializePayment = async (req, res) => {
       return res.status(400).json({ message: "Order ID is required" });
     }
 
+ 
+
+
     const order = await Order.findById(orderId).session(session);
     if (!order) {
       await session.abortTransaction();
       session.endSession();
       return res.status(404).json({ message: "Order not found" });
+    }
+
+    // ADD SAFETY CHECK:
+    if (!order.user || !req.user._id) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(401).json({ message: "User not authenticated" });
     }
 
     if (order.user.toString() !== req.user._id.toString()) {
@@ -46,6 +56,8 @@ export const initializePayment = async (req, res) => {
     }
 
     const reference = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    
 
     const payment = await Payment.create(
       [
@@ -173,6 +185,38 @@ export const handleWebhook = async (req, res) => {
       message: "Webhook processing failed",
       error: error.message,
     });
+  }
+};
+
+export const getAllPayments = async (req, res) => {
+  try {
+    const { status, payment_method, search, page = 1, limit = 50 } = req.query;
+
+    const filter = {};
+
+    if (status && status !== "All") filter.status = status;
+    if (payment_method && payment_method !== "All") filter.payment_method = payment_method;
+    if (search) {
+      filter.$or = [
+        { reference: { $regex: search, $options: "i" } },
+      ];
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const [payments, total] = await Promise.all([
+      Payment.find(filter)
+        .populate("order", "status payment_status")
+        .populate("user", "name email")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Payment.countDocuments(filter),
+    ]);
+
+    res.status(200).json({ payments, total, page: Number(page), limit: Number(limit) });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to fetch payments", error: error.message });
   }
 };
 

@@ -7,6 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { ArrowLeft, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { oauthHelpers } from "@/utils/oauth";
+import { Spinner } from "@/components/ui/Spinner";
+
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -177,13 +179,13 @@ const LoginPage = () => {
             </Link>
           </p>
 
-          <Button
-            type="submit"
-            className="w-full bg-primary hover:bg-primary/90 text-white"
-            disabled={isLoading}
-          >
-            {isLoading ? "LOGGING IN..." : "LOGIN"}
-          </Button>
+          <Button type="submit" className="w-full bg-primary text-white" disabled={isLoading}>
+  {isLoading ? (
+    <span className="flex items-center gap-2">
+      <Spinner size="sm" /> Logging in...
+    </span>
+  ) : "LOGIN"}
+</Button>
 
           <Button
             type="button"
