@@ -27,9 +27,11 @@ import Categories from "./pages/Categories";
 import Contact from "./pages/Contact";
 import MyOrdersPage from "./pages/Myorderspage";
 import Trackorderpage from "./pages/Trackorderpage";
+import SearchPage from "./pages/Searchpage";
 import NotFound from "./pages/NotFound";
 
 // Admin pages
+import AdminRoute from "./components/AdminRoute";
 import Dashboard from "./pages/admin/Index";
 import OrdersPage from "./pages/admin/OrdersPage";
 import PaymentsPage from "./pages/admin/PaymentsPage";
@@ -39,6 +41,8 @@ import ProductDetailPage from "./pages/admin/ProductDetailPage";
 import CustomersPage from "./pages/admin/CustomersPage";
 import StaffsPage from "./pages/admin/StaffsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
+import AdminManagePage from "./pages/admin/AdminManagePage";
+
 
 const queryClient = new QueryClient();
 
@@ -57,10 +61,12 @@ const App = () => (
                 <Route element={<PublicLayout />}>
                   <Route path="/"                element={<Index />} />
                   <Route path="/products"        element={<Products />} />
-                  <Route path="/products/:id"    element={<ProductDetails />} />
+                  <Route path="/products/:slug"    element={<ProductDetails />} />
                   <Route path="/cart"            element={<Cart />} />
                   <Route path="/checkout"        element={
-                    <ProtectedRoute><Checkout /></ProtectedRoute>
+                    <ProtectedRoute>
+                      <Checkout />
+                      </ProtectedRoute>
                   } />
                   <Route path="/orders"          element={<MyOrdersPage />} />
                   <Route path="/track-order/:id" element={<Trackorderpage />} />
@@ -70,23 +76,32 @@ const App = () => (
                   <Route path="/contact"         element={<Contact />} />
                 </Route>
 
+                 <Route path="/search" element={<SearchPage />} />
+                 
+
                 {/* AUTH — standalone, no shared layout */}
                 <Route path="/signup"           element={<SignUpPage />} />
                 <Route path="/login"            element={<LoginPage />} />
                 <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
 
                 {/* ADMIN */}
+
+      {/* 🔒 Admin-only routes — all nested under AdminRoute guard */}
+      <Route element={<AdminRoute />}>
                 <Route path="/admin" element={<AdminLayout />}>
                   <Route index                  element={<Dashboard />} />
                   <Route path="orders"          element={<OrdersPage />} />
                   <Route path="payments"        element={<PaymentsPage />} />
                   <Route path="products"        element={<ProductsPage />} />
                   <Route path="products/add"    element={<AddProductPage />} />
-                  <Route path="products/:id"    element={<ProductDetailPage />} />
+                  <Route path="products/:slug"    element={<ProductDetailPage />} />
                   <Route path="customers"       element={<CustomersPage />} />
+                  <Route path="manage-admins" element={<AdminManagePage />} />
                   <Route path="staffs"          element={<StaffsPage />} />
                   <Route path="settings"        element={<SettingsPage />} />
+                  
                 </Route>
+ </Route>
 
                 <Route path="*" element={<NotFound />} />
 

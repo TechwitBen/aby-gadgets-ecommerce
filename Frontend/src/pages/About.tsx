@@ -1,154 +1,208 @@
 import { useState } from "react";
-import { Users, Award, Briefcase, Trophy, CheckCircle, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import {
+  Instagram, Twitter, Linkedin, Youtube,
+  Mail, Phone, MapPin, ArrowRight,
+  Zap, Shield, Headphones, Award
+} from "lucide-react";
 
-// Image URLs (gadget/tech themed)
-const aboutHeroBanner = "https://images.unsplash.com/photo-1716681863832-8e1f4b2e0cc0?q=80&w=1228&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"; // tech gadgets collage
-const aboutTeam1 = "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // team working with laptops
-const aboutTeam2 = "https://images.unsplash.com/photo-1531297484001-80022131f5a1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"; // person holding tablet/tech
+// ── Team members ───────────────────────────────────────────────────────────────
+const team = [
+  {
+    name: "Abiodun Lawal",
+    role: "Founder & CEO",
+    initials: "AL",
+    color: "from-[#6426E1] to-purple-400",
+    social: "linkedin",
+    featured: true,
+  },
+  {
+    name: "Fatima Bello",
+    role: "Head of Products",
+    initials: "FB",
+    color: "from-blue-500 to-indigo-400",
+    featured: false,
+  },
+  {
+    name: "Chuka Eze",
+    role: "Tech Lead",
+    initials: "CE",
+    color: "from-emerald-500 to-teal-400",
+    featured: false,
+  },
+  {
+    name: "Ngozi Obi",
+    role: "Customer Success",
+    initials: "NO",
+    color: "from-rose-500 to-pink-400",
+    featured: false,
+  },
+  {
+    name: "Samuel Adeyemi",
+    role: "Logistics Manager",
+    initials: "SA",
+    color: "from-amber-500 to-orange-400",
+    featured: false,
+  },
+  {
+    name: "Kemi Adekunle",
+    role: "Marketing Director",
+    initials: "KA",
+    color: "from-violet-500 to-purple-400",
+    featured: false,
+  },
+];
 
 const stats = [
-  { icon: Briefcase, value: "5+", label: "Years Of Experience" },
-  { icon: Award, value: "200+", label: "Complete Orders" },
-  { icon: Users, value: "50+", label: "Happy Customers" },
-  { icon: Trophy, value: "10+", label: "Awards Won" },
+  { value: "5+",   label: "Years in Business" },
+  { value: "500+", label: "Premium Products" },
+  { value: "830+", label: "Verified Reviews" },
+  { value: "50K",  label: "Happy Customers" },
 ];
 
-const specialServices = [
-  "Emergency Solutions Anytime",
-  "Affordable Prices Always",
-  "How to Improve Your Tech",
-  "Reliable & Experienced Team",
-];
+const footerLinks = {
+  Links:     ["Home", "Products", "Categories", "About Us"],
+  Support:   ["Help Center", "Track Order", "Returns", "Warranty"],
+  Community: ["Careers", "Blog", "Partners", "Investors", "Contact"],
+};
 
-const testimonials = [
-  {
-    name: "Abiodun T.",
-    role: "Loyal Customer",
-    text: "Aby Gadgets has been my go-to for all tech purchases. Their authenticity guarantee gives me peace of mind every time I buy from them.",
-    rating: 5,
-  },
-  {
-    name: "Chioma E.",
-    role: "Business Owner",
-    text: "I trust Aby Gadgets for all my business tech needs. Fast delivery, genuine products, and excellent customer support every time.",
-    rating: 5,
-  },
-];
+// ── Component ──────────────────────────────────────────────────────────────────
+const AboutPage = () => {
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
 
-const About = () => {
-  const [activeTab, setActiveTab] = useState<"mission" | "vision" | "goal">("mission");
-
-  const tabContent = {
-    mission: {
-      title: "Our Company Mission",
-      text1: "At Aby Gadgets, our mission is to provide Nigerians with access to authentic, high-quality gadgets at competitive prices. We believe everyone deserves genuine technology products backed by reliable customer service.",
-      text2: "We are committed to building lasting relationships with our customers through transparency, trust, and an unwavering dedication to quality in every device we sell.",
-    },
-    vision: {
-      title: "Our Company Vision",
-      text1: "We envision becoming Nigeria's most trusted gadget retailer, known for authenticity, affordability, and exceptional customer experience across every touchpoint.",
-      text2: "Our vision extends beyond sales — we aim to create a tech community where customers feel confident in their purchases and empowered by their devices.",
-    },
-    goal: {
-      title: "Our Company Goal",
-      text1: "Our goal is to expand our reach across Nigeria, making genuine gadgets accessible to everyone regardless of location. We aim to serve thousands of satisfied customers nationwide.",
-      text2: "We continuously improve our services, from faster delivery to better financing options, ensuring that technology is never out of reach for anyone.",
-    },
+  const handleSubscribe = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email.trim()) {
+      setSubscribed(true);
+      setEmail("");
+      setTimeout(() => setSubscribed(false), 3000);
+    }
   };
 
-  const current = tabContent[activeTab];
-
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-white font-sans">
 
-    {/* Hero Banner - Refined */}
-<section className="relative h-[280px] md:h-[340px] flex items-center justify-center overflow-hidden">
-  <img
-    src={aboutHeroBanner}
-    alt="About Us Banner"
-    className="absolute inset-0 w-full h-full object-cover"
-  />
-  {/* Dark overlay for better text readability */}
-  <div className="absolute inset-0 bg-black/70" />
-  {/* Gradient overlay: from primary to primary/70 gives depth */}
-  <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/90 to-primary/70" />
-  <div className="relative z-10 text-center text-white px-4">
-    <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight">
-      About Us
-    </h1>
-    <p className="text-sm text-white/80 flex items-center justify-center gap-2">
-      <span className="hover:text-white transition-colors cursor-pointer">Home</span>
-      <span className="text-white/60">•</span>
-      <span className="text-white/90">About Us</span>
-    </p>
-  </div>
-</section>
+      {/* ══════════════════════════════════════════════════════
+          TOP SECTION — 2 columns
+      ══════════════════════════════════════════════════════ */}
+      <section className="grid lg:grid-cols-2 min-h-[560px]">
 
-      {/* Company About Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col md:flex-row items-center gap-10 md:gap-16 max-w-6xl mx-auto">
-            {/* Images */}
-            <div className="w-full md:w-[45%] relative">
-              <div className="relative">
-                <img
-                  src={aboutTeam1}
-                  alt="Our team"
-                  className="rounded-2xl w-full h-[300px] object-cover shadow-lg"
-                />
-                <div className="absolute -bottom-6 -right-4 md:-right-8 bg-accent text-accent-foreground rounded-2xl px-5 py-4 shadow-xl">
-                  <span className="text-3xl font-bold block">5+</span>
-                  <span className="text-xs font-semibold uppercase tracking-wider">Years<br />Of Experience</span>
+        {/* Left — Origin story */}
+        <div className="bg-white px-8 sm:px-12 lg:px-16 py-14 flex flex-col justify-between">
+          <div>
+            {/* Label */}
+            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#6426E1" }}>
+              How It Started
+            </p>
+
+            {/* Headline */}
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+              Our Dream is<br />
+              <span style={{ color: "#6426E1" }}>Premium Tech</span><br />
+              For Everyone
+            </h1>
+
+            {/* Body */}
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md mb-8">
+              Aby Gadgets was founded by Abiodun Lawal and Fatima Bello — two tech enthusiasts
+              who believed that cutting-edge gadgets shouldn't be a luxury. Their shared vision
+              was to create Nigeria's most trusted electronics destination. With a handpicked
+              catalogue of premium devices, an expert team, and a passion for genuine customer
+              care, they launched Aby Gadgets — connecting thousands of Nigerians to the tech
+              they deserve.
+            </p>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {stats.map((s) => (
+                <div
+                  key={s.label}
+                  className="rounded-2xl p-4 border border-gray-100 bg-gray-50 hover:border-purple-200 transition-colors"
+                >
+                  <p className="text-2xl font-black text-gray-900">{s.value}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
                 </div>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Content */}
-            <div className="w-full md:w-[55%]">
-              <p className="text-accent font-semibold text-xs uppercase tracking-widest mb-3">Company About</p>
-              <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-tight mb-1">
-                One of the fastest way to get
-              </h2>
-              <h2 className="text-2xl md:text-3xl font-bold italic text-accent leading-tight mb-5">
-                genuine gadgets
-              </h2>
-              <p className="text-muted-foreground text-sm leading-relaxed mb-6">
-                Aby Gadgets is your trusted source for authentic phones, laptops, tablets, and accessories. 
-                Based in Lagos, Nigeria, we cater to individuals and businesses of all sizes. Our objective is to 
-                help customers access genuine technology products at the best prices.
-              </p>
-
-              <p className="font-bold text-foreground text-sm mb-3">Our Special Services:</p>
-              <div className="grid grid-cols-2 gap-2 mb-6">
-                {specialServices.map((service) => (
-                  <div key={service} className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-accent flex-shrink-0" />
-                    <span className="text-xs text-muted-foreground">{service}</span>
-                  </div>
-                ))}
-              </div>
-
-              <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold rounded-full px-6 py-2.5 text-sm uppercase tracking-wide">
-                Contact Us →
-              </Button>
+          {/* Hero image strip */}
+          <div className="mt-10 rounded-2xl overflow-hidden relative h-44 bg-gradient-to-br from-[#6426E1] to-purple-900 flex items-center justify-center shadow-xl">
+            {/* Decorative tech circles */}
+            <div className="absolute -top-6 -left-6 w-28 h-28 rounded-full bg-white/5 border border-white/10" />
+            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/5 border border-white/10" />
+            <div className="absolute top-4 right-12 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+              <Zap className="w-5 h-5 text-yellow-300" />
+            </div>
+            <div className="text-center">
+              <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Our Store</p>
+              <p className="text-white font-black text-3xl">Aby Gadgets</p>
+              <p className="text-purple-200 text-sm mt-1">Premium Tech Store · Lagos</p>
             </div>
           </div>
         </div>
-      </section>
 
-      {/* Stats Bar */}
-      <section className="bg-accent py-8">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="flex items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full border-2 border-accent-foreground/30 flex items-center justify-center">
-                  <stat.icon className="w-5 h-5 text-accent-foreground" />
+        {/* Right — Meet the Team */}
+        <div className="bg-gray-50 px-8 sm:px-12 lg:px-16 py-14">
+          <p className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "#6426E1" }}>
+            Meet the Team
+          </p>
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-8">
+            Meet Our Dedicated<br />Team of Tech Experts
+          </h2>
+
+          {/* Team grid — 3 columns × 2 rows */}
+          <div className="grid grid-cols-3 gap-3">
+            {team.map((member) => (
+              <div
+                key={member.name}
+                className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${member.color} aspect-square flex flex-col items-center justify-end pb-3 shadow-md hover:scale-105 transition-transform duration-200 cursor-pointer`}
+              >
+                {/* Avatar initials */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-white/30 font-black text-5xl">{member.initials}</span>
+                </div>
+
+                {/* Name card overlay (featured only) */}
+                {member.featured && (
+                  <div className="relative z-10 bg-white rounded-xl px-3 py-2 shadow-lg flex items-center gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-gray-900 leading-tight">{member.name}</p>
+                      <p className="text-[10px] text-gray-500">{member.role}</p>
+                    </div>
+                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "#6426E1" }}>
+                      <Linkedin className="w-3 h-3 text-white" />
+                    </div>
+                  </div>
+                )}
+
+                {/* Subtle name at bottom for non-featured */}
+                {!member.featured && (
+                  <div className="relative z-10 text-center">
+                    <p className="text-white text-[11px] font-semibold leading-tight drop-shadow">{member.name}</p>
+                    <p className="text-white/70 text-[9px]">{member.role}</p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Values strip */}
+          <div className="mt-6 grid grid-cols-2 gap-3">
+            {[
+              { icon: Shield,     label: "Genuine Products",    desc: "100% authentic, verified gadgets" },
+              { icon: Headphones, label: "Expert Support",      desc: "Real humans, real answers" },
+              { icon: Award,      label: "Top Rated",           desc: "830+ five-star reviews" },
+              { icon: Zap,        label: "Fast Delivery",       desc: "Same-day Lagos delivery" },
+            ].map((v) => (
+              <div key={v.label} className="flex items-start gap-3 p-3 rounded-xl bg-white border border-gray-100 hover:border-purple-200 transition-colors">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "rgba(100,38,225,0.10)" }}>
+                  <v.icon className="w-4 h-4" style={{ color: "#6426E1" }} />
                 </div>
                 <div>
-                  <span className="text-2xl md:text-3xl font-bold text-accent-foreground">{stat.value}</span>
-                  <p className="text-xs text-accent-foreground/80">{stat.label}</p>
+                  <p className="text-xs font-bold text-gray-900">{v.label}</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">{v.desc}</p>
                 </div>
               </div>
             ))}
@@ -156,92 +210,162 @@ const About = () => {
         </div>
       </section>
 
-      {/* Mission / Vision / Goal Section */}
-      <section className="py-16 md:py-24">
-        <div className="container mx-auto px-4">
-          <div className="max-w-6xl mx-auto">
-            <p className="text-accent font-semibold text-xs uppercase tracking-widest mb-3">About Mission</p>
-            <div className="flex flex-col md:flex-row gap-10 md:gap-16">
-              <div className="w-full md:w-[55%]">
-                <h2 className="text-2xl md:text-3xl font-bold text-foreground leading-tight mb-1">
-                  Our Main Goal to Satisfy
-                </h2>
-                <h2 className="text-2xl md:text-3xl font-bold italic text-foreground leading-tight mb-6">
-                  local & Global Clients
-                </h2>
+      {/* ══════════════════════════════════════════════════════
+          BOTTOM SECTION — 2 columns
+      ══════════════════════════════════════════════════════ */}
+      <section className="grid lg:grid-cols-2">
 
-                {/* Tabs */}
-                <div className="flex gap-3 mb-6">
-                  {(["mission", "vision", "goal"] as const).map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-full text-xs font-semibold uppercase tracking-wide transition-colors ${
-                        activeTab === tab
-                          ? "bg-accent text-accent-foreground"
-                          : "border border-border text-muted-foreground hover:border-accent hover:text-accent"
-                      }`}
-                    >
-                      Our {tab}
-                    </button>
-                  ))}
+        {/* Left — Vision & Mission */}
+        <div className="bg-white px-8 sm:px-12 lg:px-16 py-14 flex flex-col gap-12">
+          {/* Our Vision */}
+          <div>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#6426E1" }}>
+              Our Vision
+            </p>
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+              Empowering Lives<br />Through Technology
+            </h3>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+              Our unwavering vision is to make premium technology accessible and affordable for every
+              Nigerian household. By curating a world-class product catalogue and maintaining
+              honest pricing, we aim to inspire innovation, enable connectivity, and shape a
+              smarter future for all.
+            </p>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-100 w-full" />
+
+          {/* Our Mission */}
+          <div>
+            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#6426E1" }}>
+              Our Mission
+            </p>
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
+              Quality Tech,<br />Everywhere
+            </h3>
+            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
+              Our mission is to deliver top-tier electronics with speed, transparency, and
+              exceptional after-sales service. By fostering a community of tech-savvy shoppers
+              across Nigeria, we are redefining the e-commerce experience — one gadget at a time.
+            </p>
+          </div>
+        </div>
+
+        {/* Right — Newsletter CTA + Footer */}
+        <div className="flex flex-col">
+
+          {/* CTA block */}
+          <div className="bg-[#0E0B2E] px-8 sm:px-12 lg:px-16 py-14 flex-1 flex flex-col justify-center">
+            <p className="text-xs font-bold tracking-widest uppercase text-purple-300 mb-4">
+              Exclusive Offer
+            </p>
+            <h3 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-3">
+              Get 10% off your<br />first order with us
+            </h3>
+            <p className="text-sm text-gray-400 mb-8">
+              Subscribe to our newsletter and be first to hear about new arrivals,
+              flash sales, and exclusive member deals.
+            </p>
+
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white placeholder-gray-500 border border-white/20 focus:outline-none focus:border-purple-400 text-sm transition-colors"
+              />
+              <button
+                type="submit"
+                className="px-6 py-3 rounded-xl font-bold text-white text-sm flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
+                style={{ backgroundColor: "#6426E1" }}
+              >
+                {subscribed ? "Subscribed!" : "Subscribe"}
+                {!subscribed && <ArrowRight className="w-4 h-4" />}
+              </button>
+            </form>
+          </div>
+
+          {/* Footer */}
+          <footer className="bg-[#070516] px-8 sm:px-12 lg:px-16 py-10">
+            <div className="grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8 mb-8">
+
+              {/* Brand */}
+              <div className="col-span-2 sm:col-span-1">
+                <div className="flex items-center gap-2.5 mb-4">
+                  <div className="w-8 h-8 rounded-lg bg-[#6426E1] flex items-center justify-center">
+                    <span className="text-white font-black text-sm">AG</span>
+                  </div>
+                  <span className="text-white font-bold text-base">Aby Gadgets</span>
                 </div>
-
-                <h3 className="font-bold text-foreground mb-3">{current.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed mb-3">{current.text1}</p>
-                <p className="text-muted-foreground text-sm leading-relaxed">{current.text2}</p>
+                <div className="space-y-2 text-xs text-gray-500">
+                  <p className="flex items-start gap-2">
+                    <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-600" />
+                    14 Computer Village, Ikeja, Lagos
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-600" />
+                    +234 801 234 5678
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <Mail className="w-3.5 h-3.5 flex-shrink-0 text-gray-600" />
+                    hello@abygadgets.com
+                  </p>
+                </div>
               </div>
 
-              <div className="w-full md:w-[45%]">
-                <img
-                  src={aboutTeam2}
-                  alt="Our workspace"
-                  className="rounded-2xl w-full h-[320px] object-cover shadow-lg"
-                />
+              {/* Link columns */}
+              {Object.entries(footerLinks).map(([heading, links]) => (
+                <div key={heading}>
+                  <p className="text-white text-xs font-bold mb-3">{heading}</p>
+                  <ul className="space-y-2">
+                    {links.map((l) => (
+                      <li key={l}>
+                        <Link to="/" className="text-gray-500 text-xs hover:text-purple-400 transition-colors">
+                          {l}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+
+            {/* Bottom bar */}
+            <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <p className="text-gray-600 text-xs">
+                © 2025 Aby Gadgets. All rights reserved.
+              </p>
+              <div className="flex items-center gap-4">
+                {[
+                  { icon: Instagram, href: "#" },
+                  { icon: Youtube,   href: "#" },
+                  { icon: Twitter,   href: "#" },
+                  { icon: Linkedin,  href: "#" },
+                ].map(({ icon: Icon, href }) => (
+                  <a
+                    key={href}
+                    href={href}
+                    className="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center text-gray-500 hover:text-purple-400 hover:border-purple-500 transition-colors"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                  </a>
+                ))}
+              </div>
+              <div className="flex items-center gap-4">
+                {["Terms of Use", "Privacy Policy", "Cookies"].map((t) => (
+                  <Link key={t} to="/" className="text-gray-600 text-xs hover:text-gray-400 transition-colors">
+                    {t}
+                  </Link>
+                ))}
               </div>
             </div>
-          </div>
+          </footer>
         </div>
       </section>
-
-      {/* Testimonials */}
-      <section className="py-16 bg-muted/30">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-10">
-            <p className="text-accent font-semibold text-xs uppercase tracking-widest mb-2">Our Experiences</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-              Trusted By Our Clients
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-            {testimonials.map((t) => (
-              <div key={t.name} className="bg-card rounded-xl p-6 shadow-sm border border-border">
-                <p className="text-muted-foreground text-sm leading-relaxed mb-5">
-                  {t.text}
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center">
-                    <span className="text-accent font-bold text-sm">{t.name[0]}</span>
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-semibold text-foreground text-sm">{t.name}</p>
-                    <p className="text-xs text-muted-foreground">{t.role}</p>
-                  </div>
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: t.rating }).map((_, i) => (
-                      <Star key={i} className="w-3.5 h-3.5 fill-accent text-accent" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
- 
     </div>
   );
 };
 
-export default About;
+export default AboutPage;

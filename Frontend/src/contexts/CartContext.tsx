@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { cartService, type CartDoc } from "@/services/Cart.service";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ── CartItem — the shape stored locally and used by UI ────────────────────────
 export interface CartItem {
@@ -47,13 +48,8 @@ const docToItems = (doc: CartDoc): CartItem[] =>
   }));
 
 // ── Provider ──────────────────────────────────────────────────────────────────
-export const CartProvider = ({
-  children,
-  isAuthenticated = false,
-}: {
-  children: ReactNode;
-  isAuthenticated?: boolean;
-}) => {
+export const CartProvider = ({ children }: { children: ReactNode }) => {
+  const { isAuthenticated } = useAuth();
   const [items,        setItems]        = useState<CartItem[]>([]);
   const [isSyncing,    setIsSyncing]    = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);

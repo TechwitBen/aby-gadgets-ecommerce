@@ -1,5 +1,21 @@
 import axios from "axios";
 
+// ─────────────────────────────────────────────
+// CENTRAL API CLIENT (SESSION SUPPORT)
+// ─────────────────────────────────────────────
+
+const api = axios.create({
+  baseURL: "http://localhost:3000/api/v1",
+
+  // 🔥 REQUIRED FOR PASSPORT SESSION AUTH
+  withCredentials: true,
+
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+
 // ── Shared Types ──────────────────────────────────────────────────────────────
 
 export interface ProductSpecs {
@@ -23,7 +39,6 @@ export interface Variant {
   is_active: boolean;
 }
 
-/** Shape returned by every product endpoint (controller normalizes _id → id, images → image/image2, etc.) */
 export interface Product {
   _id: string;
   id: string;
@@ -34,8 +49,8 @@ export interface Product {
   brand: string;
   condition: string;
   images: string[];
-  image?: string;   // images[0]
-  image2?: string;  // images[1]
+  image?: string;
+  image2?: string;
   features?: string[];
   tags?: string[];
   type?: string;
@@ -46,10 +61,9 @@ export interface Product {
   specs?: ProductSpecs;
   is_active: boolean;
   variants: Variant[];
-  // Derived by controller
-  price: number;     // cheapest active variant price
-  storage?: string;  // cheapest variant storage
-  inStock: boolean;  // totalStock > 0
+  price: number;
+  storage?: string;
+  inStock: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,8 +74,6 @@ export interface ProductsResponse {
   pages: number;
   totalProducts: number;
 }
-
-// ── Query param types ─────────────────────────────────────────────────────────
 
 export type SortBy =
   | "featured"
@@ -74,7 +86,6 @@ export type SortBy =
 export interface GetProductsParams {
   page?: number;
   limit?: number;
-  /** "true" → return all matching products (no pagination) */
   all?: boolean;
   search?: string;
   productType?: string;
@@ -87,8 +98,6 @@ export interface GetProductsParams {
   maxPrice?: number;
   sortBy?: SortBy;
 }
-
-// ── Payload types ─────────────────────────────────────────────────────────────
 
 export interface CreateProductPayload {
   name: string;
@@ -122,82 +131,77 @@ export interface CreateVariantPayload {
   compare_at_price?: number;
   stock: number;
   is_active?: boolean;
-}
+};
 
 export type UpdateVariantPayload = Omit<CreateVariantPayload, "productId">;
 
-// ── Internal helper ───────────────────────────────────────────────────────────
+// ── helper ───────────────────────────────────────────────────────────
 
 const toQuery = (p: GetProductsParams) => ({
   ...p,
   all: p.all ? "true" : undefined,
 });
 
-// ── Product service ───────────────────────────────────────────────────────────
-
-const BASE  = "/api/products";
-const VBASE = "/api/variants";
+// ── PRODUCT SERVICE ───────────────────────────────────────────────────────────
 
 export const productService = {
-  /** GET /api/products — paginated & filterable */
   getAll: (params: GetProductsParams = {}): Promise<ProductsResponse> =>
-    axios.get<ProductsResponse>(BASE, { params: toQuery(params) }).then((r) => r.data),
+    api.get("/products", { params: toQuery(params) }).then((r) => r.data),
 
-  /** Fetch ALL products for a given section (no pagination) */
-  getBySection: (section: string, extra: Omit<GetProductsParams, "section" | "all"> = {}): Promise<Product[]> =>
-    axios
-      .get<ProductsResponse>(BASE, { params: toQuery({ ...extra, section, all: true }) })
+  getBySection: (
+    section: string,
+    extra: Omit<GetProductsParams, "section" | "all"> = {},
+  ): Promise<Product[]> =>
+    api
+      .get("/products", {
+        params: toQuery({ ...extra, section, all: true }),
+      })
       .then((r) => r.data.products),
 
-  /** GET /api/products/slug/:slug */
   getBySlug: (slug: string): Promise<Product> =>
-    axios.get<Product>(`${BASE}/slug/${slug}`).then((r) => r.data),
+    api.get(`/products/${slug}`).then((r) => r.data),
 
-  /** POST /api/products */
   create: (payload: CreateProductPayload): Promise<Product> =>
-    axios.post<Product>(BASE, payload).then((r) => r.data),
+    api.post("/products", payload).then((r) => r.data),
 
-  /** PUT /api/products/:id */
   update: (id: string, payload: UpdateProductPayload): Promise<Product> =>
-    axios.put<Product>(`${BASE}/${id}`, payload).then((r) => r.data),
+    api.put(`/products/${id}`, payload).then((r) => r.data),
 
-  /** PATCH /api/products/:id */
   patch: (id: string, payload: UpdateProductPayload): Promise<Product> =>
-    axios.patch<Product>(`${BASE}/${id}`, payload).then((r) => r.data),
+    api.patch(`/products/${id}`, payload).then((r) => r.data),
 
-  /** DELETE /api/products/:id */
   delete: (id: string): Promise<{ message: string }> =>
-    axios.delete(`${BASE}/${id}`).then((r) => r.data),
+    api.delete(`/products/${id}`).then((r) => r.data),
 };
 
-// ── Variant service ───────────────────────────────────────────────────────────
+// ── VARIANT SERVICE ───────────────────────────────────────────────────────────
 
 export const variantService = {
-  /** GET /api/variants/product/:productId */
   getByProduct: (productId: string): Promise<Variant[]> =>
-    axios.get<Variant[]>(`${VBASE}/product/${productId}`).then((r) => r.data),
+    api.get(`/variants/product/${productId}`).then((r) => r.data),
 
-  /** POST /api/variants */
   create: (payload: CreateVariantPayload): Promise<Variant> =>
-    axios.post<Variant>(VBASE, payload).then((r) => r.data),
+    api.post("/variants", payload).then((r) => r.data),
 
-  /** PUT /api/variants/:id */
   update: (id: string, payload: UpdateVariantPayload): Promise<Variant> =>
-    axios.put<Variant>(`${VBASE}/${id}`, payload).then((r) => r.data),
+    api.put(`/variants/${id}`, payload).then((r) => r.data),
 
-  /** DELETE /api/variants/:id */
   delete: (id: string): Promise<{ message: string }> =>
-    axios.delete(`${VBASE}/${id}`).then((r) => r.data),
+    api.delete(`/variants/${id}`).then((r) => r.data),
 };
 
-// ── Shared utilities ──────────────────────────────────────────────────────────
+// ── UTILITIES ──────────────────────────────────────────────────────────
 
 export type StockStatus = "In Stock" | "Low Stock" | "Out of Stock";
 
 export const getStockStatus = (product: Product): StockStatus => {
-  const total = product.variants.reduce((s, v) => s + (v.is_active ? v.stock : 0), 0);
+  const total = product.variants.reduce(
+    (s, v) => s + (v.is_active ? v.stock : 0),
+    0,
+  );
+
   if (total === 0) return "Out of Stock";
-  if (total <= 5)  return "Low Stock";
+  if (total <= 5) return "Low Stock";
   return "In Stock";
 };
 

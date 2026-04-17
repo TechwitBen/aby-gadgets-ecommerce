@@ -14,8 +14,10 @@ const orderRouter = Router();
 
 orderRouter.post("/", isAuthenticated, createOrder); // POST /api/orders
 orderRouter.get("/my-orders", isAuthenticated, getMyOrders); // GET /api/orders/my-orders
-orderRouter.get("/:id", isAuthenticated, getOrderById); // GET /api/orders/:id
-orderRouter.get("/", isAdmin, getAllOrders); // GET /api/orders (admin)
+// ✅ Static routes BEFORE dynamic /:id
+orderRouter.get("/",            isAdmin,         getAllOrders);   // ← moved up
+orderRouter.get("/:id",         isAuthenticated, getOrderById);  // ← now after
+
 orderRouter.patch("/:id/status", isAdmin, updateOrderStatus); // PATCH /api/orders/:id/status
 
 

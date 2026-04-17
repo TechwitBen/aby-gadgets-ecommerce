@@ -2,6 +2,10 @@ import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Variant from "../models/variant.model.js";
 
+
+import { sendOrderConfirmationEmail } from "../Service/Email.service.js";
+  import User from "../models/user.model.js";
+
 /**
  * @desc    Create new order
  * @route   POST /api/orders
@@ -89,9 +93,22 @@ export const createOrder = async (req, res) => {
     // 7. Commit the transaction
     await session.commitTransaction();
     session.endSession();
+ 
+    const createdOrder = order[0];
 
-    // Return the created order (first item in the array)
-    res.status(201).json(order[0]);
+      // 8. Send order-confirmation email (non-blocking – don't await in main flow)
+    const buyer = await User.findById(req.user._id).select("email username").lean();
+    if (buyer?.email) {
+      sendOrderConfirmationEmail({
+        to:       buyer.email,
+        username: buyer.username,
+        order:    createdOrder,
+      }).catch((err) =>
+        console.error("[email] Order confirmation failed:", err.message)
+      );
+    }
+ 
+    res.status(201).json(createdOrder);
 
   } catch (error) {
     // If anything fails, abort the transaction to restore stock levels

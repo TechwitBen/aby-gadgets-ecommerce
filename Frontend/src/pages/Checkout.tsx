@@ -138,8 +138,7 @@ const Checkout = () => {
       if (paymentMethod === "pod") {
         // Show success modal immediately
         setShowSuccess(true);
-        // Safe to clear cart for POD since no redirect
-      if (!isBuyNow) clearCart();
+     
       } else {
         // 2 — Initialize Paystack payment
         const { authorization_url } = await paymentService.initializePayment({
@@ -149,7 +148,7 @@ const Checkout = () => {
         setShowSuccess(true);
         // Slight delay so the modal renders before redirect
         setTimeout(() => {
-          if (!isBuyNow) clearCart();
+          // if (!isBuyNow) clearCart();
           window.location.href = authorization_url;
         }, 2500);
       }
@@ -605,6 +604,8 @@ const Checkout = () => {
         email={email || user?.email || ""}
         onClose={() => {
           setShowSuccess(false);
+           // Safe to clear cart for POD since no redirect
+      if (!isBuyNow) clearCart();
           navigate("/orders");
         }}
       />

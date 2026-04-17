@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
-import { Trash2, X, Loader2, RefreshCw } from "lucide-react";
+import { Trash2, X, Loader2, RefreshCw, AlertTriangle } from "lucide-react";
 import { orderService, type OrderDoc } from "@/services/Order.service";
 import { OrderDetailModal } from "@/pages/admin/OrderDetailModal";
 import { useToast } from "@/hooks/use-toast";
@@ -20,35 +20,34 @@ const DeleteConfirmModal = ({
 }) => {
   if (!open || !order) return null;
 
-  // Check for High-Risk deletion
   const isHighRisk =
     order.payment_status === "paid" && order.status === "delivered";
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-popover text-popover-foreground rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border">
-        {/* Header - Changes color if High Risk */}
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm">
+      <div className="bg-popover text-popover-foreground rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-border animate-in fade-in zoom-in duration-200">
         <div
-          className={`flex items-center justify-between px-6 py-4 border-b ${isHighRisk ? "bg-amber-50" : ""}`}
+          className={`flex items-center justify-between px-6 py-4 border-b ${isHighRisk ? "bg-amber-50/50" : ""}`}
         >
           <div className="flex items-center gap-3">
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${isHighRisk ? "bg-amber-100" : "bg-destructive/10"}`}
             >
-              <Trash2
-                size={20}
-                className={isHighRisk ? "text-amber-600" : "text-destructive"}
-              />
+              {isHighRisk ? (
+                <AlertTriangle size={20} className="text-amber-600" />
+              ) : (
+                <Trash2 size={20} className="text-destructive" />
+              )}
             </div>
             <div>
               <p className="text-sm font-bold text-foreground">
-                {isHighRisk ? "⚠️ High-Risk Deletion" : "Delete Order"}
+                {isHighRisk ? "High-Risk Deletion" : "Delete Order"}
               </p>
             </div>
           </div>
           <button
             onClick={onCancel}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <X size={18} />
           </button>
@@ -58,22 +57,19 @@ const DeleteConfirmModal = ({
           <p className="text-sm text-muted-foreground leading-relaxed">
             Are you sure you want to delete order{" "}
             <span className="font-mono font-bold text-foreground">
-              {order._id.slice(-8).toUpperCase()}
-            </span>
-            ?
+              #{order._id.slice(-8).toUpperCase()}
+            </span>?
           </p>
 
-          {/* Additional Warning for Paid/Delivered Orders */}
           {isHighRisk && (
             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg">
-              <p className="text-xs text-red-700 font-semibold uppercase mb-1">
+              <p className="text-xs text-red-700 font-bold uppercase mb-1">
                 Warning:
               </p>
               <p className="text-xs text-red-600">
                 This order is marked as <strong>PAID</strong> and{" "}
                 <strong>DELIVERED</strong>. Deleting this will permanently
-                remove this transaction from your financial records. This action
-                cannot be reversed.
+                remove this transaction from your financial records.
               </p>
             </div>
           )}
@@ -96,7 +92,7 @@ const DeleteConfirmModal = ({
   );
 };
 
-// ── Helper ────────────────────────────────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
 const getShippingName = (order: OrderDoc) =>
   order.shipping_address?.full_name ?? "—";
 const getShippingPhone = (order: OrderDoc) =>
@@ -107,7 +103,7 @@ const getShippingAddress = (order: OrderDoc) => {
   return [a.street, a.city, a.state].filter(Boolean).join(", ");
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Main Page ────────────────────────────────────────────────────────────────
 const OrdersPage = () => {
   const [orders, setOrders] = useState<OrderDoc[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -116,15 +112,17 @@ const OrdersPage = () => {
   const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDoc | null>(null);
 
- const { toast }    = useToast();
+  const { toast } = useToast();
 
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
     try {
       const data = await orderService.getAllOrders();
-      setOrders(data);
-    } catch {
+      // Ensure data is always an array
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Fetch error:", err);
       setFetchError("Failed to load orders. Please try again.");
     } finally {
       setIsLoading(false);
@@ -135,48 +133,49 @@ const OrdersPage = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const filteredOrders = orders.filter((o) => {
+  // CRITICAL FIX: Safe filtering with fallback to empty array
+  const filteredOrders = (orders || []).filter((o) => {
+    if (!o || !o._id) return false;
     const q = searchTerm.toLowerCase();
-    return (
-      o._id.toLowerCase().includes(q) ||
-      getShippingName(o).toLowerCase().includes(q)
-    );
+    const orderIdMatch = o._id.toLowerCase().includes(q);
+    const nameMatch = getShippingName(o).toLowerCase().includes(q);
+    return orderIdMatch || nameMatch;
   });
 
-  // Delete is a soft operation — in production you'd call a DELETE endpoint
   const handleConfirmDelete = async () => {
     if (!deletingOrder) return;
 
     try {
-      // 1. Tell the backend to delete it
       await orderService.deleteOrder(deletingOrder._id);
 
-      // 2. Only if the backend succeeds, update the UI state
+      // Optimistic UI Update
       setOrders((prev) => prev.filter((o) => o._id !== deletingOrder._id));
 
-      // 3. Close the modal and clean up
-      if (selectedOrder?._id === deletingOrder._id) setSelectedOrder(null);
+      if (selectedOrder?._id === deletingOrder._id) {
+        setSelectedOrder(null);
+      }
 
-      // Success feedback (optional)
-      // ADD SUCCESS FEEDBACK:
-    toast?.({
-      title: "Order Deleted",
-      description: `Order ${deletingOrder._id.slice(-8).toUpperCase()} has been removed`,
-    });
-      console.log("Order deleted from database.");
+      toast({
+        title: "Order Deleted",
+        description: `Order ${deletingOrder._id.slice(-8).toUpperCase()} has been removed`,
+      });
     } catch (error) {
-      // 4. If the backend fails (e.g., 401 Unauthorized or 500 Server Error)
-      console.error("Failed to delete order:", error);
-      alert("Delete failed. Please check your admin permissions.");
+      console.error("Delete failed:", error);
+      toast({
+        variant: "destructive",
+        title: "Delete Failed",
+        description: "Could not remove the order. Please try again.",
+      });
     } finally {
       setDeletingOrder(null);
     }
   };
+
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" />
-        <span className="text-sm">Loading orders…</span>
+      <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
+        <Loader2 size={32} className="animate-spin text-primary" />
+        <span className="text-sm font-medium">Fetching orders...</span>
       </div>
     );
   }
@@ -184,7 +183,10 @@ const OrdersPage = () => {
   if (fetchError) {
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
-        <p className="text-sm text-destructive">{fetchError}</p>
+        <div className="p-4 bg-destructive/10 rounded-full">
+          <RefreshCw size={32} className="text-destructive" />
+        </div>
+        <p className="text-sm text-destructive font-medium">{fetchError}</p>
         <Button variant="outline" onClick={fetchOrders} className="gap-2">
           <RefreshCw size={14} /> Retry
         </Button>
@@ -193,141 +195,115 @@ const OrdersPage = () => {
   }
 
   return (
-    <div>
-      {/* Welcome section */}
-      <div className="flex items-center justify-between mb-8 bg-card rounded-xl p-6">
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header section */}
+      <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-6 shadow-sm">
         <div>
-          <p className="text-muted-foreground text-lg">Welcome,</p>
-          <h1 className="text-primary text-2xl font-semibold">Admin</h1>
+          <p className="text-muted-foreground text-lg">Welcome back,</p>
+          <h1 className="text-primary text-3xl font-bold tracking-tight">Admin Dashboard</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            It's okay to take breaks but never stop pushing
+            "It's okay to take breaks, but never stop pushing."
           </p>
         </div>
-        <div className="w-32 h-24 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center">
-          <div className="text-4xl">🛍️</div>
+        <div className="hidden sm:flex w-24 h-24 bg-primary/5 rounded-2xl items-center justify-center border border-primary/10">
+          <span className="text-4xl">📦</span>
         </div>
       </div>
 
-      {/* Orders section */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
+      {/* Orders Table section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Orders</h2>
+            <h2 className="text-xl font-bold text-foreground">Customer Orders</h2>
             <p className="text-muted-foreground text-sm">
-              Manage and track customer orders
+              Total found: {filteredOrders.length}
             </p>
           </div>
           <SearchInput
-            placeholder="Search by name or order ID"
+            placeholder="Search by ID or name..."
             value={searchTerm}
             onChange={setSearchTerm}
-            className="w-72"
+            className="w-full sm:w-80"
             showMenuIcon={false}
           />
         </div>
 
-        <div className="bg-card rounded-lg overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border">
-                {[
-                  "Order ID",
-                  "Name",
-                  "Phone",
-                  "Address",
-                  "Status",
-                  "Total",
-                  "Actions",
-                ].map((h) => (
-                  <th
-                    key={h}
-                    className="text-left p-4 text-muted-foreground font-medium text-sm"
-                  >
-                    {h}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredOrders.length === 0 ? (
-                <tr>
-                  <td
-                    colSpan={7}
-                    className="p-8 text-center text-muted-foreground text-sm"
-                  >
-                    No orders match your search.
-                  </td>
+        <div className="bg-card rounded-xl overflow-hidden border border-border shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  {["Order ID", "Customer", "Phone", "Address", "Status", "Total", "Actions"].map((h) => (
+                    <th key={h} className="p-4 text-muted-foreground font-semibold">
+                      {h}
+                    </th>
+                  ))}
                 </tr>
-              ) : (
-                filteredOrders.map((order) => (
-                  <tr
-                    key={order._id}
-                    className="border-b border-border hover:bg-secondary/50 transition-colors"
-                  >
-                    <td
-                      className="p-4 text-primary text-sm cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      {order._id.slice(-8).toUpperCase()}
-                    </td>
-                    <td
-                      className="p-4 text-foreground text-sm cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      {getShippingName(order)}
-                    </td>
-                    <td
-                      className="p-4 text-muted-foreground text-sm cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      {getShippingPhone(order)}
-                    </td>
-                    <td
-                      className="p-4 text-muted-foreground text-sm max-w-xs truncate cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      {getShippingAddress(order)}
-                    </td>
-                    <td
-                      className="p-4 text-sm cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <span
-                        className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${
-                          order.status === "delivered"
-                            ? "bg-green-100 text-green-700"
-                            : order.status === "shipped"
-                              ? "bg-blue-100 text-blue-700"
-                              : order.status === "cancelled"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td
-                      className="p-4 text-primary text-sm font-medium cursor-pointer"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      ₦{order.total.toLocaleString()}
-                    </td>
-                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => setDeletingOrder(order)}
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                      >
-                        <Trash2 size={15} />
-                      </button>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-12 text-center text-muted-foreground italic">
+                      No orders found matching your criteria.
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <tr
+                      key={order._id}
+                      className="hover:bg-muted/50 transition-colors group cursor-default"
+                     onClick={() => setSelectedOrder(order)}
+                    >
+                      <td
+                        className="p-4 font-mono font-medium text-primary cursor-pointer hover:underline"
+                       
+                      >
+                        #{order._id.slice(-8).toUpperCase()}
+                      </td>
+                      <td className="p-4 font-medium text-foreground">
+                        {getShippingName(order)}
+                      </td>
+                      <td className="p-4 text-muted-foreground">
+                        {getShippingPhone(order)}
+                      </td>
+                      <td className="p-4 text-muted-foreground max-w-[200px] truncate">
+                        {getShippingAddress(order)}
+                      </td>
+                      <td className="p-4">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
+                            order.status === "delivered"
+                              ? "bg-green-100 text-green-700"
+                              : order.status === "cancelled" || order.status === "refunded"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-blue-100 text-blue-700"
+                          }`}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="p-4 font-bold text-foreground">
+                        ₦{order.total.toLocaleString()}
+                      </td>
+                      <td className="p-4">
+                        <button
+                          onClick={() => setDeletingOrder(order)}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
+                          title="Delete Order"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
+      {/* Modals */}
       {selectedOrder && (
         <OrderDetailModal
           key={selectedOrder._id}
@@ -352,7 +328,7 @@ const OrdersPage = () => {
 
       <DeleteConfirmModal
         open={!!deletingOrder}
-        order={deletingOrder} // Pass the whole object
+        order={deletingOrder}
         onConfirm={handleConfirmDelete}
         onCancel={() => setDeletingOrder(null)}
       />

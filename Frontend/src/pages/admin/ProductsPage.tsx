@@ -104,7 +104,7 @@ const sortFields = [
 
 // ── Helper: total stock across all variants ───────────────────────────────────
 const totalStock = (p: Product) =>
-  p.variants.reduce((s, v) => s + (v.is_active ? v.stock : 0), 0);
+  (p.variants || []).reduce((s, v) => s + (v.is_active ? v.stock : 0), 0);
 
 // ─────────────────────────────────────────────────────────────────────────────
 const ProductsPage = () => {
@@ -120,8 +120,10 @@ const ProductsPage = () => {
     setFetchError(null);
     try {
       const data = await productService.getAll({ all: true });
-      setProducts(data.products);
-    } catch {
+      // Safety check: ensure products is always an array
+      setProducts(Array.isArray(data?.products) ? data.products : []);
+    } catch (err) {
+      console.error("Fetch error:", err);
       setFetchError("Failed to load products. Please try again.");
     } finally {
       setIsLoading(false);
@@ -149,13 +151,19 @@ const ProductsPage = () => {
   };
   const closeDropdown = () => setOpenDropdown(null);
 
-  // ── Derived filter option lists ────────────────────────────────────────────
-  const conditionOptions = useMemo(() => [...new Set(products.map((p) => p.condition))].sort(), [products]);
-  const brandOptions     = useMemo(() => [...new Set(products.map((p) => p.brand))].sort(), [products]);
-  const statusOptions    = ["In Stock", "Low Stock", "Out of Stock"];
-  const categoryOptions  = [...new Set(categories)].sort();
+  // ── CRITICAL FIX: Derived filter option lists with safety guards ───────────
+  const conditionOptions = useMemo(() => 
+    [...new Set((products || []).map((p) => p.condition))].filter(Boolean).sort(), 
+  [products]);
 
-  const activeCount = [filterCategory, filterCondition, filterStatus, filterBrand, filterPrice]
+  const brandOptions = useMemo(() => 
+    [...new Set((products || []).map((p) => p.brand))].filter(Boolean).sort(), 
+  [products]);
+
+  const statusOptions  = ["In Stock", "Low Stock", "Out of Stock"];
+  const categoryOptions = [...new Set(categories)].sort();
+
+  const activeFilterCount = [filterCategory, filterCondition, filterStatus, filterBrand, filterPrice]
     .filter((v) => !["Category", "Condition", "Status", "Brand", "Price"].includes(v)).length;
 
   const clearAll = () => {
@@ -170,7 +178,7 @@ const ProductsPage = () => {
 
   // ── Filtered + sorted list ─────────────────────────────────────────────────
   const filteredProducts = useMemo(() => {
-    let list = [...products];
+    let list = [...(products || [])];
 
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
@@ -182,7 +190,7 @@ const ProductsPage = () => {
       );
     }
 
-    if (filterCategory  !== "Category")  list = list.filter((p) => p.category  === filterCategory.toLowerCase());
+    if (filterCategory  !== "Category")  list = list.filter((p) => p.category?.toLowerCase() === filterCategory.toLowerCase());
     if (filterCondition !== "Condition") list = list.filter((p) => p.condition === filterCondition);
     if (filterBrand     !== "Brand")     list = list.filter((p) => p.brand     === filterBrand);
     if (filterStatus    !== "Status")    list = list.filter((p) => getStockStatus(p) === filterStatus);
@@ -215,23 +223,25 @@ const ProductsPage = () => {
       setProducts((prev) => prev.filter((p) => p._id !== deletingProduct._id));
       setDeletingProduct(null);
     } catch {
-      // keep modal open, show nothing (error is silent — could add a toast)
+      // keep modal open
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // ── Derived stats ──────────────────────────────────────────────────────────
-  const totalCount    = products.length;
-  const activeCount2  = products.filter((p) => getStockStatus(p) === "In Stock").length;
-  const outCount      = products.filter((p) => getStockStatus(p) === "Out of Stock").length;
-  const invValue      = products.reduce((s, p) => s + p.price * totalStock(p), 0);
+  // ── Derived stats with safety guards ──────────────────────────────────────
+  const safeProducts = products || [];
+  const totalCount    = safeProducts.length;
+  const activeCount2  = safeProducts.filter((p) => getStockStatus(p) === "In Stock").length;
+  const outCount      = safeProducts.filter((p) => getStockStatus(p) === "Out of Stock").length;
+  const invValue      = safeProducts.reduce((s, p) => s + (p.price || 0) * totalStock(p), 0);
+  
   const invDisplay    = invValue >= 1_000_000
     ? `₦${(invValue / 1_000_000).toFixed(1)}m`
     : formatPrice(invValue);
 
   const getStatusClass = (status: string) => {
-    if (status === "In Stock")     return "text-success";
+    if (status === "In Stock")     return "text-green-600";
     if (status === "Out of Stock") return "text-destructive";
     if (status === "Low Stock")    return "text-yellow-500";
     return "text-muted-foreground";
@@ -241,7 +251,7 @@ const ProductsPage = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-3">
-        <Loader2 size={20} className="animate-spin" />
+        <Loader2 size={20} className="animate-spin text-primary" />
         <span className="text-sm">Loading products…</span>
       </div>
     );
@@ -260,11 +270,11 @@ const ProductsPage = () => {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div onClick={closeDropdown}>
+    <div onClick={closeDropdown} className="animate-in fade-in duration-500">
       <h1 className="text-2xl font-semibold text-foreground mb-6">Product Information</h1>
 
       {/* Stats */}
-      <div className="grid grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatsCard title="Total Products"  value={String(totalCount)}   variant="primary" />
         <StatsCard title="Active Products" value={String(activeCount2)} variant="default" />
         <StatsCard title="Out of Stock"    value={String(outCount)}     variant="primary" />
@@ -272,17 +282,17 @@ const ProductsPage = () => {
       </div>
 
       {/* Filter toolbar */}
-      <div className="bg-card border border-border rounded-xl p-4 mb-6">
-        <div className="flex items-center justify-between gap-4 mb-4">
+      <div className="bg-card border border-border rounded-xl p-4 mb-6 shadow-sm">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
           <SearchInput
             placeholder="Search by name, brand or condition…"
             value={searchTerm}
             onChange={setSearchTerm}
-            className="flex-1 max-w-md"
+            className="w-full md:flex-1 md:max-w-md"
           />
-          <Link to="add">
-            <Button className="gap-1 whitespace-nowrap">
-              <Plus size={16} /> Add Products
+          <Link to="add" className="w-full md:w-auto">
+            <Button className="w-full gap-1 whitespace-nowrap">
+              <Plus size={16} /> Add Product
             </Button>
           </Link>
         </div>
@@ -309,7 +319,7 @@ const ProductsPage = () => {
             onChange={setFilterPrice} isOpen={openDropdown === "price"}
             onToggle={(e) => toggleDropdown("price", e)} onClose={closeDropdown} />
 
-          <div className="w-px h-6 bg-border mx-1" />
+          <div className="hidden md:block w-px h-6 bg-border mx-1" />
 
           {/* Sort */}
           <div className="relative">
@@ -324,7 +334,7 @@ const ProductsPage = () => {
               <ChevronDown size={13} className={`transition-transform ${openDropdown === "sort" ? "rotate-180" : ""}`} />
             </button>
             {openDropdown === "sort" && (
-              <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 min-w-[140px]"
+              <div className="absolute top-full left-0 mt-1 bg-popover border border-border rounded-lg shadow-lg z-20 min-w-[140px] animate-in slide-in-from-top-1"
                 onClick={(e) => e.stopPropagation()}>
                 <button onClick={() => { setSortLabel("Sort"); closeDropdown(); }}
                   className={`w-full text-left px-4 py-2 text-sm hover:bg-secondary/70 transition-colors ${sortLabel === "Sort" ? "text-primary font-medium" : "text-muted-foreground"}`}>
@@ -340,7 +350,7 @@ const ProductsPage = () => {
             )}
           </div>
 
-          {(activeCount > 0 || sortLabel !== "Sort" || searchTerm) && (
+          {(activeFilterCount > 0 || sortLabel !== "Sort" || searchTerm) && (
             <button onClick={clearAll}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto">
               <X size={12} /> Clear all
@@ -348,11 +358,11 @@ const ProductsPage = () => {
           )}
         </div>
 
-        {activeCount > 0 && (
+        {activeFilterCount > 0 && (
           <div className="flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-border">
             <span className="text-xs text-muted-foreground">Active:</span>
             {[
-              { label: filterCategory,  reset: () => setFilterCategory("Category"),   sentinel: "Category"  },
+              { label: filterCategory,  reset: () => setFilterCategory("Category"),  sentinel: "Category"  },
               { label: filterBrand,     reset: () => setFilterBrand("Brand"),          sentinel: "Brand"     },
               { label: filterCondition, reset: () => setFilterCondition("Condition"),  sentinel: "Condition" },
               { label: filterStatus,    reset: () => setFilterStatus("Status"),        sentinel: "Status"    },
@@ -371,8 +381,8 @@ const ProductsPage = () => {
       </div>
 
       {/* Table */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
           <h2 className="text-base font-medium text-foreground">
             Product List
             <span className="ml-2 text-sm font-normal text-muted-foreground">
@@ -381,58 +391,71 @@ const ProductsPage = () => {
           </h2>
         </div>
 
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-border bg-secondary/30">
-                {["Product", "Brand", "Condition", "Price", "Stock", "Status", "Actions"].map((h) => (
-                  <th key={h} className="text-left p-4 text-muted-foreground font-medium text-sm">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="p-12 text-center">
-                    <p className="text-muted-foreground text-sm mb-2">No products match your filters.</p>
-                    <button onClick={clearAll} className="text-xs text-primary hover:underline">Clear all filters</button>
-                  </td>
+        <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  {["Product", "Brand", "Condition", "Price", "Stock", "Status", "Actions"].map((h) => (
+                    <th key={h} className="p-4 text-muted-foreground font-semibold whitespace-nowrap">{h}</th>
+                  ))}
                 </tr>
-              ) : (
-                filteredProducts.map((product) => {
-                  const stock  = totalStock(product);
-                  const status = getStockStatus(product);
-                  return (
-                    <tr key={product._id}
-                      className="border-b border-border hover:bg-secondary/40 transition-colors">
-                      <td className="p-4 text-foreground text-sm font-medium cursor-pointer"
-                        onClick={() => navigate(product.slug)}>
-                        <div className="flex items-center gap-3">
-                          {product.image && (
-                            <img src={product.image} alt={product.name}
-                              className="w-8 h-8 rounded object-contain bg-secondary/30 shrink-0" />
-                          )}
-                          <span className="line-clamp-1">{product.name}</span>
-                        </div>
-                      </td>
-                      <td className="p-4 text-muted-foreground text-sm cursor-pointer" onClick={() => navigate(product.slug)}>{product.brand}</td>
-                      <td className="p-4 text-muted-foreground text-sm cursor-pointer" onClick={() => navigate(product.slug)}>{product.condition}</td>
-                      <td className="p-4 text-primary text-sm cursor-pointer font-medium" onClick={() => navigate(product.slug)}>{formatPrice(product.price)}</td>
-                      <td className="p-4 text-muted-foreground text-sm cursor-pointer" onClick={() => navigate(product.slug)}>{stock}</td>
-                      <td className={`p-4 text-sm cursor-pointer font-medium ${getStatusClass(status)}`} onClick={() => navigate(product.slug)}>{status}</td>
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <button onClick={() => setDeletingProduct(product)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          title="Delete product">
-                          <Trash2 size={15} />
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredProducts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-12 text-center">
+                      <p className="text-muted-foreground italic mb-2">No products match your filters.</p>
+                      <button onClick={clearAll} className="text-xs text-primary hover:underline font-medium">Clear all filters</button>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProducts.map((product) => {
+                    const stock  = totalStock(product);
+                    const status = getStockStatus(product);
+                    return (
+                      <tr key={product._id}
+                        className="hover:bg-muted/50 transition-colors group">
+                        <td className="p-4 font-medium cursor-pointer"
+                          onClick={() => navigate(product.slug)}>
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-secondary/30 flex items-center justify-center p-1 overflow-hidden shrink-0 border border-border/50">
+                              {product.image ? (
+                                <img src={product.image} alt={product.name}
+                                  className="w-full h-full object-contain" />
+                              ) : (
+                                <span className="text-[10px] text-muted-foreground">No img</span>
+                              )}
+                            </div>
+                            <span className="line-clamp-1 text-foreground">{product.name}</span>
+                          </div>
+                        </td>
+                        <td className="p-4 text-muted-foreground cursor-pointer" onClick={() => navigate(product.slug)}>{product.brand}</td>
+                        <td className="p-4 text-muted-foreground cursor-pointer" onClick={() => navigate(product.slug)}>{product.condition}</td>
+                        <td className="p-4 text-primary font-bold cursor-pointer" onClick={() => navigate(product.slug)}>{formatPrice(product.price)}</td>
+                        <td className="p-4 text-muted-foreground cursor-pointer" onClick={() => navigate(product.slug)}>{stock}</td>
+                        <td className={`p-4 font-bold cursor-pointer ${getStatusClass(status)}`} onClick={() => navigate(product.slug)}>
+                          <span className="flex items-center gap-1.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${
+                              status === 'In Stock' ? 'bg-green-500' : status === 'Low Stock' ? 'bg-yellow-500' : 'bg-destructive'
+                            }`} />
+                            {status}
+                          </span>
+                        </td>
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <button onClick={() => setDeletingProduct(product)}
+                            className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
+                            title="Delete product">
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 

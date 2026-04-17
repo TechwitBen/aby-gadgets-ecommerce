@@ -1,9 +1,10 @@
-import { useState, useRef, useRef as useOutsideRef } from "react";
+import { useState, useRef, useRef as useOutsideRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, X, ChevronDown, Check } from "lucide-react";
 import { categories, brands, conditions } from "@/pages/admin/data/mockData";
 import { productService, variantService } from "@/services/Products.service";
+import { authAPI } from "@/services/api";
 
 const sectionOptions = ["New Arrivals", "Popular Products", "Sweet Deals"] as const;
 
@@ -13,6 +14,23 @@ const TAG_OPTIONS = [
   { group: "Feature",    tags: ["5G", "Foldable", "Ultra-thin", "Pro Camera", "Long Battery", "S Pen", "Noise Cancelling", "Wireless", "Waterproof", "Gaming"] },
   { group: "Status",     tags: ["New", "Best Seller", "Limited Stock", "Deal", "Popular"] },
 ];
+
+// ── SKU generator ─────────────────────────────────────────────────────────────
+// Generates a readable SKU from product info when the admin leaves it blank.
+// e.g.  APL-IP15-BLK-256  →  brand(3)-name_slug(4)-color(3)-storage
+const autoSku = (productName: string, brand: string, color?: string, storage?: string, ram?: string) => {
+  const slug = (s = "") =>
+    s.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  const parts = [
+    slug(brand),
+    slug(productName),
+    color  ? slug(color)   : null,
+    storage ? slug(storage) : null,
+    ram     ? slug(ram)     : null,
+    Math.random().toString(36).slice(2, 5).toUpperCase(),   // uniqueness suffix
+  ].filter(Boolean);
+  return parts.join("-");
+};
 
 // ── Tag Dropdown ──────────────────────────────────────────────────────────────
 const TagDropdown = ({
@@ -142,6 +160,14 @@ const emptyVariant = (): Variant => ({
 const AddProductPage = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const checkUser = async () => {
+      const user = await authAPI.getCurrentUser();
+      console.log("CURRENT USER:", user);
+    };
+    checkUser();
+  }, []);
+
   const [formData, setFormData] = useState({
     name: "",
     category: "Phones",
@@ -244,14 +270,19 @@ const AddProductPage = () => {
   // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     const errs = validate();
-    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (Object.keys(errs).length) {
+      setErrors(errs);
+      return;
+    }
     setErrors({});
     setSubmitError(null);
     setIsSubmitting(true);
 
+    let newProduct: { _id: string } | null = null;
+
     try {
       // Step 1 — create the product
-      const newProduct = await productService.create({
+      newProduct = await productService.create({
         name:        formData.name,
         category:    formData.category,
         brand:       formData.brand,
@@ -269,31 +300,43 @@ const AddProductPage = () => {
         features: features.filter((f) => f.trim()),
         tags:     selectedTags.length ? selectedTags : undefined,
         specs: {
-          storage:    formData.specs.storage    || undefined,
           screenSize: formData.specs.screenSize || undefined,
           camera:     formData.specs.camera     || undefined,
           battery:    formData.specs.battery    || undefined,
         },
       });
 
-      // Step 2 — create each variant
+      // Step 2 — create each variant with automatic SKU generation if blank
       await Promise.all(
-        variants.map((v) =>
-          variantService.create({
-            productId: newProduct._id,
+        variants.map((v) => {
+          const resolvedSku =
+            v.sku?.trim() ||
+            autoSku(formData.name, formData.brand, v.color, v.storage, v.ram);
+
+          return variantService.create({
+            productId: newProduct!._id,
             color:     v.color   || undefined,
             storage:   v.storage || undefined,
             ram:       v.ram     || undefined,
-            sku:       v.sku,
+            sku:       resolvedSku,
             price:     Number(v.price.replace(/[^0-9]/g, "")),
             stock:     Number(v.stock),
             is_active: v.is_active,
-          })
-        )
+          });
+        })
       );
 
-      navigate("products");
+      navigate("/admin/products");
     } catch (err: any) {
+      // 🧹 Cleanup: if product was created but variants failed, delete orphaned product
+      if (newProduct?._id) {
+        try {
+          await productService.delete(newProduct._id);
+        } catch (deleteErr) {
+          console.error("Failed to rollback product creation", deleteErr);
+        }
+      }
+
       const msg = err.response?.data?.message || "Something went wrong. Please try again.";
       setSubmitError(msg);
     } finally {
@@ -504,11 +547,6 @@ const AddProductPage = () => {
         <h2 className="text-lg font-medium text-foreground mb-4">Specifications</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="text-xs text-muted-foreground block mb-1">Storage</label>
-            <input type="text" placeholder="e.g. 256GB" value={formData.specs.storage}
-              onChange={(e) => handleSpecChange("storage", e.target.value)} className={inputCls()} />
-          </div>
-          <div>
             <label className="text-xs text-muted-foreground block mb-1">Screen Size</label>
             <input type="text" placeholder='e.g. 6.1"' value={formData.specs.screenSize}
               onChange={(e) => handleSpecChange("screenSize", e.target.value)} className={inputCls()} />
@@ -594,9 +632,19 @@ const AddProductPage = () => {
                   onChange={(e) => updateVariant(i, "storage", e.target.value)} className={inputCls()} />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground block mb-1">SKU <span className="text-destructive">*</span></label>
-                <input type="text" placeholder="e.g. APL-IP15-BLK-256" value={v.sku}
-                  onChange={(e) => updateVariant(i, "sku", e.target.value)} className={inputCls()} />
+                <label className="text-xs text-muted-foreground block mb-1">
+                  SKU <span className="text-destructive">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Leave blank to auto‑generate"
+                  value={v.sku}
+                  onChange={(e) => updateVariant(i, "sku", e.target.value)}
+                  className={inputCls()}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  If you don't have an SKU, it will be generated automatically.
+                </p>
               </div>
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Price <span className="text-destructive">*</span></label>

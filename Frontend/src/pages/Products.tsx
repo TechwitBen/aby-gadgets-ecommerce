@@ -148,9 +148,10 @@ const Products = () => {
   };
 
   const handleAddToCart = (product: Product) => {
+    const variant = product.variants?.[0];
     addToCart({
       id:        product.id,
-      variantId: product.id,
+      variantId: variant._id,
       name:      product.name,
       price:     product.price,
       image:     product.image,
@@ -334,15 +335,20 @@ const Products = () => {
   );
 
   const SectionBlock = ({
-    title, id, ref: sectionRef, list, visible, setVisible,
-  }: {
-    title: string;
-    id: string;
-    ref: React.RefObject<HTMLDivElement>;
-    list: Product[];
-    visible: number;
-    setVisible: React.Dispatch<React.SetStateAction<number>>;
-  }) => (
+  title,
+  id,
+  sectionRef,
+  list,
+  visible,
+  setVisible,
+}: {
+  title: string;
+  id: string;
+  sectionRef: React.RefObject<HTMLDivElement>;
+  list: Product[];
+  visible: number;
+  setVisible: React.Dispatch<React.SetStateAction<number>>;
+}) => (
     <div ref={sectionRef} id={id} className="mb-12 scroll-mt-20">
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -560,15 +566,15 @@ const Products = () => {
         ) : (
           <>
             <SectionBlock
-              title="New Arrivals"     id="new-arrivals" ref={newArrivalsRef}
+              title="New Arrivals"     id="new-arrivals" sectionRef={newArrivalsRef}
               list={newArrivals}       visible={newArrivalsVisible} setVisible={setNewArrivalsVisible}
             />
             <SectionBlock
-              title="Popular Products" id="popular"      ref={{ current: null }}
+              title="Popular Products" id="popular"      sectionRef={{ current: null }}
               list={popularProducts}   visible={popularVisible}     setVisible={setPopularVisible}
             />
             <SectionBlock
-              title="Sweet Deals"      id="sweet-deals"  ref={sweetDealsRef}
+              title="Sweet Deals"      id="sweet-deals"  sectionRef={sweetDealsRef}
               list={sweetDeals}        visible={sweetDealsVisible}  setVisible={setSweetDealsVisible}
             />
           </>

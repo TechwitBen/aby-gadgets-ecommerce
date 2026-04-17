@@ -60,20 +60,20 @@ const ProductDetails = () => {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  // Similar products (same category)
   const [similar, setSimilar] = useState<Product[]>([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
     setIsLoading(true);
     setFetchError(false);
+    setSimilar([]);
 
     productService
       .getBySlug(slug)
       .then(async (data) => {
         setProduct(data);
 
-        // ADD BETTER FALLBACK:
         const inStockVariant = data.variants.find(
           (v) => v.is_active && v.stock > 0,
         );
@@ -84,16 +84,48 @@ const ProductDetails = () => {
 
         if (defaultVariant) {
           setSelectedVariant(defaultVariant);
-        } else {
-          setFetchError(true); // No variants available
-          return;
         }
-        // Fetch similar
-        const res = await productService.getAll({
-          category: data.category,
-          limit: 6,
-        });
-        setSimilar(res.products.filter((p) => p.id !== data.id).slice(0, 5));
+
+        // ── Fetch similar products with cascading fallback ──────────────────
+        setSimilarLoading(true);
+        try {
+          // 1st try: same category
+          let res = await productService.getAll({
+            category: data.category,
+            limit: 10,
+          });
+          let candidates = res.products.filter((p) => p.id !== data.id);
+
+          // 2nd try: same type (e.g. "smartphone")
+          if (candidates.length < 2 && data.type) {
+            res = await productService.getAll({
+              productType: data.type,
+              limit: 10,
+            });
+            candidates = res.products.filter((p) => p.id !== data.id);
+          }
+
+          // 3rd try: same brand
+          if (candidates.length < 2 && data.brand) {
+            res = await productService.getAll({
+              brand: data.brand,
+              limit: 10,
+            });
+            candidates = res.products.filter((p) => p.id !== data.id);
+          }
+
+          // 4th try: just recent products
+          if (candidates.length < 2) {
+            res = await productService.getAll({ sortBy: "newest", limit: 10 });
+            candidates = res.products.filter((p) => p.id !== data.id);
+          }
+
+          setSimilar(candidates.slice(0, 5));
+        } catch {
+          // similar failing silently is fine
+        } finally {
+          setSimilarLoading(false);
+        }
       })
       .catch(() => setFetchError(true))
       .finally(() => setIsLoading(false));
@@ -105,8 +137,6 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
 
   const activeVariants = product?.variants.filter((v) => v.is_active) ?? [];
-
-  // Unique colors and storages from active variants
   const colors = [
     ...new Set(activeVariants.map((v) => v.color).filter(Boolean)),
   ] as string[];
@@ -114,7 +144,6 @@ const ProductDetails = () => {
     ...new Set(activeVariants.map((v) => v.storage).filter(Boolean)),
   ] as string[];
 
-  // Currently selected color / storage
   const selectedColor = selectedVariant?.color ?? null;
   const selectedStorage = selectedVariant?.storage ?? null;
 
@@ -130,15 +159,12 @@ const ProductDetails = () => {
     if (match) setSelectedVariant(match);
   };
 
-  const handleColorSelect = (color: string) => {
+  const handleColorSelect = (color: string) =>
     selectByColorStorage(color, selectedStorage);
-  };
 
-  const handleStorageSelect = (storage: string) => {
+  const handleStorageSelect = (storage: string) =>
     selectByColorStorage(selectedColor, storage);
-  };
 
-  // ── Derived from selected variant ─────────────────────────────────────────
   const displayPrice = selectedVariant?.price ?? product?.price ?? 0;
   const stockCount = selectedVariant?.stock ?? 0;
   const canAddToCart = stockCount > 0;
@@ -186,18 +212,11 @@ const ProductDetails = () => {
 
   const handleAddToCart = () => {
     if (!selectedVariant) {
-      toast({
-        title: "Error",
-        description: "Please select a variant (color/storage) first",
-      });
+      toast({ title: "Error", description: "Please select a variant first" });
       return;
     }
-
     if (selectedVariant.stock <= 0) {
-      toast({
-        title: "Out of Stock",
-        description: "This variant is currently unavailable",
-      });
+      toast({ title: "Out of Stock", description: "This variant is currently unavailable" });
       return;
     }
     addToCart({
@@ -207,35 +226,22 @@ const ProductDetails = () => {
       image: product.image,
       quantity,
       storage: selectedVariant.storage ?? undefined,
-      // Extra variant info for order display
       color: selectedVariant.color,
       sku: selectedVariant.sku,
       variantId: selectedVariant.id,
     });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
+    toast({ title: "Added to cart", description: `${product.name} has been added to your cart.` });
   };
 
   const handleBuyNow = () => {
-    // ADD VALIDATION:
     if (!selectedVariant) {
-      toast({
-        title: "Error",
-        description: "Please select a variant (color/storage) first",
-      });
+      toast({ title: "Error", description: "Please select a variant first" });
       return;
     }
-
     if (selectedVariant.stock <= 0) {
-      toast({
-        title: "Out of Stock",
-        description: "This variant is currently unavailable",
-      });
+      toast({ title: "Out of Stock", description: "This variant is currently unavailable" });
       return;
     }
-
     navigate("/checkout", {
       state: {
         buyNowItem: {
@@ -331,9 +337,7 @@ const ProductDetails = () => {
               </button>
               <button
                 onClick={() =>
-                  setSelectedImage((p) =>
-                    Math.min(galleryImages.length - 1, p + 1),
-                  )
+                  setSelectedImage((p) => Math.min(galleryImages.length - 1, p + 1))
                 }
                 disabled={selectedImage === galleryImages.length - 1}
                 className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center shadow-md hover:bg-purple-700 disabled:opacity-40"
@@ -352,11 +356,7 @@ const ProductDetails = () => {
                       : "border-gray-300 hover:border-gray-400"
                   }`}
                 >
-                  <img
-                    src={img}
-                    alt=""
-                    className="w-full h-full object-contain p-1"
-                  />
+                  <img src={img} alt="" className="w-full h-full object-contain p-1" />
                 </button>
               ))}
             </div>
@@ -367,7 +367,6 @@ const ProductDetails = () => {
             <h1 className="text-2xl md:text-3xl font-normal text-gray-900 mb-2">
               {product.name}
             </h1>
-
             <p className="text-sm text-gray-600 mb-6 leading-relaxed">
               {product.description ||
                 "(UK Used), fully tested and verified, carefully inspected to ensure full functionality."}
@@ -377,15 +376,11 @@ const ProductDetails = () => {
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
               <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
                 <ShieldCheck className="w-4 h-4 text-green-600" />
-                <span className="text-sm font-medium text-green-800">
-                  Verified Authentic
-                </span>
+                <span className="text-sm font-medium text-green-800">Verified Authentic</span>
               </div>
               <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2">
                 <Truck className="w-4 h-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">
-                  Safe Delivery
-                </span>
+                <span className="text-sm font-medium text-blue-800">Safe Delivery</span>
               </div>
             </div>
 
@@ -406,35 +401,33 @@ const ProductDetails = () => {
             {/* Variant Selectors */}
             {activeVariants.length > 0 && (
               <div className="mb-6 space-y-5">
-                {/* Color */}
                 {colors.length > 0 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-2">Color</div>
                     <div className="flex flex-wrap gap-2">
-                      {colors.map((color) => (
-                       // Disable options that have no stock:
-<button 
-  key={color} 
-  onClick={() => handleColorSelect(color)}
-  disabled={!activeVariants.some(v => v.color === color && v.stock > 0)}
-  className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
-    selectedColor === color
-      ? "border-purple-600 bg-purple-50 text-purple-700"
-      : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-  } ${
-    !activeVariants.some(v => v.color === color && v.stock > 0)
-      ? "opacity-40 cursor-not-allowed"
-      : ""
-  }`}
->
-  {color}
-</button>
-                      ))}
+                      {colors.map((color) => {
+                        const hasStock = activeVariants.some(
+                          (v) => v.color === color && v.stock > 0,
+                        );
+                        return (
+                          <button
+                            key={color}
+                            onClick={() => handleColorSelect(color)}
+                            disabled={!hasStock}
+                            className={`px-4 py-2 rounded-full text-sm font-medium border-2 transition-all ${
+                              selectedColor === color
+                                ? "border-purple-600 bg-purple-50 text-purple-700"
+                                : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                            } ${!hasStock ? "opacity-40 cursor-not-allowed" : ""}`}
+                          >
+                            {color}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* Storage */}
                 {storages.length > 0 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-2">Storage</div>
@@ -456,17 +449,12 @@ const ProductDetails = () => {
                   </div>
                 )}
 
-                {/* Selected summary + stock badge */}
                 {selectedVariant && (
                   <div className="flex items-center gap-4 flex-wrap">
                     <span className="text-sm text-gray-500">
                       Selected:{" "}
                       <span className="font-medium text-gray-800">
-                        {[
-                          selectedVariant.color,
-                          selectedVariant.storage,
-                          selectedVariant.ram,
-                        ]
+                        {[selectedVariant.color, selectedVariant.storage, selectedVariant.ram]
                           .filter(Boolean)
                           .join(" / ")}
                       </span>
@@ -491,9 +479,7 @@ const ProductDetails = () => {
                   {quantity}
                 </span>
                 <button
-                  onClick={() =>
-                    setQuantity(Math.min(stockCount, quantity + 1))
-                  }
+                  onClick={() => setQuantity(Math.min(stockCount, quantity + 1))}
                   disabled={quantity >= stockCount}
                   className="px-3 py-2 hover:bg-gray-50 transition-colors text-gray-700 disabled:opacity-40"
                 >
@@ -521,7 +507,6 @@ const ProductDetails = () => {
               </Button>
             </div>
 
-            {/* Wishlist */}
             <button
               onClick={handleToggleWishlist}
               className="flex items-center gap-2 text-sm text-gray-500 hover:text-red-500 transition-colors mt-2"
@@ -540,18 +525,14 @@ const ProductDetails = () => {
 
         {/* Key Highlights */}
         <div className="mt-16 pt-12 border-t border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900 mb-8">
-            Key Highlights
-          </h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-8">Key Highlights</h2>
           <ul className="space-y-6">
             {keyHighlights.map((highlight, i) => (
               <li key={i} className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-6 h-6 flex items-center justify-center">
                   <div className="w-2 h-2 bg-gray-900 rounded-full" />
                 </div>
-                <p className="text-base text-gray-700 leading-relaxed">
-                  {highlight}
-                </p>
+                <p className="text-base text-gray-700 leading-relaxed">{highlight}</p>
               </li>
             ))}
           </ul>
@@ -562,51 +543,57 @@ const ProductDetails = () => {
           <h2 className="text-xl font-bold text-gray-900 mb-8">Reviews</h2>
           <div className="space-y-0">
             {staticReviews.map((review, index) => (
-              <div
-                key={review.id}
-                className="border-b border-gray-200 last:border-b-0"
-              >
+              <div key={review.id} className="border-b border-gray-200 last:border-b-0">
                 <div className="py-6">
-                  <h4 className="font-bold text-gray-900 mb-2">
-                    {review.name}
-                  </h4>
+                  <h4 className="font-bold text-gray-900 mb-2">{review.name}</h4>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-sm text-gray-500">{review.date}</span>
                     <div className="flex items-center">
                       {Array.from({ length: review.rating }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-5 h-5 fill-yellow-400 text-yellow-400"
-                        />
+                        <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
                       ))}
                       {Array.from({ length: 5 - review.rating }).map((_, i) => (
-                        <Star
-                          key={i}
-                          className="w-5 h-5 fill-gray-300 text-gray-300"
-                        />
+                        <Star key={i} className="w-5 h-5 fill-gray-300 text-gray-300" />
                       ))}
                     </div>
                   </div>
-                  <p className="text-gray-600 leading-relaxed">
-                    {review.comment}
-                  </p>
+                  <p className="text-gray-600 leading-relaxed">{review.comment}</p>
                 </div>
-                {index < staticReviews.length - 1 && (
-                  <div className="h-px bg-gray-200" />
-                )}
+                {index < staticReviews.length - 1 && <div className="h-px bg-gray-200" />}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Similar Products */}
-        {similar.length > 0 && (
-          <div className="mt-16 pt-12">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Discover similar items
-              </h2>
+        {/* ── Similar Products ──────────────────────────────────────────────── */}
+        <div className="mt-16 pt-12 border-t border-gray-200">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Discover similar items
+            </h2>
+            <Link
+              to="/products"
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium transition-colors"
+            >
+              View all →
+            </Link>
+          </div>
+
+          {/* Loading skeleton */}
+          {similarLoading && (
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="bg-gray-100 rounded-lg aspect-square mb-3" />
+                  <div className="h-3 bg-gray-100 rounded mb-2 w-3/4" />
+                  <div className="h-3 bg-gray-100 rounded w-1/2" />
+                </div>
+              ))}
             </div>
+          )}
+
+          {/* Actual similar cards */}
+          {!similarLoading && similar.length > 0 && (
             <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
               {similar.map((p) => {
                 const inWishlistSimilar = isInWishlist(p.id);
@@ -616,7 +603,7 @@ const ProductDetails = () => {
                     to={`/products/${p.slug}`}
                     className="group block"
                   >
-                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:shadow-sm transition-shadow">
+                    <div className="bg-gray-50 rounded-lg p-3 border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-200">
                       <div className="relative aspect-square mb-3 bg-white rounded-md overflow-hidden">
                         <img
                           src={p.image}
@@ -629,26 +616,59 @@ const ProductDetails = () => {
                             e.stopPropagation();
                             toggleWishlist(p.id);
                           }}
-                          className="absolute top-2 right-2 w-6 h-6 bg-white/80 rounded-full flex items-center justify-center shadow-sm border border-gray-200 hover:bg-white hover:shadow-md transition-all"
+                          className="absolute top-2 right-2 w-6 h-6 bg-white/90 rounded-full flex items-center justify-center shadow-sm border border-gray-200 hover:bg-white hover:shadow-md transition-all"
                         >
                           <Heart
-                            className={`w-3.5 h-3.5 ${inWishlistSimilar ? "fill-pink-500 text-pink-500" : "text-gray-600"}`}
+                            className={`w-3.5 h-3.5 ${
+                              inWishlistSimilar
+                                ? "fill-pink-500 text-pink-500"
+                                : "text-gray-400"
+                            }`}
                           />
                         </button>
+                        {p.condition && p.condition !== "Brand New" && (
+                          <div className="absolute bottom-2 left-2">
+                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                              {p.condition}
+                            </span>
+                          </div>
+                        )}
                       </div>
-                      <h3 className="text-xs font-medium text-gray-900 truncate mb-1">
+                      <h3 className="text-xs font-medium text-gray-900 line-clamp-2 mb-1 leading-snug">
                         {p.name}
                       </h3>
-                      <p className="text-xs text-gray-500 font-medium">
+                      <p className="text-xs font-semibold text-purple-600">
                         {formatPrice(p.price)}
                       </p>
+                      {p.rating > 0 && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-[10px] text-gray-500">{p.rating}</span>
+                        </div>
+                      )}
                     </div>
                   </Link>
                 );
               })}
             </div>
-          </div>
-        )}
+          )}
+
+          {/* Empty state — only show after loading is done */}
+          {!similarLoading && similar.length === 0 && (
+            <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-100">
+              <p className="text-sm text-gray-500 mb-3">No similar products found.</p>
+              <Link to="/products">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-purple-300 text-purple-600 hover:bg-purple-50"
+                >
+                  Browse all products
+                </Button>
+              </Link>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

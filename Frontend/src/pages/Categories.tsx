@@ -481,61 +481,60 @@ const Categories = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
 
       {/* Hero */}
-      <div className="relative bg-gradient-to-br from-slate-50 via-white to-blue-50/30 border-b border-slate-200 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-200/30 rounded-full blur-3xl" />
-          <div className="absolute -bottom-32 -left-32 w-96 h-96 bg-purple-200/20 rounded-full blur-3xl" />
-        </div>
-        <div className="container mx-auto px-4 py-12 md:py-16 relative z-10">
-          <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-slate-900 via-blue-800 to-indigo-800 bg-clip-text text-transparent mb-4">
-              Discover Amazing Gadgets
-            </h1>
-            <p className="text-slate-600 text-lg md:text-xl max-w-2xl mx-auto leading-relaxed">
-              Browse our full collection of premium tech — every product, every category, every condition.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap justify-center gap-3">
-            {[
-              { name: "Smartphones", icon: "📱", type: "smartphone" },
-              { name: "Laptops",     icon: "💻", type: "laptop"     },
-              { name: "Tablets",     icon: "🖥️", type: "tablet"     },
-              { name: "Audio",       icon: "🎧", type: "earbuds"    },
-              { name: "Gaming",      icon: "🎮", type: "gaming"     },
-              { name: "Wearables",   icon: "⌚", type: "smartwatch" },
-            ].map((cat) => (
-              <button
-                key={cat.type}
-                onClick={() => setProductType(productType === cat.type ? "all" : cat.type)}
-                className={`group relative px-5 py-2.5 rounded-full border shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 ${
-                  productType === cat.type
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "bg-white border-slate-200 hover:border-blue-200"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-xl">{cat.icon}</span>
-                  <span className={`text-sm font-semibold transition-colors ${
-                    productType === cat.type ? "text-white" : "text-slate-700 group-hover:text-blue-700"
-                  }`}>{cat.name}</span>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <div className="text-center mt-8">
-            <p className="text-xs text-slate-400 inline-flex items-center gap-1 bg-white/60 backdrop-blur-sm rounded-full px-3 py-1">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500" />
-              </span>
-              {totalProducts} products available — updated weekly
-            </p>
-          </div>
+ {/* <div className="border-b border-slate-200 bg-white">
+  <div className="container mx-auto px-4 py-12 md:py-16">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+    
+      <div className="max-w-3xl">
+        <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-900 tracking-tight mb-4">
+          The Future, <br />
+          <span className="inline-block border-b-4 border-blue-500 pb-1">In Stock.</span>
+        </h1>
+        <p className="text-slate-600 text-lg leading-relaxed max-w-xl mt-6 font-sans">
+          Browse our full collection of premium tech — every product, every category, every condition.
+        </p>
+        <div className="mt-8">
+          <p className="text-xs text-slate-400 inline-flex items-center gap-1.5 bg-white shadow-sm rounded-full px-3 py-1 border border-slate-200">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+            </span>
+            {totalProducts} products available — updated weekly
+          </p>
         </div>
       </div>
 
+      
+      <div className="grid grid-cols-2 gap-4">
+       
+        <div className="aspect-[3/4] rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 group">
+          <img
+            src="https://images.pexels.com/photos/3183150/pexels-photo-3183150.jpeg?auto=compress&cs=tinysrgb&w=600"
+            alt="Modern tech workspace"
+            className="w-full h-full object-cover grayscale group-hover:scale-105 transition-transform duration-500"
+          />
+        </div>
+      
+        <div className="flex flex-col gap-4">
+          <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 group">
+            <img
+              src="https://images.pexels.com/photos/205316/pexels-photo-205316.png?auto=compress&cs=tinysrgb&w=600"
+              alt="Smartphone"
+              className="w-full h-full object-cover grayscale group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+          <div className="aspect-[16/9] rounded-2xl overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300 group">
+            <img
+              src="https://images.pexels.com/photos/3945659/pexels-photo-3945659.jpeg?auto=compress&cs=tinysrgb&w=600"
+              alt="Headphones"
+              className="w-full h-full object-cover grayscale group-hover:scale-105 transition-transform duration-500"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> */}
       {/* Main */}
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">

@@ -384,7 +384,7 @@ export const staffData = {
 };
 
 // ── Lookup lists ──────────────────────────────────────────────────────────────
-export const categories = ["Phones", "Laptops", "Tabs", "Watches", "Games", "Pods", "Others"];
+export const categories = ["phones", "laptops", "tablets", "accessories", "gadget", "wearable",  "Others"];
 export const brands     = ["Apple", "Samsung", "Dell", "HP", "Lenovo", "Microsoft", "Others"];
 export const conditions = ["Brand New", "UK Used", "Fairly Used", "Open Box", "Refurbished"];
 

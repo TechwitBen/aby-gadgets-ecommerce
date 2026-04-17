@@ -26,17 +26,7 @@ export const getVariantsByProduct = async (req, res) => {
 
 export const createVariant = async (req, res) => {
   try {
-    const {
-      productId,
-      color,
-      storage,
-      ram,
-      price,
-      compare_at_price,
-      stock,
-      sku,
-    } = req.body;
-
+   const { productId, color, storage, ram, price, compare_at_price, stock, sku, is_active } = req.body;
     if (!productId || !price || !sku) {
       return res.status(400).json({
         message: "Product ID, price, and SKU are required",

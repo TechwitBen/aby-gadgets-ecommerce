@@ -1,26 +1,37 @@
+
 import axios from "axios";
 
-// Base matches your router mount point — confirm in your app.js/server.js
-// e.g. app.use("/api/v1/payment", paymentRouter)
-const BASE = "/api/v1/payment";
+// Base matches your router mount point — confirm in your server.js/app.js
+// Example: app.use("/api/v1/payment", paymentRouter)
+const BASE = "http://localhost:3000/api/v1/payment";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+/**
+ * IMPORTANT 🔥
+ * If you're using session auth (passport + express-session),
+ * you MUST send cookies with requests or you'll get 401 Unauthorized.
+ */
+const api = axios.create({
+  baseURL: BASE,
+  withCredentials: true, // 👈 FIXES YOUR 401 ISSUE
+});
+
+// ── TYPES ─────────────────────────────────────────────────────────────────────
 
 export type PaymentStatus = "pending" | "success" | "failed" | "cancelled";
 
 export interface PaymentDoc {
-  _id:                 string;
-  order:               string;
-  user:                string;
-  amount:              number;
-  currency:            string;        // "NGN"
-  status:              PaymentStatus;
-  reference:           string;        // our internal ref  PAY-timestamp-random
-  paystack_reference?: string;        // Paystack's own ref (set after verify)
-  payment_method?:     string;
-  metadata?:           Record<string, unknown>;
-  createdAt:           string;
-  updatedAt:           string;
+  _id: string;
+  order: string;
+  user: string;
+  amount: number;
+  currency: string; // "NGN"
+  status: PaymentStatus;
+  reference: string; // PAY-timestamp-random
+  paystack_reference?: string;
+  payment_method?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface InitializePaymentPayload {
@@ -28,40 +39,49 @@ export interface InitializePaymentPayload {
 }
 
 export interface InitializePaymentResponse {
-  authorization_url: string;  // redirect the user here → Paystack checkout
-  reference:         string;  // store to verify on callback
+  authorization_url: string;
+  reference: string;
 }
 
-// ── Service — one method per route ────────────────────────────────────────────
+// ── SERVICE METHODS ──────────────────────────────────────────────────────────
 
 export const paymentService = {
   /**
-   * POST /api/v1/payment/initialize
-   * Creates a Payment document and returns the Paystack authorization URL.
-   * Call this AFTER orderService.createOrder, passing the new order's _id.
+   * POST /initialize
+   * Creates payment + returns Paystack checkout URL
    */
-  initializePayment: (payload: InitializePaymentPayload): Promise<InitializePaymentResponse> =>
-    axios.post<InitializePaymentResponse>(`${BASE}/initialize`, payload).then((r) => r.data),
+  initializePayment: async (
+    payload: InitializePaymentPayload
+  ): Promise<InitializePaymentResponse> => {
+    const { data } = await api.post("/initialize", payload);
+    return data;
+  },
 
   /**
-   * GET /api/v1/payment/verify/:reference
-   * Verify a payment after the user returns from Paystack.
-   * On success the backend:
-   *   1. Marks payment.status = "success"
-   *   2. Marks order.payment_status = "paid"
-   *   3. Sets order.payment_reference = reference
+   * GET /verify/:reference
+   * Verifies payment after Paystack redirect
    */
-  verifyPayment: (reference: string): Promise<{ message: string; payment: PaymentDoc }> =>
-    axios.get(`${BASE}/verify/${reference}`).then((r) => r.data),
+  verifyPayment: async (
+    reference: string
+  ): Promise<{ message: string; payment: PaymentDoc }> => {
+    const { data } = await api.get(`/verify/${reference}`);
+    return data;
+  },
 
   /**
-   * GET /api/v1/payment/status/:reference
-   * Poll for the current payment document (used on the callback / status page).
-   * Returns the payment with its populated order.status and payment_status.
+   * GET /status/:reference
+   * Poll payment status (useful for UI loading screens)
    */
-  getPaymentStatus: (reference: string): Promise<PaymentDoc> =>
-    axios.get<PaymentDoc>(`${BASE}/status/${reference}`).then((r) => r.data),
+  getPaymentStatus: async (reference: string): Promise<PaymentDoc> => {
+    const { data } = await api.get(`/status/${reference}`);
+    return data;
+  },
 
-  // NOTE: The webhook route POST /api/v1/payment/webhook is called by Paystack's
-  // servers directly — it is NOT called from the frontend. No service method needed.
+  getAllPayments:async():Promise<PaymentDoc[]>=>{
+    const {data} = await api.get("/all");
+    return data;
+  }
+  // NOTE:
+  // POST /webhook is NOT called from frontend.
+  // Paystack calls it directly from their servers.
 };

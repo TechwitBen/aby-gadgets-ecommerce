@@ -14,6 +14,6 @@ paymentRouter.post("/initialize", isAuthenticated, initializePayment); // POST /
 paymentRouter.get("/verify/:reference", isAuthenticated, verifyPayment); // GET /api/v1/payment/verify/:reference
 paymentRouter.post("/webhook", handleWebhook); // POST /api/v1/payment/webhook (no auth for webhooks)
 paymentRouter.get("/status/:reference", isAuthenticated, getPaymentStatus); // GET /api/v1/payment/status/:reference
-paymentRouter.get("/admin/all", isAuthenticated, isAdmin, getAllPayments);
+paymentRouter.get("/all", isAuthenticated, isAdmin, getAllPayments);
 
 export default paymentRouter;

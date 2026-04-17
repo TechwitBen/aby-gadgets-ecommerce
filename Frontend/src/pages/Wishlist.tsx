@@ -42,9 +42,10 @@ const Wishlist = () => {
   };
 
   const handleAddToCart = (product: (typeof wishlistProducts)[number]) => {
+    const variant = product.variants?.[0];
     addToCart({
       id:        product.id,
-    variantId: product.id,      // ← add this — use product id as fallback
+    variantId: variant._id,      // ← add this — use product id as fallback
     name:      product.name,
     price:     product.price,
     image:     product.image,

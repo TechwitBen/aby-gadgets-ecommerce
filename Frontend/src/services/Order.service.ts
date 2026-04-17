@@ -1,6 +1,12 @@
 import axios from "axios";
 
-const BASE = "/api/orders";
+// ✅ Create a dedicated instance that always sends cookies
+const api = axios.create({
+  baseURL: "http://localhost:3000/api/v1/orders",
+  withCredentials: true,   // ← THIS is the fix; session cookie gets sent on every call
+});
+
+
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -130,46 +136,41 @@ export const orderService = {
   /**
    * POST /api/orders
    */
-  createOrder: (payload: CreateOrderPayload): Promise<OrderDoc> =>
-    axios.post<OrderDoc>(BASE, payload).then((r) => r.data),
+  createOrder:          (payload: CreateOrderPayload) =>
+    api.post<OrderDoc>("", payload).then(r => r.data),
 
   /**
    * GET /api/orders/my-orders
    */
-  getMyOrders: (): Promise<OrderDoc[]> =>
-    axios.get<OrderDoc[]>(`${BASE}/my-orders`).then((r) => r.data),
-
+  getMyOrders:          () =>
+    api.get<OrderDoc[]>("/my-orders").then(r => r.data),
   /**
    * GET /api/orders/:id
    */
-  getOrderById: (id: string): Promise<OrderDoc> =>
-    axios.get<OrderDoc>(`${BASE}/${id}`).then((r) => r.data),
-
+  getOrderById:         (id: string) =>
+    api.get<OrderDoc>(`/${id}`).then(r => r.data),
   /**
    * GET /api/orders  (admin only)
    */
-  getAllOrders: (): Promise<OrderDoc[]> =>
-    axios.get<OrderDoc[]>(BASE).then((r) => r.data),
+  getAllOrders:          () =>
+    api.get<OrderDoc[]>("").then(r => r.data),
 
   /**
    * PATCH /api/orders/:id/status  (admin only)
    * Updates the delivery/fulfilment status of an order.
    */
-  updateStatus: (id: string, status: OrderStatus): Promise<OrderDoc> =>
-    axios.patch<OrderDoc>(`${BASE}/${id}/status`, { status }).then((r) => r.data),
+  updateStatus:         (id: string, status: OrderStatus) =>
+    api.patch<OrderDoc>(`/${id}/status`, { status }).then(r => r.data),
 
   /**
    * PATCH /api/orders/:id/payment-status  (admin only)
    * Updates the payment status manually.
    * Requires adding the route + controller to your backend — see updateOrderPaymentStatus.js
    */
-  updatePaymentStatus: (id: string, payment_status: PaymentStatus): Promise<OrderDoc> =>
-    axios.patch<OrderDoc>(`${BASE}/${id}/payment-status`, { payment_status }).then((r) => r.data),
+  updatePaymentStatus:  (id: string, payment_status: PaymentStatus) =>
+    api.patch<OrderDoc>(`/${id}/payment-status`, { payment_status }).then(r => r.data),
 
-// ← add this
-  deleteOrder: (id: string): Promise<{ message: string; stockRestored: boolean }> =>
-    axios.delete(`${BASE}/${id}`).then((r) => r.data),
+ deleteOrder:          (id: string) =>
+    api.delete<{ message: string; stockRestored: boolean }>(`/${id}`).then(r => r.data),
 
-};
-
-
+}

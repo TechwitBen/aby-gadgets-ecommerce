@@ -3,15 +3,18 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import Payment from "../models/payment.model.js";
 import Order from "../models/order.model.js";
-import { PAYSTACK_SECRET_KEY } from "../configs/.env.configs.js";
+
+
+// top of payment.controller.js
+console.log("Paystack key loaded:", !!process.env.PAYSTACK_SECRET_KEY);
 
 const paystack = axios.create({
   baseURL: "https://api.paystack.co",
   headers: {
-    Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+    Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
     "Content-Type": "application/json",
   },
-});
+})
 
 export const initializePayment = async (req, res) => {
   const session = await mongoose.startSession();
@@ -102,9 +105,10 @@ export const initializePayment = async (req, res) => {
     await session.abortTransaction();
     session.endSession();
     res.status(500).json({
-      message: "Failed to initialize payment",
-      error: error.message,
-    });
+  message: "Failed to initialize payment",
+  error: error.message  // ← this tells you the real cause
+  
+});
   }
 };
 

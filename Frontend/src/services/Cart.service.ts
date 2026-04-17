@@ -1,6 +1,18 @@
 import axios from "axios";
 
-const BASE = "/api/v1/cart";
+/**
+ * ─────────────────────────────────────────────────────────────
+ * Axios Instance
+ * ─────────────────────────────────────────────────────────────
+ * All cart requests use this instance
+ * Automatically:
+ * - prefixes /api/v1
+ * - sends cookies (for session auth)
+ */
+const api = axios.create({
+  baseURL: "http://localhost:3000/api/v1",
+  withCredentials: true,
+});
 
 // ── Types matching the Cart model exactly ─────────────────────────────────────
 
@@ -77,23 +89,36 @@ export interface UpdateCartItemPayload {
 // ── Cart service ──────────────────────────────────────────────────────────────
 
 export const cartService = {
-  /** GET /api/v1/cart */
+  /**
+   * GET CART
+   */
   getCart: (): Promise<CartDoc> =>
-    axios.get<CartDoc>(BASE).then((r) => r.data),
+    api.get("/cart").then((res) => res.data),
 
-  /** POST /api/v1/cart — add or increment a variant */
+  /**
+   * ADD ITEM TO CART
+   */
   addItem: (payload: AddCartItemPayload): Promise<CartDoc> =>
-    axios.post<CartDoc>(BASE, payload).then((r) => r.data),
+    api.post("/cart", payload).then((res) => res.data),
 
-  /** PATCH /api/v1/cart — update quantity for an existing variant */
+  /**
+   * UPDATE ITEM QUANTITY
+   */
   updateItem: (payload: UpdateCartItemPayload): Promise<CartDoc> =>
-    axios.patch<CartDoc>(BASE, payload).then((r) => r.data),
+    api.patch("/cart", payload).then((res) => res.data),
 
-  /** DELETE /api/v1/cart/:variantId — remove one line item by variant id */
+  /**
+   * REMOVE SINGLE ITEM (by variantId)
+   */
   removeItem: (variantId: string): Promise<CartDoc> =>
-    axios.delete<CartDoc>(`${BASE}/${variantId}`).then((r) => r.data),
+    api.delete(`/cart/${variantId}`).then((res) => res.data),
 
-  /** DELETE /api/v1/cart — remove all items */
+  /**
+   * CLEAR CART
+   */
   clearCart: (): Promise<CartDoc> =>
-    axios.delete<CartDoc>(`${BASE}/clear`).then((r) => r.data),
+    api.delete("/cart/clear").then((res) => res.data),
 };
+
+
+

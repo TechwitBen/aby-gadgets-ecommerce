@@ -182,6 +182,9 @@ export const createProduct = async (req, res) => {
       rating, reviews, deliveryFee, tags,
     } = req.body;
 
+console.log("🔥 CREATE PRODUCT HIT");
+    console.log("BODY:", req.body);
+
     if (!name || !category || !brand) {
       return res.status(400).json({ message: "Name, category, and brand are required" });
     }
@@ -203,9 +206,17 @@ export const createProduct = async (req, res) => {
       specs,
     });
 
+
+    console.log("✅ PRODUCT CREATED:", product);
+
     res.status(201).json(normalizeProduct(product, []));
   } catch (error) {
-    res.status(500).json({ message: "Failed to create product", error: error.message });
+
+    console.error("❌ CREATE PRODUCT ERROR FULL:");
+    console.error(error); // THIS is the key
+    res.status(500).json({ message: "Failed to create product", error: error.message,stack: error.stack, });
+
+     
   }
 };
 

@@ -9,7 +9,7 @@ const ProductSchema = new Schema(
     slug:        { type: String, unique: true, lowercase: true },
     category: {
       type: String,
-      enum: ["phone", "laptop", "tablets", "accessory", "gadget", "wearable"],
+      enum: ["phones", "laptops", "tablets", "accessories", "gadget", "wearable",  "Others"],
       required: true,
     },
     brand:       { type: String, required: true },
@@ -33,16 +33,14 @@ const ProductSchema = new Schema(
   { collection: "products", timestamps: true }
 );
 
-ProductSchema.pre("save", async function (next) {
+ProductSchema.pre("save", async function () {
   if (!this.slug || this.isModified("name")) {
     this.slug =
       slugify(this.name, { lower: true, strict: true }) +
       "-" +
       this._id.toString().slice(-4);
   }
-  next();
 });
-
 const Product =
   mongoose.models.Product || mongoose.model("Product", ProductSchema);
 
