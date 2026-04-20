@@ -7,12 +7,12 @@ import {
 } from "../controllers/review.controllers.js";
 import { isAuthenticated, isAdmin } from "../middlewares/auth.middleware.js";
 
-const router = Router();
+const reviewRouter = Router();
 
-router.get("/product/:productId", getReviewsByProduct); // GET /api/reviews/product/:productId
-router.post("/", isAuthenticated, createReview); // POST /api/reviews
-router.put("/:id", isAuthenticated, updateReview); // PUT /api/reviews/:id
-// router.delete("/:id", isAuthenticated, deleteReview);
-router.delete("/:id", isAuthenticated || isAdmin, deleteReview); // DELETE /api/reviews/:id
+reviewRouter.get("/product/:productId", getReviewsByProduct); // GET /api/reviews/product/:productId
+reviewRouter.post("/", isAuthenticated, createReview); // POST /api/reviews
+reviewRouter.put("/:id", isAuthenticated, updateReview); // PUT /api/reviews/:id
+// reviewRouter.delete("/:id", isAuthenticated, deleteReview);
+reviewRouter.delete("/:id", isAuthenticated, isAdmin, deleteReview); // DELETE /api/reviews/:id
 
-export default router;
+export default reviewRouter;

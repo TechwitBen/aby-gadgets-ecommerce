@@ -179,8 +179,6 @@ const AddProductPage = () => {
     section: "" as "" | "New Arrivals" | "Popular Products" | "Sweet Deals",
     image: "",
     image2: "",
-    rating: "",
-    reviews: "",
     specs: { storage: "", screenSize: "", camera: "", battery: "" },
   });
 
@@ -295,8 +293,6 @@ const AddProductPage = () => {
         deliveryFee: formData.deliveryFee
           ? Number(formData.deliveryFee.replace(/[^0-9]/g, ""))
           : undefined,
-        rating:   formData.rating  ? Number(formData.rating)  : undefined,
-        reviews:  formData.reviews ? Number(formData.reviews) : undefined,
         features: features.filter((f) => f.trim()),
         tags:     selectedTags.length ? selectedTags : undefined,
         specs: {
@@ -674,16 +670,7 @@ const AddProductPage = () => {
               onChange={(e) => handleDeliveryFeeChange(e.target.value.replace(/[^0-9]/g, ""))}
               className={inputCls()} />
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Rating (0–5)</label>
-            <input type="number" min="0" max="5" step="0.1" placeholder="4.8" value={formData.rating}
-              onChange={(e) => handleChange("rating", e.target.value)} className={mintCls} />
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">Review Count</label>
-            <input type="number" min="0" placeholder="124" value={formData.reviews}
-              onChange={(e) => handleChange("reviews", e.target.value)} className={mintCls} />
-          </div>
+          {/* Rating and Review Count inputs removed */}
         </div>
       </div>
 

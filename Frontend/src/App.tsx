@@ -39,9 +39,10 @@ import ProductsPage from "./pages/admin/ProductsPage";
 import AddProductPage from "./pages/admin/AddProductPage";
 import ProductDetailPage from "./pages/admin/ProductDetailPage";
 import CustomersPage from "./pages/admin/CustomersPage";
-import StaffsPage from "./pages/admin/StaffsPage";
+import StaffsPage from "./pages/admin/StaffsDetailsPage";
 import SettingsPage from "./pages/admin/SettingsPage";
 import AdminManagePage from "./pages/admin/AdminManagePage";
+import ScrollToTop from "./components/ScrollToTop";
 
 
 const queryClient = new QueryClient();
@@ -55,6 +56,7 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
+<ScrollToTop />
               <Routes>
 
                 {/* PUBLIC — Header + TrustBadges + Footer injected by PublicLayout */}

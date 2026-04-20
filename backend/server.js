@@ -17,6 +17,7 @@ import wishlistRouter from "./routes/wishlist.routes.js";
 import paymentRouter from "./routes/payment.routes.js";
 import contactRouter from "./routes/contact.routes.js";
 
+
 import { connect } from "./db.js";
 import User from "./models/user.model.js";
 import { SESSION_SECRET } from "./configs/.env.configs.js";
@@ -92,12 +93,11 @@ const startServer = async () => {
   app.use("/api/v1/orders", orderRouter);
   app.use("/api/v1/cart", cartRouter);
   app.use("/api/v1/payment", paymentRouter);
-  app.use("/api/v1/review", reviewRouter);
+  app.use("/api/v1/reviews", reviewRouter);
   app.use("/api/v1/checkout", checkoutRouter);
   app.use("/api/v1/wishlist", wishlistRouter);
   app.use("/api/v1/variants", variantRouter);
   app.use("/api/v1/contact", contactRouter);
-
   // =========================
   // 6. START SERVER
   // =========================

@@ -18,6 +18,10 @@ import {
   googleCallback,
 } from "../controllers/google-auth.controllers.js";
 
+import { facebookAuth, facebookAuthCallback } from "../controllers/facebook.auth.js";
+
+
+
 import { isAuthenticated, isAdmin } from "../middlewares/auth.middleware.js";
 
 export const authRouter = Router();
@@ -49,3 +53,7 @@ authRouter.get("/users", isAuthenticated, isAdmin, getAllUsersController);
 
 // delete user (admin only)
 authRouter.delete("/:id", isAuthenticated, isAdmin, deleteUserController);
+
+
+authRouter.get("/facebook", facebookAuth);
+authRouter.get("/facebook/callback", facebookAuthCallback);

@@ -1,14 +1,12 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ShoppingCart, Star, Heart, Zap,
-  Sparkles, ArrowRight, Check, Loader2,
+  ShoppingCart, Star, Heart, ArrowRight, Check, Loader2,
+  ShoppingBag, TrendingUp, Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  productService,
-  formatPrice,
-  type Product,
+  productService, formatPrice, type Product,
 } from "@/services/Products.service";
 import { getTypeIcon, getTypeColor, getTwoSpecs } from "@/utils/productUtils";
 import { useWishlist } from "@/contexts/WishlistContext";
@@ -21,11 +19,10 @@ interface FeaturedProductsProps {
 
 const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
   const { isInWishlist, toggleWishlist } = useWishlist();
-  const { addToCart } = useCart();
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { addToCart }                   = useCart();
+  const { toast }                       = useToast();
+  const navigate                        = useNavigate();
 
-  // ── API data ───────────────────────────────────────────────────────────────
   const [newArrivals, setNewArrivals] = useState<Product[]>([]);
   const [sweetDeals,  setSweetDeals]  = useState<Product[]>([]);
   const [isLoading,   setIsLoading]   = useState(true);
@@ -40,14 +37,10 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
         setNewArrivals((na ?? []).slice(0, 4));
         setSweetDeals((sd ?? []).slice(0, 4));
       })
-      .catch(() => {
-        setNewArrivals([]);
-        setSweetDeals([]);
-      })
+      .catch(() => { setNewArrivals([]); setSweetDeals([]); })
       .finally(() => setIsLoading(false));
   }, []);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
   const handleAddToCart = (product: Product) => {
     const variant =
       product.variants?.find((v) => v.is_active && v.stock > 0) ??
@@ -62,16 +55,12 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
       quantity:  1,
       storage:   product.storage ?? undefined,
     });
-    toast({
-      title:       "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
+    toast({ title: "Added to cart", description: `${product.name} has been added to your cart.` });
   };
 
   const handleViewAll = (section: "new-arrivals" | "sweet-deals") =>
     navigate(`/products#${section}`);
 
-  // ── Skeleton ───────────────────────────────────────────────────────────────
   const SkeletonCard = () => (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden animate-pulse">
       <div className="aspect-square bg-gray-100" />
@@ -84,7 +73,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
     </div>
   );
 
-  // ── Product Card ───────────────────────────────────────────────────────────
+  // ── Product Card — CSS group hover, no JS hover state ─────────────────────
   const ProductCard = ({
     product,
     isNewArrival,
@@ -92,34 +81,30 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
     product: Product;
     isNewArrival: boolean;
   }) => {
-    const [isHovered, setIsHovered] = useState(false);
-    const inWishlist = isInWishlist(product.id);
-    const TypeIcon   = getTypeIcon(product.type);
-    const typeColor  = getTypeColor(product.type);
-    const specs      = getTwoSpecs(product);
+    const inWishlist   = isInWishlist(product.id);
+    const TypeIcon     = getTypeIcon(product.type);
+    const typeColor    = getTypeColor(product.type);
+    const specs        = getTwoSpecs(product);
+    const isOutOfStock = !product.inStock;
 
     return (
-      <div
-        className="group relative bg-white rounded-xl border border-gray-200 hover:border-violet-300 hover:shadow-xl transition-all duration-300 overflow-hidden"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
+      <div className="group relative bg-white rounded-xl border border-gray-200 hover:border-violet-300 hover:shadow-xl transition-all duration-300 overflow-hidden">
         {/* Image area */}
         <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+          {/* Primary image */}
           <img
             src={product.image ?? ""}
             alt={product.name}
-            className={`absolute inset-0 w-full h-full object-contain p-4 transition-all duration-500 ${
-              isHovered ? "opacity-0" : "opacity-100"
+            className={`absolute inset-0 w-full h-full object-contain p-4 transition-opacity duration-500 ${
+              !isOutOfStock ? "group-hover:opacity-0" : ""
             }`}
           />
-          {product.image2 && (
+          {/* Secondary image — only when in stock */}
+          {product.image2 && !isOutOfStock && (
             <img
               src={product.image2}
               alt={product.name}
-              className={`absolute inset-0 w-full h-full object-contain p-4 transition-all duration-500 ${
-                isHovered ? "opacity-100" : "opacity-0"
-              }`}
+              className="absolute inset-0 w-full h-full object-contain p-4 transition-opacity duration-500 opacity-0 group-hover:opacity-100"
             />
           )}
 
@@ -131,12 +116,17 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
                 <span>{product.type.charAt(0).toUpperCase() + product.type.slice(1)}</span>
               </div>
             )}
-            <span
-              className="text-white px-3 py-1 rounded-full text-xs font-bold w-fit"
-              style={{ backgroundColor: isNewArrival ? "#ef4444" : "#6426E1" }}
-            >
-              {isNewArrival ? "NEW" : "DEAL"}
-            </span>
+            {!isOutOfStock && (
+              <span
+                className="text-white px-3 py-1 rounded-full text-xs font-bold w-fit"
+                style={{ backgroundColor: isNewArrival ? "#ef4444" : "#6426E1" }}
+              >
+                {isNewArrival ? "NEW" : "DEAL"}
+              </span>
+            )}
+            {isOutOfStock && (
+              <span className="bg-gray-700 text-white px-3 py-1 rounded-full text-xs font-bold">OUT OF STOCK</span>
+            )}
           </div>
 
           {/* Wishlist button */}
@@ -147,9 +137,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
             <Heart className={`w-5 h-5 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`} />
           </button>
 
-          {/* Hover overlay */}
-          {isHovered && product.inStock && (
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center transition-all duration-300">
+          {/* Hover overlay — CSS group hover, stable */}
+          {!isOutOfStock && (
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
               <div className="flex flex-col gap-3">
                 <Button
                   className="bg-white px-6 py-3 rounded-lg font-semibold transform hover:scale-105 transition-all"
@@ -177,17 +167,13 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
               <span className={`text-xs font-semibold px-3 py-1 rounded-full ${typeColor}`}>
                 {product.brand}
               </span>
-              {product.condition === "Brand New" && (
-                <Check className="w-4 h-4 text-green-500" />
-              )}
+              {product.condition === "Brand New" && <Check className="w-4 h-4 text-green-500" />}
             </div>
             {product.rating > 0 && (
               <div className="flex items-center gap-1">
                 <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                 <span className="text-sm font-bold text-gray-900">{product.rating}</span>
-                {product.reviews > 0 && (
-                  <span className="text-xs text-gray-500">({product.reviews})</span>
-                )}
+                {product.reviews > 0 && <span className="text-xs text-gray-500">({product.reviews})</span>}
               </div>
             )}
           </div>
@@ -216,15 +202,8 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
     );
   };
 
-  // ── Section ────────────────────────────────────────────────────────────────
   const Section = ({
-    title,
-    subtitle,
-    products,
-    isNewArrival,
-    sectionKey,
-    icon: Icon,
-    iconGradient,
+    title, subtitle, products, isNewArrival, sectionKey, icon: Icon, iconGradient,
   }: {
     title: string;
     subtitle: string;
@@ -278,7 +257,6 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
     </div>
   );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <section className="py-16 md:py-24 bg-gradient-to-b from-gray-50 to-white">
       <div className="container mx-auto px-4">
@@ -290,7 +268,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
               className="w-12 h-12 rounded-2xl flex items-center justify-center"
               style={{ backgroundImage: "linear-gradient(135deg, #6426E1, #9b59f5)" }}
             >
-              <Sparkles className="w-6 h-6 text-white" />
+              <ShoppingBag className="w-6 h-6 text-white" />
             </div>
             <div>
               <div className="text-sm font-semibold tracking-wider uppercase" style={{ color: "#6426E1" }}>
@@ -317,7 +295,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           products={newArrivals}
           isNewArrival={true}
           sectionKey="new-arrivals"
-          icon={Sparkles}
+          icon={TrendingUp}
           iconGradient="linear-gradient(135deg, #6426E1, #9b59f5)"
         />
 
@@ -327,7 +305,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           products={sweetDeals}
           isNewArrival={false}
           sectionKey="sweet-deals"
-          icon={Zap}
+          icon={Tag}
           iconGradient="linear-gradient(135deg, #e11d48, #fb7185)"
         />
       </div>

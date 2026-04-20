@@ -1,12 +1,13 @@
 import Product from "./../models/product.model.js";
 import Variant from "./../models/variant.model.js";
+import Review from "./../models/review.model.js";
+import mongoose from "mongoose";
 
 // ── Normalize a product + its variants into the frontend Product shape ────────
 const normalizeProduct = (product, variants = []) => {
   const doc = product.toObject ? product.toObject() : product;
   const activeVariants = variants.filter((v) => v.is_active);
 
-  // Pick cheapest active variant for the top-level price / storage
   const sorted = [...activeVariants].sort((a, b) => a.price - b.price);
   const cheapest = sorted[0];
 
@@ -14,14 +15,14 @@ const normalizeProduct = (product, variants = []) => {
 
   return {
     ...doc,
-    id:       doc._id.toString(),
-    image:    doc.images?.[0] ?? null,
-    image2:   doc.images?.[1] ?? null,
-    price:    cheapest?.price ?? 0,
-    storage:  cheapest?.storage ?? doc.specs?.storage ?? null,
-    inStock:  totalStock > 0,
+    id: doc._id.toString(),
+    image: doc.images?.[0] ?? null,
+    image2: doc.images?.[1] ?? null,
+    price: cheapest?.price ?? 0,
+    storage: cheapest?.storage ?? doc.specs?.storage ?? null,
+    inStock: totalStock > 0,
     variants: variants.map((v) => ({
-      ...( v.toObject ? v.toObject() : v ),
+      ...(v.toObject ? v.toObject() : v),
       id: v._id.toString(),
     })),
   };
@@ -29,29 +30,22 @@ const normalizeProduct = (product, variants = []) => {
 
 // ── Build Mongoose filter from query params ───────────────────────────────────
 const buildFilter = (query) => {
-  const {
-    search, productType, brand, category,
-    section, condition, storage,
-  } = query;
-
+  const { search, productType, brand, category, section, condition, storage } = query;
   const filter = {};
 
-  if (category)    filter.category  = category.toLowerCase();
-  if (section)     filter.section   = section;
-  if (brand)       filter.brand     = { $regex: brand, $options: "i" };
-  if (productType) filter.type      = productType;
-  if (condition)   filter.condition = condition;
+  if (category) filter.category = category.toLowerCase();
+  if (section) filter.section = section;
+  if (brand) filter.brand = { $regex: brand, $options: "i" };
+  if (productType) filter.type = productType;
+  if (condition) filter.condition = condition;
 
   if (storage) {
-    filter.$or = [
-      { "specs.storage": { $regex: storage, $options: "i" } },
-    ];
+    filter.$or = [{ "specs.storage": { $regex: storage, $options: "i" } }];
   }
 
   if (search) {
     const regex = { $regex: search, $options: "i" };
     const searchOr = [{ name: regex }, { brand: regex }, { type: regex }];
-    // Merge with existing $or if storage filter already set one
     filter.$or = filter.$or ? [...filter.$or, ...searchOr] : searchOr;
   }
 
@@ -70,41 +64,60 @@ const buildSort = (sortBy) => {
   }
 };
 
+// ── Batch-fetch review aggregates for a list of product IDs ──────────────────
+const batchReviewStats = async (productIds) => {
+  if (!productIds.length) return {};
+
+  const objectIds = productIds.map(
+    (id) => new mongoose.Types.ObjectId(id.toString()),
+  );
+
+  const stats = await Review.aggregate([
+    { $match: { product: { $in: objectIds } } },
+    {
+      $group: {
+        _id: "$product",
+        avgRating: { $avg: "$rating" },
+        count: { $sum: 1 },
+      },
+    },
+  ]);
+
+  const map = {};
+  stats.forEach(({ _id, avgRating, count }) => {
+    map[_id.toString()] = {
+      rating: Number(avgRating.toFixed(1)),
+      reviews: count,
+    };
+  });
+  return map;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
  * @desc    Get all products with advanced filtering, sorting, pagination
  * @route   GET /api/products
- *
- * Query params:
- *   page, limit          – pagination (ignored when all=true)
- *   all                  – "true" → skip pagination
- *   search               – text across name / brand / type
- *   productType, brand, category, section, condition, storage
- *   minPrice, maxPrice   – applied after variant join (in-memory)
- *   sortBy               – price_low | price_high | newest | best_rating | most_popular | featured
- *   withVariants         – "true" → embed variant docs (default: true for public API)
  */
 export const getProducts = async (req, res) => {
   try {
     const {
-      page     = 1,
-      limit    = 12,
-      all      = "false",
-      sortBy   = "featured",
+      page = 1,
+      limit = 12,
+      all = "false",
+      sortBy = "featured",
       minPrice,
       maxPrice,
     } = req.query;
 
     const filter = buildFilter(req.query);
-    const sort   = buildSort(sortBy);
+    const sort = buildSort(sortBy);
 
-    // ── Fetch products ──────────────────────────────────────────────────────
     let query = Product.find(filter).sort(sort);
 
     const returnAll = all === "true";
-    const pageNum   = Math.max(1, parseInt(page));
-    const limitNum  = Math.min(100, Math.max(1, parseInt(limit)));
+    const pageNum = Math.max(1, parseInt(page));
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit)));
 
     if (!returnAll) {
       query = query.skip((pageNum - 1) * limitNum).limit(limitNum);
@@ -115,13 +128,10 @@ export const getProducts = async (req, res) => {
       Product.countDocuments(filter),
     ]);
 
-    // ── Batch-fetch variants for all returned products ──────────────────────
+    // Batch-fetch variants
     const productIds = products.map((p) => p._id);
-    const allVariants = await Variant.find({
-      product: { $in: productIds },
-    }).lean();
+    const allVariants = await Variant.find({ product: { $in: productIds } }).lean();
 
-    // Group variants by product id
     const variantMap = {};
     allVariants.forEach((v) => {
       const key = v.product.toString();
@@ -129,24 +139,24 @@ export const getProducts = async (req, res) => {
       variantMap[key].push(v);
     });
 
-    // ── Normalize ───────────────────────────────────────────────────────────
+    // Normalize
     let normalized = products.map((p) => {
       const variants = variantMap[p._id.toString()] ?? [];
       return normalizeProduct(p, variants);
     });
 
-    // ── Price filter (post-join) ─────────────────────────────────────────────
+    // Price filter (post-join)
     if (minPrice) normalized = normalized.filter((p) => p.price >= Number(minPrice));
     if (maxPrice) normalized = normalized.filter((p) => p.price <= Number(maxPrice));
 
-    // ── Price sort (post-join) ───────────────────────────────────────────────
-    if (sortBy === "price_low")  normalized.sort((a, b) => a.price - b.price);
+    // Price sort (post-join)
+    if (sortBy === "price_low") normalized.sort((a, b) => a.price - b.price);
     if (sortBy === "price_high") normalized.sort((a, b) => b.price - a.price);
 
     res.status(200).json({
       products: normalized,
-      page:     returnAll ? 1 : pageNum,
-      pages:    returnAll ? 1 : Math.ceil(totalProducts / limitNum),
+      page: returnAll ? 1 : pageNum,
+      pages: returnAll ? 1 : Math.ceil(totalProducts / limitNum),
       totalProducts,
     });
   } catch (error) {
@@ -171,7 +181,7 @@ export const getProductBySlug = async (req, res) => {
 };
 
 /**
- * @desc    Create a new product
+ * @desc    Create a new product  (rating / reviews are auto-managed via reviews API)
  * @route   POST /api/products
  */
 export const createProduct = async (req, res) => {
@@ -179,11 +189,8 @@ export const createProduct = async (req, res) => {
     const {
       name, description, category, brand, condition,
       image, image2, features, specs, type, section,
-      rating, reviews, deliveryFee, tags,
+      deliveryFee, tags,
     } = req.body;
-
-console.log("🔥 CREATE PRODUCT HIT");
-    console.log("BODY:", req.body);
 
     if (!name || !category || !brand) {
       return res.status(400).json({ message: "Name, category, and brand are required" });
@@ -195,28 +202,25 @@ console.log("🔥 CREATE PRODUCT HIT");
       category: category.toLowerCase(),
       brand,
       condition,
-      images:      [image, image2].filter(Boolean),
+      images: [image, image2].filter(Boolean),
       features,
       tags,
       type,
       section,
-      rating:      rating      ?? 0,
-      reviews:     reviews     ?? 0,
       deliveryFee: deliveryFee ?? 0,
       specs,
+      // rating and reviews start at 0 and are managed by the reviews API
+      rating: 0,
+      reviews: 0,
     });
-
-
-    console.log("✅ PRODUCT CREATED:", product);
 
     res.status(201).json(normalizeProduct(product, []));
   } catch (error) {
-
-    console.error("❌ CREATE PRODUCT ERROR FULL:");
-    console.error(error); // THIS is the key
-    res.status(500).json({ message: "Failed to create product", error: error.message,stack: error.stack, });
-
-     
+    res.status(500).json({
+      message: "Failed to create product",
+      error: error.message,
+      stack: error.stack,
+    });
   }
 };
 
@@ -232,7 +236,7 @@ export const updateProduct = async (req, res) => {
     const {
       name, description, category, brand, condition,
       image, image2, features, tags, specs,
-      type, section, rating, reviews, is_active, deliveryFee,
+      type, section, is_active, deliveryFee,
     } = req.body;
 
     product.name        = name        ?? product.name;
@@ -244,14 +248,13 @@ export const updateProduct = async (req, res) => {
     product.tags        = tags        ?? product.tags;
     product.type        = type        ?? product.type;
     product.section     = section     ?? product.section;
-    product.rating      = rating      ?? product.rating;
-    product.reviews     = reviews     ?? product.reviews;
     product.is_active   = is_active   ?? product.is_active;
     product.deliveryFee = deliveryFee ?? product.deliveryFee;
+    // rating and reviews are NOT manually editable — managed by reviews API
 
     if (image !== undefined || image2 !== undefined) {
       const imgs = [...product.images];
-      if (image  !== undefined) imgs[0] = image;
+      if (image !== undefined) imgs[0] = image;
       if (image2 !== undefined) imgs[1] = image2;
       product.images = imgs.filter(Boolean);
     }
@@ -282,8 +285,14 @@ export const patchProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
+    // Fields that are auto-managed and must not be manually patched
+    const PROTECTED = new Set(["rating", "reviews"]);
+
     const specFields = ["camera", "battery", "screenSize", "storage"];
+
     Object.keys(req.body).forEach((key) => {
+      if (PROTECTED.has(key)) return; // ignore
+
       if (specFields.includes(key)) {
         if (!product.specs) product.specs = {};
         product.specs[key] = req.body[key];

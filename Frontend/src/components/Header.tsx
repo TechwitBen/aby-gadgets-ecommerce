@@ -1,11 +1,17 @@
-import { Search, ShoppingCart, User, Menu, ArrowLeft, ChevronDown, LogIn, UserPlus, Heart, Package, HelpCircle, Truck, LogOut, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Search, ShoppingCart, User, Menu, ArrowLeft, ChevronDown,
+  LogIn, UserPlus, Heart, Package, HelpCircle, Truck,
+  LogOut, ChevronRight,
+} from "lucide-react";
+import { Button }                           from "@/components/ui/button";
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useCart } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
-import { useWishlist } from "@/contexts/WishlistContext";
-import { orderService } from "@/services/Order.service";
+import { Link, useNavigate, useLocation }   from "react-router-dom";
+import { useCart }                           from "@/contexts/CartContext";
+import { useAuth }                           from "@/contexts/AuthContext";
+import { useWishlist }                       from "@/contexts/WishlistContext";
+import { orderService }                      from "@/services/Order.service";
+// Place your logo file at:  src/assets/logo.png
+import logoImg from "@/assets/logo.png";
 
 interface HeaderProps {
   variant?: "default" | "transparent";
@@ -18,29 +24,27 @@ const Header = ({
   showBackButton = false,
   title,
 }: HeaderProps) => {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [orderCount, setOrderCount] = useState<number>(0);
+  const [mobileMenuOpen,    setMobileMenuOpen]    = useState(false);
+  const [userDropdownOpen,  setUserDropdownOpen]  = useState(false);
+  const [isScrolled,        setIsScrolled]        = useState(false);
+  const [orderCount,        setOrderCount]        = useState<number>(0);
 
-  const { totalItems } = useCart();
-  const { wishlistCount } = useWishlist();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { totalItems }                        = useCart();
+  const { wishlistCount }                     = useWishlist();
+  const { user, isAuthenticated, logout }     = useAuth();
 
-  const navigate = useNavigate();
-  const location = useLocation();
-  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const navigate          = useNavigate();
+  const location          = useLocation();
+  const userDropdownRef   = useRef<HTMLDivElement>(null);
 
   const getUserInitials = () => {
     if (!user?.username) return "U";
     const names = user.username.split(" ");
-    if (names.length >= 2) {
-      return (names[0][0] + names[1][0]).toUpperCase();
-    }
-    return user.username.substring(0, 2).toUpperCase();
+    return names.length >= 2
+      ? (names[0][0] + names[1][0]).toUpperCase()
+      : user.username.substring(0, 2).toUpperCase();
   };
 
-  // Fetch order count when authenticated
   const fetchOrderCount = useCallback(async () => {
     if (!isAuthenticated) return;
     try {
@@ -51,9 +55,7 @@ const Header = ({
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    fetchOrderCount();
-  }, [fetchOrderCount]);
+  useEffect(() => { fetchOrderCount(); }, [fetchOrderCount]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -62,8 +64,8 @@ const Header = ({
   }, []);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
         setUserDropdownOpen(false);
       }
     };
@@ -116,45 +118,72 @@ const Header = ({
   const isDefaultUnscrolled     = variant === "default"     && !isScrolled;
 
   return (
-    <header className={`sticky top-0 z-50 w-full border-b ${getBorderColor()} ${getHeaderBackground()} transition-all duration-300 shadow-sm`}>
+    <header
+      className={`sticky top-0 z-50 w-full border-b ${getBorderColor()} ${getHeaderBackground()} transition-all duration-300 shadow-sm`}
+    >
       <div className="container mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
 
-          {/* Left — Logo */}
+          {/* ── Left — Logo / Back button ──────────────────────────────── */}
           <div className="flex items-center gap-3">
             {showBackButton ? (
               <button
                 onClick={() => navigate(-1)}
-                className={`flex items-center gap-2 ${isTransparentUnscrolled ? "text-white hover:text-gray-200" : isDefaultUnscrolled ? "text-white hover:text-purple-100" : "text-gray-600 hover:text-gray-900"} transition-colors`}
+                className={`flex items-center gap-2 transition-colors ${
+                  isTransparentUnscrolled ? "text-white hover:text-gray-200"
+                  : isDefaultUnscrolled   ? "text-white hover:text-purple-100"
+                  : "text-gray-600 hover:text-gray-900"
+                }`}
               >
                 <ArrowLeft className="h-5 w-5" />
                 <span className="hidden sm:inline text-sm font-medium">Back</span>
               </button>
             ) : (
               <Link to="/" className="flex items-center gap-3 group">
-                <div className={`w-9 h-9 sm:w-10 sm:h-10 ${isDefaultUnscrolled ? "bg-white" : "bg-gradient-to-br from-blue-600 to-purple-600"} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-200`}>
-                  <span className={`font-bold text-sm sm:text-lg ${isDefaultUnscrolled ? "text-[#6426E1]" : "text-white"}`}>AG</span>
+                {/* ── Logo image ─────────────────────────────────────────── */}
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-200 bg-black">
+                  <img
+                    src={logoImg}
+                    alt="Aby Gadgets logo"
+                    className="w-full h-full object-cover"
+                  />
                 </div>
+
                 <div className="hidden sm:flex flex-col">
-                  <span className={`font-bold text-lg leading-tight ${getTextColor()} ${isDefaultUnscrolled ? "group-hover:text-purple-100" : "group-hover:text-blue-600"} transition-colors`}>
+                  <span
+                    className={`font-bold text-lg leading-tight transition-colors ${getTextColor()} ${
+                      isDefaultUnscrolled
+                        ? "group-hover:text-purple-100"
+                        : "group-hover:text-blue-600"
+                    }`}
+                  >
                     Aby Gadgets
                   </span>
-                  <span className={`text-xs ${isDefaultUnscrolled ? "text-purple-200" : "text-gray-500"}`}>
+                  <span
+                    className={`text-xs ${
+                      isDefaultUnscrolled ? "text-purple-200" : "text-gray-500"
+                    }`}
+                  >
                     Premium Tech Store
                   </span>
                 </div>
               </Link>
             )}
+
             {title && (
               <div className="hidden md:flex items-center ml-2">
-                <span className={`text-lg font-bold ${getTextColor()} border-l ${isDefaultUnscrolled ? "border-purple-300/50" : "border-gray-300"} pl-4`}>
+                <span
+                  className={`text-lg font-bold ${getTextColor()} border-l ${
+                    isDefaultUnscrolled ? "border-purple-300/50" : "border-gray-300"
+                  } pl-4`}
+                >
                   {title}
                 </span>
               </div>
             )}
           </div>
 
-          {/* Center — Desktop Nav */}
+          {/* ── Center — Desktop Nav ───────────────────────────────────── */}
           <nav className="hidden lg:flex items-center justify-center flex-1">
             <div className="flex items-center gap-0.5">
               {navLinks.map((link) => {
@@ -175,7 +204,15 @@ const Header = ({
                   >
                     {link.name}
                     {!isActive && (
-                      <span className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 ${isDefaultUnscrolled ? "bg-white" : "bg-gradient-to-r from-blue-500 to-purple-500"} transition-all duration-300 group-hover:w-3/4 ${isTransparentUnscrolled ? "group-hover:bg-white" : ""}`} />
+                      <span
+                        className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-3/4 ${
+                          isDefaultUnscrolled
+                            ? "bg-white"
+                            : isTransparentUnscrolled
+                            ? "group-hover:bg-white bg-white"
+                            : "bg-gradient-to-r from-blue-500 to-purple-500"
+                        }`}
+                      />
                     )}
                   </Link>
                 );
@@ -183,16 +220,27 @@ const Header = ({
             </div>
           </nav>
 
-          {/* Right — Icons */}
+          {/* ── Right — Icons ─────────────────────────────────────────── */}
           <div className="flex items-center gap-2 sm:gap-3">
+
             {/* Desktop search */}
             <div
               className="hidden md:flex items-center relative group cursor-pointer"
               onClick={() => navigate("/search")}
             >
-              <Search className={`absolute left-3.5 h-4 w-4 pointer-events-none ${isTransparentUnscrolled ? "text-gray-300 group-hover:text-white" : isDefaultUnscrolled ? "text-purple-200 group-hover:text-white" : "text-gray-400 group-hover:text-blue-500"} transition-colors`} />
+              <Search
+                className={`absolute left-3.5 h-4 w-4 pointer-events-none transition-colors ${
+                  isTransparentUnscrolled ? "text-gray-300 group-hover:text-white"
+                  : isDefaultUnscrolled   ? "text-purple-200 group-hover:text-white"
+                  : "text-gray-400 group-hover:text-blue-500"
+                }`}
+              />
               <div
-                className={`pl-10 pr-4 py-2.5 text-sm ${isTransparentUnscrolled ? "bg-white/15 text-white border-white/30 hover:bg-white/20" : isDefaultUnscrolled ? "bg-white/20 text-white border-white/30 hover:bg-white/30" : "bg-gray-50 text-gray-900 border-gray-200 hover:bg-gray-100"} rounded-xl w-44 cursor-pointer select-none border transition-all duration-300`}
+                className={`pl-10 pr-4 py-2.5 text-sm rounded-xl w-44 cursor-pointer select-none border transition-all duration-300 ${
+                  isTransparentUnscrolled ? "bg-white/15 text-white border-white/30 hover:bg-white/20"
+                  : isDefaultUnscrolled   ? "bg-white/20 text-white border-white/30 hover:bg-white/30"
+                  : "bg-gray-50 text-gray-900 border-gray-200 hover:bg-gray-100"
+                }`}
               >
                 <span className={`${getSearchPlaceholderColor()} text-sm`}>Search...</span>
               </div>
@@ -202,7 +250,11 @@ const Header = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`md:hidden ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl`}
+              className={`md:hidden rounded-xl ${
+                isTransparentUnscrolled || isDefaultUnscrolled
+                  ? "text-white hover:text-white hover:bg-white/10"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
               onClick={() => navigate("/search")}
             >
               <Search className="h-5 w-5" />
@@ -212,7 +264,11 @@ const Header = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`relative ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-pink-100 hover:bg-white/10" : "text-gray-600 hover:text-pink-500 hover:bg-pink-50"} rounded-xl`}
+              className={`relative rounded-xl ${
+                isTransparentUnscrolled || isDefaultUnscrolled
+                  ? "text-white hover:text-pink-100 hover:bg-white/10"
+                  : "text-gray-600 hover:text-pink-500 hover:bg-pink-50"
+              }`}
               onClick={() => navigate("/wishlist")}
             >
               <Heart className="h-5 w-5" />
@@ -227,12 +283,22 @@ const Header = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`relative ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"} rounded-xl`}
+              className={`relative rounded-xl ${
+                isTransparentUnscrolled || isDefaultUnscrolled
+                  ? "text-white hover:text-white hover:bg-white/10"
+                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+              }`}
               onClick={() => navigate("/cart")}
             >
               <ShoppingCart className="h-5 w-5" />
               {totalItems > 0 && (
-                <span className={`absolute -top-1 -right-1 w-5 h-5 ${isDefaultUnscrolled ? "bg-yellow-400 text-[#6426E1]" : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"} text-xs rounded-full flex items-center justify-center shadow-sm`}>
+                <span
+                  className={`absolute -top-1 -right-1 w-5 h-5 text-xs rounded-full flex items-center justify-center shadow-sm ${
+                    isDefaultUnscrolled
+                      ? "bg-yellow-400 text-[#6426E1]"
+                      : "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                  }`}
+                >
                   {totalItems}
                 </span>
               )}
@@ -245,18 +311,41 @@ const Header = ({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`relative ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"} rounded-xl group`}
+                    className={`relative rounded-xl group ${
+                      isTransparentUnscrolled || isDefaultUnscrolled
+                        ? "text-white hover:text-white hover:bg-white/10"
+                        : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                    }`}
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   >
-                    <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full ${isDefaultUnscrolled ? "bg-white text-[#6426E1]" : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"} flex items-center justify-center font-semibold text-sm group-hover:scale-105 transition-transform duration-200`}>
+                    <div
+                      className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-semibold text-sm group-hover:scale-105 transition-transform duration-200 ${
+                        isDefaultUnscrolled
+                          ? "bg-white text-[#6426E1]"
+                          : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
+                      }`}
+                    >
                       {getUserInitials()}
                     </div>
-                    <ChevronDown className={`absolute -bottom-1 -right-1 h-3 w-3 bg-white rounded-full border ${isTransparentUnscrolled ? "border-white/30" : isDefaultUnscrolled ? "border-white" : "border-gray-300"} ${isDefaultUnscrolled ? "text-[#6426E1]" : "text-gray-600"} ${userDropdownOpen ? "rotate-180" : ""} transition-transform duration-200`} />
+                    <ChevronDown
+                      className={`absolute -bottom-1 -right-1 h-3 w-3 bg-white rounded-full border transition-transform duration-200 ${
+                        userDropdownOpen ? "rotate-180" : ""
+                      } ${
+                        isTransparentUnscrolled ? "border-white/30"
+                        : isDefaultUnscrolled   ? "border-white"
+                        : "border-gray-300"
+                      } ${isDefaultUnscrolled ? "text-[#6426E1]" : "text-gray-600"}`}
+                    />
                   </Button>
 
                   {userDropdownOpen && (
-                    <div className={`absolute right-0 mt-2 w-64 rounded-2xl shadow-xl border ${isTransparentUnscrolled ? "bg-gray-900/95 backdrop-blur-md border-white/20" : "bg-white border-gray-200"}`}>
-                      
+                    <div
+                      className={`absolute right-0 mt-2 w-64 rounded-2xl shadow-xl border ${
+                        isTransparentUnscrolled
+                          ? "bg-gray-900/95 backdrop-blur-md border-white/20"
+                          : "bg-white border-gray-200"
+                      }`}
+                    >
                       {/* User info */}
                       <div className="p-4 border-b border-gray-100">
                         <div className="flex items-center gap-3">
@@ -264,24 +353,43 @@ const Header = ({
                             {getUserInitials()}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <h3 className={`font-bold truncate text-sm ${isTransparentUnscrolled ? "text-white" : "text-gray-900"}`}>{user?.username}</h3>
-                            <p className={`text-xs truncate ${isTransparentUnscrolled ? "text-gray-400" : "text-gray-500"}`}>{user?.email}</p>
+                            <h3
+                              className={`font-bold truncate text-sm ${
+                                isTransparentUnscrolled ? "text-white" : "text-gray-900"
+                              }`}
+                            >
+                              {user?.username}
+                            </h3>
+                            <p
+                              className={`text-xs truncate ${
+                                isTransparentUnscrolled ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              {user?.email}
+                            </p>
                           </div>
                         </div>
 
-                        {/* Orders count stat — functional */}
+                        {/* Orders count stat */}
                         <button
                           onClick={() => { navigate("/orders"); setUserDropdownOpen(false); }}
-                          className="mt-3 w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-[#6426E1]/8 hover:bg-[#6426E1]/15 transition-colors group"
+                          className="mt-3 w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#6426E1]/15 transition-colors group"
                           style={{ backgroundColor: "rgba(100, 38, 225, 0.06)" }}
                         >
                           <div className="flex items-center gap-2.5">
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: "rgba(100, 38, 225, 0.12)" }}>
+                            <div
+                              className="w-8 h-8 rounded-lg flex items-center justify-center"
+                              style={{ backgroundColor: "rgba(100, 38, 225, 0.12)" }}
+                            >
                               <Package className="h-4 w-4" style={{ color: "#6426E1" }} />
                             </div>
                             <div className="text-left">
-                              <p className={`text-xs ${isTransparentUnscrolled ? "text-gray-400" : "text-gray-500"}`}>Total Orders</p>
-                              <p className={`font-bold text-sm ${isTransparentUnscrolled ? "text-white" : "text-gray-900"}`}>{orderCount}</p>
+                              <p className={`text-xs ${isTransparentUnscrolled ? "text-gray-400" : "text-gray-500"}`}>
+                                Total Orders
+                              </p>
+                              <p className={`font-bold text-sm ${isTransparentUnscrolled ? "text-white" : "text-gray-900"}`}>
+                                {orderCount}
+                              </p>
                             </div>
                           </div>
                           <ChevronRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
@@ -291,15 +399,19 @@ const Header = ({
                       {/* Menu items */}
                       <div className="p-2">
                         {[
-                          { icon: Package, label: "My Orders",   path: "/orders"      },
-                          { icon: User,    label: "Profile",     path: "/profile"     },
-                          { icon: Truck,   label: "Notification", path: "/notifications" },
-                          { icon: Truck,   label: "Help Centers", path: "/help" },
+                          { icon: Package,    label: "My Orders",    path: "/orders"        },
+                          { icon: User,       label: "Profile",      path: "/profile"       },
+                          { icon: Truck,      label: "Notification", path: "/notifications" },
+                          { icon: HelpCircle, label: "Help Centre",  path: "/help"          },
                         ].map((item) => (
                           <button
                             key={item.label}
                             onClick={() => { navigate(item.path); setUserDropdownOpen(false); }}
-                            className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${isTransparentUnscrolled ? "text-gray-300 hover:bg-white/10 hover:text-white" : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"}`}
+                            className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${
+                              isTransparentUnscrolled
+                                ? "text-gray-300 hover:bg-white/10 hover:text-white"
+                                : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+                            }`}
                           >
                             <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
                             <span className="flex-1 text-left">{item.label}</span>
@@ -307,11 +419,19 @@ const Header = ({
                           </button>
                         ))}
 
-                        <div className={`h-px ${isTransparentUnscrolled ? "bg-white/20" : "bg-gray-100"} my-1.5 mx-2`} />
+                        <div
+                          className={`h-px my-1.5 mx-2 ${
+                            isTransparentUnscrolled ? "bg-white/20" : "bg-gray-100"
+                          }`}
+                        />
 
                         <button
                           onClick={handleLogout}
-                          className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${isTransparentUnscrolled ? "text-rose-400 hover:bg-white/10" : "text-rose-500 hover:bg-rose-50"}`}
+                          className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${
+                            isTransparentUnscrolled
+                              ? "text-rose-400 hover:bg-white/10"
+                              : "text-rose-500 hover:bg-rose-50"
+                          }`}
                         >
                           <LogOut className="h-4 w-4" />
                           <span className="flex-1 text-left">Logout</span>
@@ -324,14 +444,24 @@ const Header = ({
                 <div className="flex items-center gap-2">
                   <Button
                     variant="ghost"
-                    className={`${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl px-3.5`}
+                    className={`rounded-xl px-3.5 ${
+                      isTransparentUnscrolled || isDefaultUnscrolled
+                        ? "text-white hover:text-white hover:bg-white/10"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    }`}
                     onClick={handleLogin}
                   >
                     <LogIn className="h-4 w-4 mr-1.5" />
                     <span className="hidden sm:inline">Login</span>
                   </Button>
                   <Button
-                    className={`rounded-xl px-3.5 ${isTransparentUnscrolled ? "bg-white text-gray-900 hover:bg-gray-100" : isDefaultUnscrolled ? "bg-white text-[#6426E1] hover:bg-gray-100" : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"}`}
+                    className={`rounded-xl px-3.5 ${
+                      isTransparentUnscrolled
+                        ? "bg-white text-gray-900 hover:bg-gray-100"
+                        : isDefaultUnscrolled
+                        ? "bg-white text-[#6426E1] hover:bg-gray-100"
+                        : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+                    }`}
                     onClick={handleSignup}
                   >
                     <UserPlus className="h-4 w-4 mr-1.5" />
@@ -346,7 +476,11 @@ const Header = ({
             <Button
               variant="ghost"
               size="icon"
-              className={`lg:hidden ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl`}
+              className={`lg:hidden rounded-xl ${
+                isTransparentUnscrolled || isDefaultUnscrolled
+                  ? "text-white hover:text-white hover:bg-white/10"
+                  : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              }`}
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               <Menu className="h-5 w-5" />
@@ -354,16 +488,36 @@ const Header = ({
           </div>
         </div>
 
-        {/* Mobile Menu */}
+        {/* ── Mobile Menu ─────────────────────────────────────────────── */}
         {mobileMenuOpen && (
-          <div className={`lg:hidden py-4 ${isTransparentUnscrolled ? "bg-black/95 backdrop-blur-md border-white/20" : isDefaultUnscrolled ? "bg-[#6426E1] border-purple-700/30" : "bg-white border-gray-200"} border-t`}>
+          <div
+            className={`lg:hidden py-4 border-t ${
+              isTransparentUnscrolled
+                ? "bg-black/95 backdrop-blur-md border-white/20"
+                : isDefaultUnscrolled
+                ? "bg-[#6426E1] border-purple-700/30"
+                : "bg-white border-gray-200"
+            }`}
+          >
             <div className="px-4 mb-4">
               <div className="relative">
-                <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${isTransparentUnscrolled ? "text-gray-300" : isDefaultUnscrolled ? "text-purple-200" : "text-gray-400"}`} />
+                <Search
+                  className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 ${
+                    isTransparentUnscrolled ? "text-gray-300"
+                    : isDefaultUnscrolled   ? "text-purple-200"
+                    : "text-gray-400"
+                  }`}
+                />
                 <input
                   type="text"
                   placeholder="Search products..."
-                  className={`w-full pl-9 pr-4 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 ${isTransparentUnscrolled ? "bg-white/20 text-white border-white/30 focus:ring-white/30" : isDefaultUnscrolled ? "bg-white/20 text-white border-white/30 focus:ring-white/30" : "bg-gray-100 text-gray-900 border-gray-200 focus:ring-blue-500"} ${getSearchPlaceholderColor()} border`}
+                  className={`w-full pl-9 pr-4 py-2.5 text-sm rounded-xl focus:outline-none focus:ring-2 border ${
+                    isTransparentUnscrolled
+                      ? "bg-white/20 text-white border-white/30 focus:ring-white/30"
+                      : isDefaultUnscrolled
+                      ? "bg-white/20 text-white border-white/30 focus:ring-white/30"
+                      : "bg-gray-100 text-gray-900 border-gray-200 focus:ring-blue-500"
+                  } ${getSearchPlaceholderColor()}`}
                 />
               </div>
             </div>
@@ -376,7 +530,15 @@ const Header = ({
                     <Link
                       key={link.name}
                       to={link.path}
-                      className={`block text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? isTransparentUnscrolled ? "bg-white/30 text-white" : isDefaultUnscrolled ? "bg-white/20 text-white" : "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-600 shadow-sm" : isTransparentUnscrolled ? "text-white/80 hover:bg-white/10 hover:text-white" : isDefaultUnscrolled ? "text-white/90 hover:bg-white/10 hover:text-white" : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"}`}
+                      className={`block text-sm font-medium px-4 py-3 rounded-xl transition-all duration-200 ${
+                        isActive
+                          ? isTransparentUnscrolled ? "bg-white/30 text-white"
+                            : isDefaultUnscrolled   ? "bg-white/20 text-white"
+                            : "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-600 shadow-sm"
+                          : isTransparentUnscrolled ? "text-white/80 hover:bg-white/10 hover:text-white"
+                            : isDefaultUnscrolled   ? "text-white/90 hover:bg-white/10 hover:text-white"
+                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                      }`}
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       {link.name}
@@ -390,7 +552,11 @@ const Header = ({
               <div className="space-y-2.5">
                 <Button
                   variant="ghost"
-                  className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl py-3`}
+                  className={`w-full justify-start rounded-xl py-3 ${
+                    isTransparentUnscrolled || isDefaultUnscrolled
+                      ? "text-white hover:text-white hover:bg-white/10"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
                   onClick={() => { navigate("/wishlist"); setMobileMenuOpen(false); }}
                 >
                   <Heart className="h-4 w-4 mr-3" />
@@ -412,7 +578,11 @@ const Header = ({
                       <Button
                         key={item.label}
                         variant="ghost"
-                        className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl py-3`}
+                        className={`w-full justify-start rounded-xl py-3 ${
+                          isTransparentUnscrolled || isDefaultUnscrolled
+                            ? "text-white hover:text-white hover:bg-white/10"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                        }`}
                         onClick={() => { navigate(item.path); setMobileMenuOpen(false); }}
                       >
                         <item.icon className="h-4 w-4 mr-3" />
@@ -426,7 +596,11 @@ const Header = ({
                     ))}
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-rose-300 hover:text-rose-200 hover:bg-white/10" : "text-rose-500 hover:text-rose-600 hover:bg-rose-50"} rounded-xl py-3`}
+                      className={`w-full justify-start rounded-xl py-3 ${
+                        isTransparentUnscrolled || isDefaultUnscrolled
+                          ? "text-rose-300 hover:text-rose-200 hover:bg-white/10"
+                          : "text-rose-500 hover:text-rose-600 hover:bg-rose-50"
+                      }`}
                       onClick={handleLogout}
                     >
                       <LogOut className="h-4 w-4 mr-3" />
@@ -437,14 +611,22 @@ const Header = ({
                   <>
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl py-3`}
+                      className={`w-full justify-start rounded-xl py-3 ${
+                        isTransparentUnscrolled || isDefaultUnscrolled
+                          ? "text-white hover:text-white hover:bg-white/10"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
                       onClick={handleLogin}
                     >
                       <LogIn className="h-4 w-4 mr-3" /> Login
                     </Button>
                     <Button
                       variant="ghost"
-                      className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl py-3`}
+                      className={`w-full justify-start rounded-xl py-3 ${
+                        isTransparentUnscrolled || isDefaultUnscrolled
+                          ? "text-white hover:text-white hover:bg-white/10"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
                       onClick={handleSignup}
                     >
                       <UserPlus className="h-4 w-4 mr-3" /> Sign Up
@@ -454,7 +636,11 @@ const Header = ({
 
                 <Button
                   variant="ghost"
-                  className={`w-full justify-start ${isTransparentUnscrolled || isDefaultUnscrolled ? "text-white hover:text-white hover:bg-white/10" : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"} rounded-xl py-3`}
+                  className={`w-full justify-start rounded-xl py-3 ${
+                    isTransparentUnscrolled || isDefaultUnscrolled
+                      ? "text-white hover:text-white hover:bg-white/10"
+                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                  }`}
                   onClick={() => { navigate("/help"); setMobileMenuOpen(false); }}
                 >
                   <HelpCircle className="h-4 w-4 mr-3" /> Help Center

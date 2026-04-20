@@ -3,70 +3,41 @@ import { Link } from "react-router-dom";
 import {
   Instagram, Twitter, Linkedin, Youtube,
   Mail, Phone, MapPin, ArrowRight,
-  Zap, Shield, Headphones, Award
+  Zap, Shield, Headphones, Award,
+  CheckCircle2,
 } from "lucide-react";
 
-// ── Team members ───────────────────────────────────────────────────────────────
-const team = [
-  {
-    name: "Abiodun Lawal",
-    role: "Founder & CEO",
-    initials: "AL",
-    color: "from-[#6426E1] to-purple-400",
-    social: "linkedin",
-    featured: true,
-  },
-  {
-    name: "Fatima Bello",
-    role: "Head of Products",
-    initials: "FB",
-    color: "from-blue-500 to-indigo-400",
-    featured: false,
-  },
-  {
-    name: "Chuka Eze",
-    role: "Tech Lead",
-    initials: "CE",
-    color: "from-emerald-500 to-teal-400",
-    featured: false,
-  },
-  {
-    name: "Ngozi Obi",
-    role: "Customer Success",
-    initials: "NO",
-    color: "from-rose-500 to-pink-400",
-    featured: false,
-  },
-  {
-    name: "Samuel Adeyemi",
-    role: "Logistics Manager",
-    initials: "SA",
-    color: "from-amber-500 to-orange-400",
-    featured: false,
-  },
-  {
-    name: "Kemi Adekunle",
-    role: "Marketing Director",
-    initials: "KA",
-    color: "from-violet-500 to-purple-400",
-    featured: false,
-  },
-];
-
+// ─────────────────────────────────────────────────────────────
 const stats = [
   { value: "5+",   label: "Years in Business" },
-  { value: "500+", label: "Premium Products" },
-  { value: "830+", label: "Verified Reviews" },
-  { value: "50K",  label: "Happy Customers" },
+  { value: "500+", label: "Premium Products"  },
+  { value: "830+", label: "Verified Reviews"  },
+  { value: "50K+", label: "Happy Customers"   },
+];
+
+const team = [
+  { name: "Abiodun Lawal",  role: "Founder & CEO",      initials: "AL", gradient: "from-[#6426E1] to-violet-400", featured: true  },
+  { name: "Fatima Bello",   role: "Head of Products",    initials: "FB", gradient: "from-blue-500 to-indigo-400",  featured: false },
+  { name: "Chuka Eze",      role: "Tech Lead",           initials: "CE", gradient: "from-emerald-500 to-teal-400", featured: false },
+  { name: "Ngozi Obi",      role: "Customer Success",    initials: "NO", gradient: "from-rose-500 to-pink-400",    featured: false },
+  { name: "Samuel Adeyemi", role: "Logistics Manager",   initials: "SA", gradient: "from-amber-500 to-orange-400", featured: false },
+  { name: "Kemi Adekunle",  role: "Marketing Director",  initials: "KA", gradient: "from-violet-600 to-purple-400",featured: false },
+];
+
+const values = [
+  { icon: Shield,     title: "Genuine Products", body: "Every item is 100% authentic, sourced directly from verified manufacturers and authorised distributors." },
+  { icon: Headphones, title: "Expert Support",   body: "Our in-house tech specialists help you pick the right device, troubleshoot issues, or process a return — no bots." },
+  { icon: Award,      title: "Top Rated Store",  body: "Over 830 five-star reviews make us one of Nigeria's most consistently trusted electronics retailers." },
+  { icon: Zap,        title: "Fast Delivery",    body: "Same-day delivery across Lagos and next-day nationwide. Your gadget ships the moment your payment clears." },
 ];
 
 const footerLinks = {
-  Links:     ["Home", "Products", "Categories", "About Us"],
+  Links:     ["Home", "All Products", "Categories", "About Us"],
   Support:   ["Help Center", "Track Order", "Returns", "Warranty"],
   Community: ["Careers", "Blog", "Partners", "Investors", "Contact"],
 };
 
-// ── Component ──────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────
 const AboutPage = () => {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
@@ -81,289 +52,255 @@ const AboutPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <div className="min-h-screen bg-white">
 
-      {/* ══════════════════════════════════════════════════════
-          TOP SECTION — 2 columns
-      ══════════════════════════════════════════════════════ */}
-      <section className="grid lg:grid-cols-2 min-h-[560px]">
+      {/* ══════════════════════════════════════════════
+          SECTION 1 — How It Started
+      ══════════════════════════════════════════════ */}
+      <section className="py-20 lg:py-28 bg-white">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
 
-        {/* Left — Origin story */}
-        <div className="bg-white px-8 sm:px-12 lg:px-16 py-14 flex flex-col justify-between">
-          <div>
-            {/* Label */}
-            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#6426E1" }}>
-              How It Started
-            </p>
+            {/* Left — text */}
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-5" style={{ color: "#6426E1" }}>
+                How It Started
+              </p>
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-gray-900 leading-[1.1] mb-8">
+                Our Dream is<br />
+                <span style={{ color: "#6426E1" }}>Premium Tech</span><br />
+                For Everyone
+              </h1>
+              <p className="text-base text-gray-500 leading-relaxed mb-5 max-w-lg">
+                Aby Gadgets was co-founded by Abiodun Lawal and Fatima Bello — two passionate
+                tech enthusiasts who believed that cutting-edge gadgets shouldn't be a luxury.
+                Their shared vision was to create Nigeria's most trusted destination for
+                premium electronics.
+              </p>
+              <p className="text-base text-gray-500 leading-relaxed max-w-lg">
+                With a handpicked catalogue of genuine devices, an expert team, and an
+                unwavering commitment to customer care, they launched Aby Gadgets —
+                connecting thousands of Nigerians to the technology they deserve.
+              </p>
 
-            {/* Headline */}
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
-              Our Dream is<br />
-              <span style={{ color: "#6426E1" }}>Premium Tech</span><br />
-              For Everyone
-            </h1>
-
-            {/* Body */}
-            <p className="text-sm text-gray-500 leading-relaxed max-w-md mb-8">
-              Aby Gadgets was founded by Abiodun Lawal and Fatima Bello — two tech enthusiasts
-              who believed that cutting-edge gadgets shouldn't be a luxury. Their shared vision
-              was to create Nigeria's most trusted electronics destination. With a handpicked
-              catalogue of premium devices, an expert team, and a passion for genuine customer
-              care, they launched Aby Gadgets — connecting thousands of Nigerians to the tech
-              they deserve.
-            </p>
-
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {stats.map((s) => (
-                <div
-                  key={s.label}
-                  className="rounded-2xl p-4 border border-gray-100 bg-gray-50 hover:border-purple-200 transition-colors"
+              <div className="mt-10 flex flex-wrap gap-4">
+                <Link
+                  to="/products"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-white text-sm font-bold hover:opacity-90 transition-opacity"
+                  style={{ backgroundColor: "#6426E1" }}
                 >
-                  <p className="text-2xl font-black text-gray-900">{s.value}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{s.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Hero image strip */}
-          <div className="mt-10 rounded-2xl overflow-hidden relative h-44 bg-gradient-to-br from-[#6426E1] to-purple-900 flex items-center justify-center shadow-xl">
-            {/* Decorative tech circles */}
-            <div className="absolute -top-6 -left-6 w-28 h-28 rounded-full bg-white/5 border border-white/10" />
-            <div className="absolute -bottom-4 -right-4 w-20 h-20 rounded-full bg-white/5 border border-white/10" />
-            <div className="absolute top-4 right-12 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-yellow-300" />
-            </div>
-            <div className="text-center">
-              <p className="text-white/60 text-xs uppercase tracking-widest mb-1">Our Store</p>
-              <p className="text-white font-black text-3xl">Aby Gadgets</p>
-              <p className="text-purple-200 text-sm mt-1">Premium Tech Store · Lagos</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — Meet the Team */}
-        <div className="bg-gray-50 px-8 sm:px-12 lg:px-16 py-14">
-          <p className="text-xs font-bold tracking-widest uppercase mb-2" style={{ color: "#6426E1" }}>
-            Meet the Team
-          </p>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-8">
-            Meet Our Dedicated<br />Team of Tech Experts
-          </h2>
-
-          {/* Team grid — 3 columns × 2 rows */}
-          <div className="grid grid-cols-3 gap-3">
-            {team.map((member) => (
-              <div
-                key={member.name}
-                className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${member.color} aspect-square flex flex-col items-center justify-end pb-3 shadow-md hover:scale-105 transition-transform duration-200 cursor-pointer`}
-              >
-                {/* Avatar initials */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-white/30 font-black text-5xl">{member.initials}</span>
-                </div>
-
-                {/* Name card overlay (featured only) */}
-                {member.featured && (
-                  <div className="relative z-10 bg-white rounded-xl px-3 py-2 shadow-lg flex items-center gap-2">
-                    <div>
-                      <p className="text-xs font-bold text-gray-900 leading-tight">{member.name}</p>
-                      <p className="text-[10px] text-gray-500">{member.role}</p>
-                    </div>
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: "#6426E1" }}>
-                      <Linkedin className="w-3 h-3 text-white" />
-                    </div>
-                  </div>
-                )}
-
-                {/* Subtle name at bottom for non-featured */}
-                {!member.featured && (
-                  <div className="relative z-10 text-center">
-                    <p className="text-white text-[11px] font-semibold leading-tight drop-shadow">{member.name}</p>
-                    <p className="text-white/70 text-[9px]">{member.role}</p>
-                  </div>
-                )}
+                  Shop Now <ArrowRight className="w-4 h-4" />
+                </Link>
+                <Link
+                  to="/contact"
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold border border-gray-200 text-gray-700 hover:border-[#6426E1] hover:text-[#6426E1] transition-colors"
+                >
+                  Get in Touch
+                </Link>
               </div>
-            ))}
-          </div>
+            </div>
 
-          {/* Values strip */}
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            {[
-              { icon: Shield,     label: "Genuine Products",    desc: "100% authentic, verified gadgets" },
-              { icon: Headphones, label: "Expert Support",      desc: "Real humans, real answers" },
-              { icon: Award,      label: "Top Rated",           desc: "830+ five-star reviews" },
-              { icon: Zap,        label: "Fast Delivery",       desc: "Same-day Lagos delivery" },
-            ].map((v) => (
-              <div key={v.label} className="flex items-start gap-3 p-3 rounded-xl bg-white border border-gray-100 hover:border-purple-200 transition-colors">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: "rgba(100,38,225,0.10)" }}>
-                  <v.icon className="w-4 h-4" style={{ color: "#6426E1" }} />
+            {/* Right — branded card */}
+            <div className="relative">
+              <div
+                className="relative rounded-3xl overflow-hidden p-10 min-h-[420px] flex flex-col justify-between"
+                style={{ background: "linear-gradient(135deg, #6426E1 0%, #3d0fa3 100%)" }}
+              >
+                <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full border border-white/10" />
+                <div className="absolute -bottom-6 -left-6 w-36 h-36 rounded-full border border-white/10" />
+                <div className="absolute top-1/2 right-8 w-16 h-16 rounded-full border border-white/15" />
+
+                <div className="relative z-10">
+                  <div className="w-14 h-14 rounded-2xl bg-white flex items-center justify-center mb-6 shadow-lg">
+                    <span className="font-black text-xl" style={{ color: "#6426E1" }}>AG</span>
+                  </div>
+                  <p className="text-purple-200 text-sm mb-2">Founded in Lagos, Nigeria</p>
+                  <h2 className="text-white text-3xl font-extrabold">Aby Gadgets</h2>
+                  <p className="text-purple-300 text-sm mt-1">Premium Tech Store</p>
+                </div>
+
+                <div className="relative z-10 grid grid-cols-2 gap-3 mt-8">
+                  {[
+                    { label: "Products",  val: "500+" },
+                    { label: "Customers", val: "50K+" },
+                    { label: "Reviews",   val: "830+" },
+                    { label: "Cities",    val: "36"   },
+                  ].map((s) => (
+                    <div key={s.label} className="rounded-xl p-4 bg-white/10 border border-white/10">
+                      <p className="text-white text-xl font-extrabold">{s.val}</p>
+                      <p className="text-purple-300 text-xs mt-0.5">{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Floating trust badge */}
+              <div className="absolute -bottom-5 -left-5 bg-white rounded-2xl shadow-xl px-5 py-3.5 border border-gray-100 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-gray-900">{v.label}</p>
-                  <p className="text-[11px] text-gray-500 mt-0.5">{v.desc}</p>
+                  <p className="text-xs text-gray-500">Since 2019</p>
+                  <p className="text-sm font-bold text-gray-900">Trusted & Verified</p>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          SECTION 2 — Stats
+      ══════════════════════════════════════════════ */}
+      <section className="py-14 bg-gray-50 border-y border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {stats.map((s) => (
+              <div key={s.label} className="text-center">
+                <p className="text-4xl sm:text-5xl font-extrabold" style={{ color: "#6426E1" }}>
+                  {s.value}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">{s.label}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════
-          BOTTOM SECTION — 2 columns
-      ══════════════════════════════════════════════════════ */}
-      <section className="grid lg:grid-cols-2">
+      
 
-        {/* Left — Vision & Mission */}
-        <div className="bg-white px-8 sm:px-12 lg:px-16 py-14 flex flex-col gap-12">
-          {/* Our Vision */}
-          <div>
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#6426E1" }}>
-              Our Vision
+      {/* ══════════════════════════════════════════════
+          SECTION 4 — Why Choose Us
+      ══════════════════════════════════════════════ */}
+      <section className="py-20 lg:py-28 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+
+          <div className="text-center max-w-xl mx-auto mb-16">
+            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#6426E1" }}>
+              Why Choose Us
             </p>
-            <h3 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-              Empowering Lives<br />Through Technology
-            </h3>
-            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
-              Our unwavering vision is to make premium technology accessible and affordable for every
-              Nigerian household. By curating a world-class product catalogue and maintaining
-              honest pricing, we aim to inspire innovation, enable connectivity, and shape a
-              smarter future for all.
-            </p>
+            <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight">
+              The Aby Gadgets Difference
+            </h2>
           </div>
 
-          {/* Divider */}
-          <div className="h-px bg-gray-100 w-full" />
-
-          {/* Our Mission */}
-          <div>
-            <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#6426E1" }}>
-              Our Mission
-            </p>
-            <h3 className="text-3xl sm:text-4xl font-extrabold text-gray-900 leading-tight mb-4">
-              Quality Tech,<br />Everywhere
-            </h3>
-            <p className="text-sm text-gray-500 leading-relaxed max-w-md">
-              Our mission is to deliver top-tier electronics with speed, transparency, and
-              exceptional after-sales service. By fostering a community of tech-savvy shoppers
-              across Nigeria, we are redefining the e-commerce experience — one gadget at a time.
-            </p>
-          </div>
-        </div>
-
-        {/* Right — Newsletter CTA + Footer */}
-        <div className="flex flex-col">
-
-          {/* CTA block */}
-          <div className="bg-[#0E0B2E] px-8 sm:px-12 lg:px-16 py-14 flex-1 flex flex-col justify-center">
-            <p className="text-xs font-bold tracking-widest uppercase text-purple-300 mb-4">
-              Exclusive Offer
-            </p>
-            <h3 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight mb-3">
-              Get 10% off your<br />first order with us
-            </h3>
-            <p className="text-sm text-gray-400 mb-8">
-              Subscribe to our newsletter and be first to hear about new arrivals,
-              flash sales, and exclusive member deals.
-            </p>
-
-            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 text-white placeholder-gray-500 border border-white/20 focus:outline-none focus:border-purple-400 text-sm transition-colors"
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 rounded-xl font-bold text-white text-sm flex items-center gap-2 hover:opacity-90 active:scale-95 transition-all whitespace-nowrap"
-                style={{ backgroundColor: "#6426E1" }}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {values.map((v) => (
+              <div
+                key={v.title}
+                className="bg-white rounded-2xl p-7 border border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300"
               >
-                {subscribed ? "Subscribed!" : "Subscribe"}
-                {!subscribed && <ArrowRight className="w-4 h-4" />}
-              </button>
-            </form>
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center mb-6"
+                  style={{ backgroundColor: "rgba(100,38,225,0.08)" }}
+                >
+                  <v.icon className="w-5 h-5" style={{ color: "#6426E1" }} />
+                </div>
+                <h3 className="text-base font-bold text-gray-900 mb-3">{v.title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{v.body}</p>
+              </div>
+            ))}
           </div>
-
-          {/* Footer */}
-          <footer className="bg-[#070516] px-8 sm:px-12 lg:px-16 py-10">
-            <div className="grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_1fr_1fr] gap-8 mb-8">
-
-              {/* Brand */}
-              <div className="col-span-2 sm:col-span-1">
-                <div className="flex items-center gap-2.5 mb-4">
-                  <div className="w-8 h-8 rounded-lg bg-[#6426E1] flex items-center justify-center">
-                    <span className="text-white font-black text-sm">AG</span>
-                  </div>
-                  <span className="text-white font-bold text-base">Aby Gadgets</span>
-                </div>
-                <div className="space-y-2 text-xs text-gray-500">
-                  <p className="flex items-start gap-2">
-                    <MapPin className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-gray-600" />
-                    14 Computer Village, Ikeja, Lagos
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 flex-shrink-0 text-gray-600" />
-                    +234 801 234 5678
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 flex-shrink-0 text-gray-600" />
-                    hello@abygadgets.com
-                  </p>
-                </div>
-              </div>
-
-              {/* Link columns */}
-              {Object.entries(footerLinks).map(([heading, links]) => (
-                <div key={heading}>
-                  <p className="text-white text-xs font-bold mb-3">{heading}</p>
-                  <ul className="space-y-2">
-                    {links.map((l) => (
-                      <li key={l}>
-                        <Link to="/" className="text-gray-500 text-xs hover:text-purple-400 transition-colors">
-                          {l}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
-
-            {/* Bottom bar */}
-            <div className="pt-6 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-gray-600 text-xs">
-                © 2025 Aby Gadgets. All rights reserved.
-              </p>
-              <div className="flex items-center gap-4">
-                {[
-                  { icon: Instagram, href: "#" },
-                  { icon: Youtube,   href: "#" },
-                  { icon: Twitter,   href: "#" },
-                  { icon: Linkedin,  href: "#" },
-                ].map(({ icon: Icon, href }) => (
-                  <a
-                    key={href}
-                    href={href}
-                    className="w-7 h-7 rounded-full border border-white/10 flex items-center justify-center text-gray-500 hover:text-purple-400 hover:border-purple-500 transition-colors"
-                  >
-                    <Icon className="w-3.5 h-3.5" />
-                  </a>
-                ))}
-              </div>
-              <div className="flex items-center gap-4">
-                {["Terms of Use", "Privacy Policy", "Cookies"].map((t) => (
-                  <Link key={t} to="/" className="text-gray-600 text-xs hover:text-gray-400 transition-colors">
-                    {t}
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </footer>
         </div>
       </section>
+
+      {/* ══════════════════════════════════════════════
+          SECTION 5 — Vision & Mission
+      ══════════════════════════════════════════════ */}
+      <section className="py-20 lg:py-28 bg-white border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="grid lg:grid-cols-2 gap-20">
+
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-5" style={{ color: "#6426E1" }}>
+                Our Vision
+              </p>
+              <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+                Empowering Lives<br />Through Technology
+              </h2>
+              <p className="text-base text-gray-500 leading-relaxed mb-5">
+                Our unwavering vision is to make premium technology accessible and affordable
+                for every Nigerian household. By curating a world-class product catalogue
+                and maintaining honest pricing, we aim to inspire innovation, enable
+                connectivity, and shape a smarter future for all.
+              </p>
+              <p className="text-base text-gray-500 leading-relaxed">
+                We see a Nigeria where every student, professional, and family has access
+                to the tools that help them learn faster, work smarter, and live better.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase mb-5" style={{ color: "#6426E1" }}>
+                Our Mission
+              </p>
+              <h2 className="text-4xl sm:text-5xl font-extrabold text-gray-900 leading-tight mb-6">
+                Quality Tech,<br />Everywhere
+              </h2>
+              <p className="text-base text-gray-500 leading-relaxed mb-5">
+                Our mission is to deliver top-tier electronics with speed, transparency, and
+                exceptional after-sales service. By fostering a community of tech-savvy
+                shoppers across Nigeria, we are redefining the e-commerce experience —
+                one gadget at a time.
+              </p>
+              <p className="text-base text-gray-500 leading-relaxed">
+                From Computer Village in Ikeja to your doorstep — we bridge the gap between
+                the world's best technology and the people who need it most.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ══════════════════════════════════════════════
+          SECTION 6 — Newsletter CTA
+      ══════════════════════════════════════════════ */}
+      <section
+        className="py-20 lg:py-24"
+        style={{ background: "linear-gradient(135deg, #6426E1 0%, #3d0fa3 100%)" }}
+      >
+        <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <p className="text-xs font-bold tracking-widest uppercase text-purple-300 mb-4">
+                Exclusive Offer
+              </p>
+              <h2 className="text-4xl sm:text-5xl font-extrabold text-white leading-tight mb-4">
+                Get 10% off your<br />first premium order
+              </h2>
+              <p className="text-base text-purple-200 leading-relaxed">
+                Subscribe to our newsletter and be the first to hear about new arrivals,
+                flash sales, and exclusive member-only deals.
+              </p>
+            </div>
+
+            <div>
+              <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="email"
+                  placeholder="Enter your email address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="flex-1 px-5 py-4 rounded-xl bg-white/10 text-white placeholder-purple-300 border border-white/20 focus:outline-none focus:border-white text-sm transition-colors"
+                />
+                <button
+                  type="submit"
+                  className="px-8 py-4 rounded-xl font-bold text-sm bg-white hover:bg-gray-100 active:scale-95 transition-all flex items-center gap-2 whitespace-nowrap justify-center"
+                  style={{ color: "#6426E1" }}
+                >
+                  {subscribed ? "Subscribed ✓" : <><span>Subscribe</span><ArrowRight className="w-4 h-4" /></>}
+                </button>
+              </form>
+              <p className="text-purple-300 text-xs mt-4">
+                No spam. Unsubscribe at any time. Your data is safe with us.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+     
+      
     </div>
   );
 };

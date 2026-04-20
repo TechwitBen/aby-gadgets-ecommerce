@@ -16,10 +16,11 @@ const UserSchema = new Schema(
     salt: { type: String },
     provider: {
       type: String,
-      enum: ["local", "google"],
+      enum: ["local", "google","facebook"],
       default: "local",
     },
     google_id: { type: String, unique: true, sparse: true },
+    facebook_id: { type: String, unique: true, sparse: true },
     name: { type: String },
     role: {
       type: String,

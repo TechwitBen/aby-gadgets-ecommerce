@@ -50,20 +50,20 @@ export const googleAuth = passport.authenticate("google", {
 export const googleCallback = (req, res, next) => {
   passport.authenticate("google", (err, user, info) => {
     if (err) {
-      return res.redirect("http://localhost:5173/login?error=google");
+      return res.redirect("http://localhost:8080/login?error=google");
     }
 
     if (!user) {
-      return res.redirect("http://localhost:5173/login?error=google");
+      return res.redirect("http://localhost:8080/login?error=google");
     }
 
     req.logIn(user, (err) => {
       if (err) {
-        return res.redirect("http://localhost:5173/login?error=google");
+        return res.redirect("http://localhost:8080/login?error=google");
       }
 
       req.session.save(() => {
-        res.redirect("http://localhost:5173/");
+        res.redirect("http://localhost:8080/");
       });
     });
   })(req, res, next);
