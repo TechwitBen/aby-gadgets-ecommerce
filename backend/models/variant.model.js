@@ -8,15 +8,15 @@ const VariantSchema = new Schema(
     color: { type: String },
     storage: { type: String },
     ram: { type: String },
+    image: { type: String }, // ← ADD THIS
     price: { type: Number, required: true },
-    compare_at_price: { type: Number }, // original price for showing discounts
+    compare_at_price: { type: Number },
     stock: { type: Number, default: 0 },
     sku: { type: String, unique: true },
     is_active: { type: Boolean, default: true },
   },
   { collection: "variants", timestamps: true },
 );
-
 VariantSchema.index({ product: 1 });
 
 const Variant =

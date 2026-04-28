@@ -15,17 +15,18 @@ import {
   CalendarDays,
   Filter,
 } from "lucide-react";
-import AnalyticsSection from "@/components/Analyticssection";
+import AnalyticsSection from "@/components/ui/Analyticssection";
 import { usersAPI, type BackendUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermission } from "@/contexts/PermissionContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
 type Customer = {
   id: string;
   name: string;
   username: string;
-  email: string;
+  email: string | null; // null when staff lacks viewContactInfo
   phone: string;
   address: string;
   provider: string;
@@ -34,11 +35,9 @@ type Customer = {
 };
 
 type ActiveView = "analytics" | "customers";
-
 const filterOptions = ["All Customers", "Recent (7 days)", "This Month"];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
 const formatDate = (iso: string) =>
   new Date(iso).toLocaleDateString("en-GB", {
     day: "numeric",
@@ -46,16 +45,14 @@ const formatDate = (iso: string) =>
     year: "numeric",
   });
 
-const isWithinDays = (iso: string, days: number) => {
-  const diff = Date.now() - new Date(iso).getTime();
-  return diff <= days * 24 * 60 * 60 * 1000;
-};
+const isWithinDays = (iso: string, days: number) =>
+  Date.now() - new Date(iso).getTime() <= days * 24 * 60 * 60 * 1000;
 
 const toCustomer = (u: BackendUser): Customer => ({
   id: u._id,
   name: u.name ?? u.username ?? "—",
   username: u.username ?? "—",
-  email: u.email,
+  email: u.email ?? null, // may be stripped by backend
   phone: "—",
   address: "—",
   provider: u.provider ?? "local",
@@ -64,7 +61,6 @@ const toCustomer = (u: BackendUser): Customer => ({
 });
 
 // ── View Toggle ───────────────────────────────────────────────────────────────
-
 const ViewToggle = ({
   active,
   onChange,
@@ -95,8 +91,7 @@ const ViewToggle = ({
   </div>
 );
 
-// ── Delete Confirmation Modal ─────────────────────────────────────────────────
-
+// ── Delete Confirm Modal ──────────────────────────────────────────────────────
 const DeleteConfirmModal = ({
   open,
   name,
@@ -117,7 +112,6 @@ const DeleteConfirmModal = ({
       }}
     >
       <div className="bg-popover text-popover-foreground rounded-t-2xl sm:rounded-2xl w-full sm:max-w-sm shadow-xl overflow-hidden">
-        {/* drag indicator on mobile */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
@@ -126,7 +120,9 @@ const DeleteConfirmModal = ({
             <div className="w-9 h-9 rounded-full bg-destructive/10 flex items-center justify-center">
               <Trash2 size={16} className="text-destructive" />
             </div>
-            <p className="text-sm font-semibold text-foreground">Delete Customer</p>
+            <p className="text-sm font-semibold text-foreground">
+              Delete Customer
+            </p>
           </div>
           <button
             onClick={onCancel}
@@ -139,7 +135,7 @@ const DeleteConfirmModal = ({
           <p className="text-sm text-muted-foreground">
             Are you sure you want to delete{" "}
             <span className="font-semibold text-foreground">{name}</span>? This
-            action cannot be undone.
+            cannot be undone.
           </p>
         </div>
         <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
@@ -160,7 +156,6 @@ const DeleteConfirmModal = ({
 };
 
 // ── Edit Customer Modal ───────────────────────────────────────────────────────
-
 const EditCustomerModal = ({
   open,
   customer,
@@ -177,7 +172,7 @@ const EditCustomerModal = ({
   const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
-    if (customer) setForm({ name: customer.name, email: customer.email });
+    if (customer) setForm({ name: customer.name, email: customer.email ?? "" });
   }, [customer]);
 
   if (!open || !customer) return null;
@@ -237,7 +232,6 @@ const EditCustomerModal = ({
             <X size={16} />
           </button>
         </div>
-
         <div className="px-6 py-5 space-y-4">
           <div>
             <label className="text-xs text-muted-foreground block mb-1">
@@ -250,10 +244,7 @@ const EditCustomerModal = ({
                 setForm({ ...form, name: e.target.value });
                 setErrors({ ...errors, name: undefined });
               }}
-              placeholder="e.g. Jenny Wilson"
-              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.name ? "ring-2 ring-destructive" : ""
-              }`}
+              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.name ? "ring-2 ring-destructive" : ""}`}
             />
             {errors.name && (
               <p className="text-xs text-destructive mt-1">{errors.name}</p>
@@ -270,45 +261,25 @@ const EditCustomerModal = ({
                 setForm({ ...form, email: e.target.value });
                 setErrors({ ...errors, email: undefined });
               }}
-              placeholder="e.g. jenny@email.com"
-              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                errors.email ? "ring-2 ring-destructive" : ""
-              }`}
+              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.email ? "ring-2 ring-destructive" : ""}`}
             />
             {errors.email && (
               <p className="text-xs text-destructive mt-1">{errors.email}</p>
             )}
           </div>
-          <div className="p-3 bg-secondary/50 rounded-lg">
-            <p className="text-xs text-muted-foreground mb-1">Auth provider</p>
-            <p className="text-sm text-foreground capitalize">
-              {customer.provider}
-            </p>
-          </div>
         </div>
-
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            Fields marked <span className="text-destructive">*</span> are
-            required
-          </p>
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleSubmit}
-              className={`gap-1.5 transition-colors ${
-                saveSuccess
-                  ? "bg-green-500 hover:bg-green-500 text-white"
-                  : ""
-              }`}
-            >
-              <Edit2 size={14} />
-              {saveSuccess ? "Saved!" : "Save changes"}
-            </Button>
-          </div>
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
+          <Button variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            size="sm"
+            onClick={handleSubmit}
+            className={`gap-1.5 ${saveSuccess ? "bg-green-500 hover:bg-green-500 text-white" : ""}`}
+          >
+            <Edit2 size={14} />
+            {saveSuccess ? "Saved!" : "Save changes"}
+          </Button>
         </div>
       </div>
     </div>
@@ -316,19 +287,22 @@ const EditCustomerModal = ({
 };
 
 // ── Customer Detail Modal ─────────────────────────────────────────────────────
-
 const CustomerDetailModal = ({
   customer,
   open,
   onClose,
   onEdit,
   onDelete,
+  canViewContact,
+  isAdmin,
 }: {
   customer: Customer | null;
   open: boolean;
   onClose: () => void;
   onEdit: (c: Customer) => void;
   onDelete: (c: Customer) => void;
+  canViewContact: boolean;
+  isAdmin: boolean;
 }) => {
   if (!open || !customer) return null;
 
@@ -341,7 +315,9 @@ const CustomerDetailModal = ({
 
   const Row = ({ label, value }: { label: string; value: string }) => (
     <div>
-      <label className="text-xs text-muted-foreground block mb-1">{label}</label>
+      <label className="text-xs text-muted-foreground block mb-1">
+        {label}
+      </label>
       <div className="bg-secondary rounded-lg p-3 text-sm text-foreground">
         {value}
       </div>
@@ -368,9 +344,16 @@ const CustomerDetailModal = ({
               <p className="text-sm font-semibold text-foreground truncate">
                 {customer.name}
               </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {customer.email}
-              </p>
+              {/* Only show email in header if permitted */}
+              {canViewContact && customer.email ? (
+                <p className="text-xs text-muted-foreground truncate">
+                  {customer.email}
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground italic">
+                  Contact info hidden
+                </p>
+              )}
             </div>
           </div>
           <button
@@ -386,40 +369,59 @@ const CustomerDetailModal = ({
             <Row label="Username" value={customer.username} />
             <Row label="Member Since" value={customer.memberSince} />
           </div>
-          <Row label="Email address" value={customer.email} />
           <Row label="Auth provider" value={customer.provider} />
-          {customer.phone !== "—" && (
-            <Row label="Phone number" value={customer.phone} />
-          )}
-          {customer.address !== "—" && (
-            <Row label="Address" value={customer.address} />
+
+          {/* Contact info — gated */}
+          {canViewContact ? (
+            <>
+              {customer.email && (
+                <Row label="Email address" value={customer.email} />
+              )}
+              {customer.phone !== "—" && (
+                <Row label="Phone number" value={customer.phone} />
+              )}
+            </>
+          ) : (
+            <div className="rounded-lg border border-dashed border-border p-4 text-center">
+              <p className="text-xs text-muted-foreground">
+                Contact information is hidden. Ask your admin to enable
+                <strong> View Contact Info</strong> permission for your account.
+              </p>
+            </div>
           )}
         </div>
 
         <div className="flex items-center justify-between px-6 py-4 border-t border-border">
-          <Button
-            size="sm"
-            variant="outline"
-            className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
-            onClick={() => {
-              onClose();
-              onDelete(customer);
-            }}
-          >
-            <Trash2 size={14} /> Delete
-          </Button>
-          <div className="flex items-center gap-2">
+          {/* Delete — admin only */}
+          {isAdmin ? (
             <Button
               size="sm"
               variant="outline"
-              className="gap-1.5"
+              className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
               onClick={() => {
                 onClose();
-                onEdit(customer);
+                onDelete(customer);
               }}
             >
-              <Edit2 size={14} /> Edit
+              <Trash2 size={14} /> Delete
             </Button>
+          ) : (
+            <div /> // spacer so edit/close stays right-aligned
+          )}
+          <div className="flex items-center gap-2">
+            {isAdmin && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                onClick={() => {
+                  onClose();
+                  onEdit(customer);
+                }}
+              >
+                <Edit2 size={14} /> Edit
+              </Button>
+            )}
             <Button
               size="sm"
               onClick={onClose}
@@ -435,17 +437,20 @@ const CustomerDetailModal = ({
 };
 
 // ── Customer Card (mobile) ────────────────────────────────────────────────────
-
 const CustomerCard = ({
   customer,
   onSelect,
   onEdit,
   onDelete,
+  canViewContact,
+  isAdmin,
 }: {
   customer: Customer;
   onSelect: (c: Customer) => void;
   onEdit: (c: Customer) => void;
   onDelete: (c: Customer) => void;
+  canViewContact: boolean;
+  isAdmin: boolean;
 }) => {
   const initials = customer.name
     .split(" ")
@@ -466,7 +471,14 @@ const CustomerCard = ({
         <p className="text-sm font-semibold text-foreground truncate">
           {customer.name}
         </p>
-        <p className="text-xs text-muted-foreground truncate">{customer.email}</p>
+        {/* Email — only if permitted */}
+        {canViewContact && customer.email ? (
+          <p className="text-xs text-muted-foreground truncate">
+            {customer.email}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground italic">Contact hidden</p>
+        )}
         <div className="flex items-center gap-2 mt-1">
           <span
             className={`px-1.5 py-0.5 rounded text-[10px] font-medium capitalize ${
@@ -487,26 +499,37 @@ const CustomerCard = ({
         className="flex items-center gap-1 flex-shrink-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={() => onEdit(customer)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 active:bg-primary/20 transition-colors"
-        >
-          <Edit2 size={15} />
-        </button>
-        <button
-          onClick={() => onDelete(customer)}
-          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
-        >
-          <Trash2 size={15} />
-        </button>
+        {isAdmin && (
+          <>
+            <button
+              onClick={() => onEdit(customer)}
+              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+            >
+              <Edit2 size={15} />
+            </button>
+            <button
+              onClick={() => onDelete(customer)}
+              className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+            >
+              <Trash2 size={15} />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 };
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
-
 const CustomersPage = () => {
+  const { user } = useAuth();
+  const { isAdmin, can } = usePermission();
+
+  // Permission flags
+  const canViewContact = isAdmin || can("customers", "viewContactInfo");
+  const canDelete = isAdmin;
+  const canEdit = isAdmin;
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -515,9 +538,13 @@ const CustomersPage = () => {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>("analytics");
 
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(
+    null,
+  );
 
   const { toast } = useToast();
 
@@ -526,14 +553,12 @@ const CustomersPage = () => {
     setFetchError(null);
     try {
       const users = await usersAPI.getAll();
-      setCustomers(
-        users.filter((u) => u.role === "user").map(toCustomer)
-      );
+      setCustomers(users.filter((u) => u.role === "user").map(toCustomer));
     } catch (err: any) {
       setFetchError(
         err?.response?.data?.error ??
           err?.response?.data?.message ??
-          "Failed to load customers. Please try again."
+          "Failed to load customers. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -558,8 +583,7 @@ const CustomersPage = () => {
     } catch (err: any) {
       toast({
         title: "Delete failed",
-        description:
-          err?.response?.data?.error ?? "Could not delete this customer.",
+        description: err?.response?.data?.error ?? "Could not delete.",
         variant: "destructive",
       });
     } finally {
@@ -569,7 +593,7 @@ const CustomersPage = () => {
 
   const handleSaveEdit = (updated: Customer) => {
     setCustomers((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
+      prev.map((c) => (c.id === updated.id ? updated : c)),
     );
     setEditingCustomer(null);
     toast({ title: "Customer updated", description: "Changes saved locally." });
@@ -596,14 +620,14 @@ const CustomersPage = () => {
       const q = searchTerm.toLowerCase();
       return (
         c.name.toLowerCase().includes(q) ||
-        c.email.toLowerCase().includes(q) ||
-        c.username.toLowerCase().includes(q)
+        c.username.toLowerCase().includes(q) ||
+        (c.email ?? "").toLowerCase().includes(q)
       );
-    })
+    }),
   );
 
   const newThisWeek = customers.filter((c) =>
-    isWithinDays(c.rawCreatedAt, 7)
+    isWithinDays(c.rawCreatedAt, 7),
   ).length;
   const newThisMonth = customers.filter((c) => {
     const now = new Date();
@@ -613,18 +637,15 @@ const CustomersPage = () => {
     );
   }).length;
 
-  const rawCreatedDates = customers.map((c) => c.rawCreatedAt);
-
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
         <Loader2 size={20} className="animate-spin" />
         <span className="text-sm">Loading customers…</span>
       </div>
     );
-  }
 
-  if (fetchError) {
+  if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <p className="text-sm text-destructive">{fetchError}</p>
@@ -633,14 +654,10 @@ const CustomersPage = () => {
         </Button>
       </div>
     );
-  }
 
   return (
-    <div
-      className="admin-theme"
-      onClick={() => setShowFilterDropdown(false)}
-    >
-      {/* Stats — 1 col on mobile, 3 on sm+ */}
+    <div className="admin-theme" onClick={() => setShowFilterDropdown(false)}>
+      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <StatsCard
           title="Total Customers"
@@ -664,7 +681,6 @@ const CustomersPage = () => {
 
       {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        {/* Left: filter (customers view only) */}
         <div>
           {activeView === "customers" && (
             <div className="relative inline-block">
@@ -691,11 +707,7 @@ const CustomersPage = () => {
                         setFilter(opt);
                         setShowFilterDropdown(false);
                       }}
-                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-secondary/70 ${
-                        filter === opt
-                          ? "text-primary font-medium"
-                          : "text-popover-foreground"
-                      }`}
+                      className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-secondary/70 ${filter === opt ? "text-primary font-medium" : "text-popover-foreground"}`}
                     >
                       {opt}
                     </button>
@@ -706,7 +718,6 @@ const CustomersPage = () => {
           )}
         </div>
 
-        {/* Right: search + toggle */}
         <div className="flex items-center gap-2 flex-1 justify-end">
           {activeView === "customers" && (
             <SearchInput
@@ -724,11 +735,11 @@ const CustomersPage = () => {
       {activeView === "analytics" ? (
         <AnalyticsSection
           totalCustomers={customers.length}
-          customerCreatedDates={rawCreatedDates}
+          customerCreatedDates={customers.map((c) => c.rawCreatedAt)}
         />
       ) : (
         <>
-          {/* ── Desktop table ─────────────────────────────────────────── */}
+          {/* ── Desktop table ─────────────────────────────────────── */}
           <div className="hidden md:block bg-card rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
@@ -736,10 +747,10 @@ const CustomersPage = () => {
                   {[
                     "Name",
                     "Username",
-                    "Email",
+                    ...(canViewContact ? ["Email"] : []),
                     "Member Since",
                     "Provider",
-                    "Actions",
+                    ...(canEdit ? ["Actions"] : []),
                   ].map((h) => (
                     <th
                       key={h}
@@ -754,7 +765,7 @@ const CustomersPage = () => {
                 {filteredCustomers.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={8}
                       className="p-8 text-center text-muted-foreground text-sm"
                     >
                       No customers match your search.
@@ -778,21 +789,25 @@ const CustomersPage = () => {
                       >
                         @{customer.username}
                       </td>
-                      <td
-                        className="p-4 text-muted-foreground text-sm cursor-pointer"
-                        onClick={() => setSelectedCustomer(customer)}
-                      >
-                        {customer.email}
-                      </td>
+                      {/* Email column — only rendered when permitted */}
+                      {canViewContact && (
+                        <td
+                          className="p-4 text-muted-foreground text-sm cursor-pointer"
+                          onClick={() => setSelectedCustomer(customer)}
+                        >
+                          {customer.email ?? (
+                            <span className="italic text-muted-foreground/50">
+                              hidden
+                            </span>
+                          )}
+                        </td>
+                      )}
                       <td
                         className="p-4 text-sm cursor-pointer"
                         onClick={() => setSelectedCustomer(customer)}
                       >
                         <span className="flex items-center gap-1.5 text-muted-foreground">
-                          <CalendarDays
-                            size={13}
-                            className="text-primary/60"
-                          />
+                          <CalendarDays size={13} className="text-primary/60" />
                           {customer.memberSince}
                         </span>
                       </td>
@@ -810,25 +825,28 @@ const CustomersPage = () => {
                           {customer.provider}
                         </span>
                       </td>
-                      <td
-                        className="p-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => setEditingCustomer(customer)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button
-                            onClick={() => setDeletingCustomer(customer)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </td>
+                      {/* Action buttons — admin only */}
+                      {canEdit && (
+                        <td
+                          className="p-4"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setEditingCustomer(customer)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button
+                              onClick={() => setDeletingCustomer(customer)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
@@ -836,7 +854,7 @@ const CustomersPage = () => {
             </table>
           </div>
 
-          {/* ── Mobile card list ──────────────────────────────────────── */}
+          {/* ── Mobile card list ──────────────────────────────────── */}
           <div className="md:hidden space-y-2">
             {filteredCustomers.length === 0 ? (
               <p className="text-center text-muted-foreground text-sm py-12">
@@ -850,6 +868,8 @@ const CustomersPage = () => {
                   onSelect={setSelectedCustomer}
                   onEdit={setEditingCustomer}
                   onDelete={setDeletingCustomer}
+                  canViewContact={canViewContact}
+                  isAdmin={isAdmin}
                 />
               ))
             )}
@@ -865,6 +885,8 @@ const CustomersPage = () => {
         onClose={() => setSelectedCustomer(null)}
         onEdit={(c) => setEditingCustomer(c)}
         onDelete={(c) => setDeletingCustomer(c)}
+        canViewContact={canViewContact}
+        isAdmin={isAdmin}
       />
       <EditCustomerModal
         key={editingCustomer?.id ? `edit-${editingCustomer.id}` : "edit-none"}

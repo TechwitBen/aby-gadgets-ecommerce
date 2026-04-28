@@ -16,6 +16,11 @@ import variantRouter from "./routes/variant.routes.js";
 import wishlistRouter from "./routes/wishlist.routes.js";
 import paymentRouter from "./routes/payment.routes.js";
 import contactRouter from "./routes/contact.routes.js";
+import staffRouter    from "./routes/staff.routes.js";
+import auditRouter    from "./routes/auditLog.routes.js";
+import settingsRouter from "./routes/settings.routes.js";
+import notificationRouter from "./routes/notification.routes.js";
+import userRouter         from "./routes/user.routes.js";
 
 
 import { connect } from "./db.js";
@@ -98,6 +103,11 @@ const startServer = async () => {
   app.use("/api/v1/wishlist", wishlistRouter);
   app.use("/api/v1/variants", variantRouter);
   app.use("/api/v1/contact", contactRouter);
+  app.use("/api/v1/staff",    staffRouter);
+app.use("/api/v1/audit",    auditRouter);
+app.use("/api/v1/settings", settingsRouter);
+app.use("/api/v1/notifications", notificationRouter);
+app.use("/api/v1/user",          userRouter);
   // =========================
   // 6. START SERVER
   // =========================

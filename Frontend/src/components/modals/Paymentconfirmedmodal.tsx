@@ -2,11 +2,19 @@ import { useNavigate } from "react-router-dom";
 
 interface PaymentConfirmedModalProps {
   open:    boolean;
-  orderId: string;
+  orderId: string; // MongoDB _id — used for navigation (intentionally kept as _id)
   onClose: () => void;
 }
 
-const PaymentConfirmedModal = ({ open, orderId, onClose }: PaymentConfirmedModalProps) => {
+/**
+ * Shown after Paystack callback verification succeeds.
+ * orderId is the MongoDB _id of the order (not order_number) because
+ * the /track-order/:id route is keyed on _id.
+ * The human-readable order_number is displayed inside TrackOrderPage itself.
+ */
+const PaymentConfirmedModal = ({
+  open, orderId, onClose,
+}: PaymentConfirmedModalProps) => {
   const navigate = useNavigate();
 
   if (!open) return null;

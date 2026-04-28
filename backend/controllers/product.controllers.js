@@ -16,6 +16,7 @@ const normalizeProduct = (product, variants = []) => {
   return {
     ...doc,
     id: doc._id.toString(),
+    // Convenience aliases kept for backward compatibility
     image: doc.images?.[0] ?? null,
     image2: doc.images?.[1] ?? null,
     price: cheapest?.price ?? 0,
@@ -26,6 +27,26 @@ const normalizeProduct = (product, variants = []) => {
       id: v._id.toString(),
     })),
   };
+};
+
+// ── Resolve the final images array from request body ─────────────────────────
+// Supports both the new `images` array and the legacy `image` / `image2` fields.
+const resolveImages = (body, existingImages = []) => {
+  const { images, image, image2 } = body;
+
+  if (Array.isArray(images) && images.length > 0) {
+    return images.filter(Boolean).slice(0, 6);
+  }
+
+  // Legacy fallback: build from separate fields
+  if (image !== undefined || image2 !== undefined) {
+    const base = [...existingImages];
+    if (image !== undefined) base[0] = image;
+    if (image2 !== undefined) base[1] = image2;
+    return base.filter(Boolean);
+  }
+
+  return existingImages;
 };
 
 // ── Build Mongoose filter from query params ───────────────────────────────────
@@ -64,7 +85,7 @@ const buildSort = (sortBy) => {
   }
 };
 
-// ── Batch-fetch review aggregates for a list of product IDs ──────────────────
+// ── Batch-fetch review aggregates ─────────────────────────────────────────────
 const batchReviewStats = async (productIds) => {
   if (!productIds.length) return {};
 
@@ -128,7 +149,6 @@ export const getProducts = async (req, res) => {
       Product.countDocuments(filter),
     ]);
 
-    // Batch-fetch variants
     const productIds = products.map((p) => p._id);
     const allVariants = await Variant.find({ product: { $in: productIds } }).lean();
 
@@ -139,17 +159,14 @@ export const getProducts = async (req, res) => {
       variantMap[key].push(v);
     });
 
-    // Normalize
     let normalized = products.map((p) => {
       const variants = variantMap[p._id.toString()] ?? [];
       return normalizeProduct(p, variants);
     });
 
-    // Price filter (post-join)
     if (minPrice) normalized = normalized.filter((p) => p.price >= Number(minPrice));
     if (maxPrice) normalized = normalized.filter((p) => p.price <= Number(maxPrice));
 
-    // Price sort (post-join)
     if (sortBy === "price_low") normalized.sort((a, b) => a.price - b.price);
     if (sortBy === "price_high") normalized.sort((a, b) => b.price - a.price);
 
@@ -166,7 +183,7 @@ export const getProducts = async (req, res) => {
 
 /**
  * @desc    Get product by slug (with variants)
- * @route   GET /api/products/slug/:slug
+ * @route   GET /api/products/:slug
  */
 export const getProductBySlug = async (req, res) => {
   try {
@@ -181,19 +198,25 @@ export const getProductBySlug = async (req, res) => {
 };
 
 /**
- * @desc    Create a new product  (rating / reviews are auto-managed via reviews API)
+ * @desc    Create a new product
  * @route   POST /api/products
  */
 export const createProduct = async (req, res) => {
   try {
     const {
       name, description, category, brand, condition,
-      image, image2, features, specs, type, section,
-      deliveryFee, tags,
+      features, specs, type, section, deliveryFee, tags,
     } = req.body;
 
     if (!name || !category || !brand) {
       return res.status(400).json({ message: "Name, category, and brand are required" });
+    }
+
+    // Resolve images — accepts new `images[]` array or legacy `image`/`image2`
+    const productImages = resolveImages(req.body);
+
+    if (productImages.length === 0) {
+      return res.status(400).json({ message: "At least one image is required" });
     }
 
     const product = await Product.create({
@@ -202,14 +225,13 @@ export const createProduct = async (req, res) => {
       category: category.toLowerCase(),
       brand,
       condition,
-      images: [image, image2].filter(Boolean),
+      images: productImages,
       features,
       tags,
       type,
       section,
       deliveryFee: deliveryFee ?? 0,
       specs,
-      // rating and reviews start at 0 and are managed by the reviews API
       rating: 0,
       reviews: 0,
     });
@@ -235,8 +257,7 @@ export const updateProduct = async (req, res) => {
 
     const {
       name, description, category, brand, condition,
-      image, image2, features, tags, specs,
-      type, section, is_active, deliveryFee,
+      features, tags, specs, type, section, is_active, deliveryFee,
     } = req.body;
 
     product.name        = name        ?? product.name;
@@ -250,13 +271,11 @@ export const updateProduct = async (req, res) => {
     product.section     = section     ?? product.section;
     product.is_active   = is_active   ?? product.is_active;
     product.deliveryFee = deliveryFee ?? product.deliveryFee;
-    // rating and reviews are NOT manually editable — managed by reviews API
 
-    if (image !== undefined || image2 !== undefined) {
-      const imgs = [...product.images];
-      if (image !== undefined) imgs[0] = image;
-      if (image2 !== undefined) imgs[1] = image2;
-      product.images = imgs.filter(Boolean);
+    // Resolve images — prefers new `images[]`, falls back to legacy fields
+    const updatedImages = resolveImages(req.body, product.images ?? []);
+    if (updatedImages !== product.images) {
+      product.images = updatedImages;
     }
 
     if (specs) {
@@ -285,22 +304,28 @@ export const patchProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    // Fields that are auto-managed and must not be manually patched
     const PROTECTED = new Set(["rating", "reviews"]);
-
     const specFields = ["camera", "battery", "screenSize", "storage"];
 
     Object.keys(req.body).forEach((key) => {
-      if (PROTECTED.has(key)) return; // ignore
+      if (PROTECTED.has(key)) return;
 
-      if (specFields.includes(key)) {
+      if (key === "images" && Array.isArray(req.body[key])) {
+        // New-style: full images array
+        product.images = req.body[key].filter(Boolean).slice(0, 6);
+        product.markModified("images");
+      } else if (specFields.includes(key)) {
         if (!product.specs) product.specs = {};
         product.specs[key] = req.body[key];
         product.markModified("specs");
       } else if (key === "image") {
+        // Legacy fallback
+        if (!product.images) product.images = [];
         product.images[0] = req.body[key];
         product.markModified("images");
       } else if (key === "image2") {
+        // Legacy fallback
+        if (!product.images) product.images = [];
         product.images[1] = req.body[key];
         product.markModified("images");
       } else if (key === "category") {

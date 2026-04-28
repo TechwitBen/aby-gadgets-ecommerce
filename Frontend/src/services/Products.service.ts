@@ -6,15 +6,9 @@ import axios from "axios";
 
 const api = axios.create({
   baseURL: "http://localhost:3000/api/v1",
-
-  // 🔥 REQUIRED FOR PASSPORT SESSION AUTH
   withCredentials: true,
-
-  headers: {
-    "Content-Type": "application/json",
-  },
+  headers: { "Content-Type": "application/json" },
 });
-
 
 // ── Shared Types ──────────────────────────────────────────────────────────────
 
@@ -33,6 +27,7 @@ export interface Variant {
   storage?: string;
   ram?: string;
   sku: string;
+   image?: string;
   price: number;
   compare_at_price?: number;
   stock: number;
@@ -48,7 +43,9 @@ export interface Product {
   category: string;
   brand: string;
   condition: string;
+  /** Full array from the DB — use this for galleries */
   images: string[];
+  /** Convenience aliases from normalizeProduct (images[0] / images[1]) */
   image?: string;
   image2?: string;
   features?: string[];
@@ -107,8 +104,8 @@ export interface CreateProductPayload {
   description?: string;
   type?: string;
   section?: string;
-  image?: string;
-  image2?: string;
+  /** Preferred: array of image URLs / data-URLs (up to 6) */
+  images?: string[];
   deliveryFee?: number;
   rating?: number;
   reviews?: number;
@@ -128,22 +125,21 @@ export interface CreateVariantPayload {
   ram?: string;
   sku: string;
   price: number;
+  image?: string;
   compare_at_price?: number;
   stock: number;
   is_active?: boolean;
-};
+}
 
 export type UpdateVariantPayload = Omit<CreateVariantPayload, "productId">;
 
-// ── helper ───────────────────────────────────────────────────────────
-
+// ── helper ────────────────────────────────────────────────────────────────────
 const toQuery = (p: GetProductsParams) => ({
   ...p,
   all: p.all ? "true" : undefined,
 });
 
 // ── PRODUCT SERVICE ───────────────────────────────────────────────────────────
-
 export const productService = {
   getAll: (params: GetProductsParams = {}): Promise<ProductsResponse> =>
     api.get("/products", { params: toQuery(params) }).then((r) => r.data),
@@ -153,9 +149,7 @@ export const productService = {
     extra: Omit<GetProductsParams, "section" | "all"> = {},
   ): Promise<Product[]> =>
     api
-      .get("/products", {
-        params: toQuery({ ...extra, section, all: true }),
-      })
+      .get("/products", { params: toQuery({ ...extra, section, all: true }) })
       .then((r) => r.data.products),
 
   getBySlug: (slug: string): Promise<Product> =>
@@ -175,7 +169,6 @@ export const productService = {
 };
 
 // ── VARIANT SERVICE ───────────────────────────────────────────────────────────
-
 export const variantService = {
   getByProduct: (productId: string): Promise<Variant[]> =>
     api.get(`/variants/product/${productId}`).then((r) => r.data),
@@ -190,8 +183,7 @@ export const variantService = {
     api.delete(`/variants/${id}`).then((r) => r.data),
 };
 
-// ── UTILITIES ──────────────────────────────────────────────────────────
-
+// ── UTILITIES ─────────────────────────────────────────────────────────────────
 export type StockStatus = "In Stock" | "Low Stock" | "Out of Stock";
 
 export const getStockStatus = (product: Product): StockStatus => {
@@ -199,11 +191,9 @@ export const getStockStatus = (product: Product): StockStatus => {
     (s, v) => s + (v.is_active ? v.stock : 0),
     0,
   );
-
   if (total === 0) return "Out of Stock";
   if (total <= 5) return "Low Stock";
   return "In Stock";
 };
 
-export const formatPrice = (n: number) =>
-  `₦${n.toLocaleString("en-NG")}`;
+export const formatPrice = (n: number) => `₦${n.toLocaleString("en-NG")}`;

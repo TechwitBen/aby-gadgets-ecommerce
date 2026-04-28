@@ -86,7 +86,14 @@ export const loginController = (req, res, next) => {
           return res.status(200).json({
             success: true,
             message: "Login successful",
-            data: req.user,
+            data: {
+    _id: user._id,
+    username: user.username,
+    email: user.email,
+    role: user.role,
+    staffStatus: user.staffStatus,
+    staffPermissions: user.staffPermissions,
+  },
           });
         });
       });
@@ -439,7 +446,6 @@ export const logoutController = (req, res) => {
 };
 
 
-
 export const getAllUsersController = async (req, res) => {
   try {
     const users = await User.find(
@@ -447,20 +453,27 @@ export const getAllUsersController = async (req, res) => {
       "-hashed_password -salt -resetPasswordToken -resetPasswordExpires"
     );
 
-    return res.status(200).json({
-      success: true,
-      users,
+    // If the requester is staff without viewContactInfo permission,
+    // strip email and any other contact fields from every user record
+    const canViewContact =
+      req.user.role === "admin" ||
+      req.user.staffPermissions?.customers?.viewContactInfo === true;
+
+    const safeUsers = users.map((u) => {
+      const doc = u.toObject();
+      if (!canViewContact) {
+        delete doc.email;
+        // add phone here too once you store it on customers
+      }
+      return doc;
     });
+
+    return res.status(200).json({ success: true, users: safeUsers });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({
-      success: false,
-      error: "Failed to fetch users",
-    });
+    return res.status(500).json({ success: false, error: "Failed to fetch users" });
   }
 };
-
-
 export const deleteUserController = async (req, res) => {
   try {
     const { id } = req.params;

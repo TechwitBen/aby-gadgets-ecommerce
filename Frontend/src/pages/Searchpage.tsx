@@ -1,7 +1,15 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Search, X, SlidersHorizontal, ArrowLeft, TrendingUp, Clock, Star } from "lucide-react";
-import { productService } from "@/services/Products.service";
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  ArrowLeft,
+  TrendingUp,
+  Clock,
+  Star,
+} from "lucide-react";
+import { productService } from "@/services/products.service";
 
 // ─── Debounce hook ────────────────────────────────────────────────────────────
 function useDebounce(value, delay = 350) {
@@ -15,17 +23,28 @@ function useDebounce(value, delay = 350) {
 
 // ─── Price formatter ──────────────────────────────────────────────────────────
 const fmt = (n) =>
-  new Intl.NumberFormat("en-NG", { style: "currency", currency: "NGN", maximumFractionDigits: 0 }).format(n);
+  new Intl.NumberFormat("en-NG", {
+    style: "currency",
+    currency: "NGN",
+    maximumFractionDigits: 0,
+  }).format(n);
 
 const RECENT_KEY = "ag_recent_searches";
 const MAX_RECENT = 6;
 
 const getRecent = () => {
-  try { return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]"); } catch { return []; }
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+  } catch {
+    return [];
+  }
 };
 const saveRecent = (term) => {
   const prev = getRecent().filter((t) => t !== term);
-  localStorage.setItem(RECENT_KEY, JSON.stringify([term, ...prev].slice(0, MAX_RECENT)));
+  localStorage.setItem(
+    RECENT_KEY,
+    JSON.stringify([term, ...prev].slice(0, MAX_RECENT)),
+  );
 };
 
 // ─── Skeleton card ────────────────────────────────────────────────────────────
@@ -50,15 +69,20 @@ const ProductCard = ({ product, query, onClick }) => {
   // Bold-highlight matching text
   const highlight = (text = "") => {
     if (!query.trim()) return text;
-    const parts = text.split(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"));
+    const parts = text.split(
+      new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")})`, "gi"),
+    );
     return parts.map((p, i) =>
       p.toLowerCase() === query.toLowerCase() ? (
-        <mark key={i} className="bg-violet-100 text-violet-700 rounded px-0.5 font-semibold not-italic">
+        <mark
+          key={i}
+          className="bg-violet-100 text-violet-700 rounded px-0.5 font-semibold not-italic"
+        >
           {p}
         </mark>
       ) : (
         p
-      )
+      ),
     );
   };
 
@@ -70,7 +94,11 @@ const ProductCard = ({ product, query, onClick }) => {
       {/* Image */}
       <div className="w-16 h-16 rounded-xl overflow-hidden bg-gray-50 flex-shrink-0 ring-1 ring-gray-100 group-hover:ring-violet-200 transition-all">
         {product.image ? (
-          <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <img
+            src={product.image}
+            alt={product.name}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+          />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-300">
             <Search size={20} />
@@ -106,7 +134,9 @@ const ProductCard = ({ product, query, onClick }) => {
         {lowestPrice != null ? (
           <>
             <p className="text-xs text-gray-400 leading-none mb-0.5">from</p>
-            <p className="text-sm font-bold text-gray-900">{fmt(lowestPrice)}</p>
+            <p className="text-sm font-bold text-gray-900">
+              {fmt(lowestPrice)}
+            </p>
           </>
         ) : (
           <p className="text-xs text-gray-400">—</p>
@@ -128,13 +158,19 @@ const SearchPage = () => {
   const [loading, setLoading] = useState(true);
   const [filterOpen, setFilterOpen] = useState(false);
   const [recentSearches, setRecentSearches] = useState(getRecent());
-  const [filters, setFilters] = useState({ category: "", brand: "", condition: "" });
+  const [filters, setFilters] = useState({
+    category: "",
+    brand: "",
+    condition: "",
+  });
 
   const inputRef = useRef(null);
   const debouncedQuery = useDebounce(query, 300);
 
   // Auto-focus
-  useEffect(() => { inputRef.current?.focus(); }, []);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   // Load all products once
   useEffect(() => {
@@ -159,8 +195,11 @@ const SearchPage = () => {
     const q = debouncedQuery.trim().toLowerCase();
 
     // Update URL
-    if (q) { setSearchParams({ q: debouncedQuery }, { replace: true }); }
-    else    { setSearchParams({}, { replace: true }); }
+    if (q) {
+      setSearchParams({ q: debouncedQuery }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
 
     if (!q && !filters.category && !filters.brand && !filters.condition) {
       setFiltered([]);
@@ -176,8 +215,8 @@ const SearchPage = () => {
         p.description?.toLowerCase().includes(q) ||
         p.tags?.some((t) => t.toLowerCase().includes(q));
 
-      const matchCat  = !filters.category  || p.category  === filters.category;
-      const matchBrand = !filters.brand    || p.brand     === filters.brand;
+      const matchCat = !filters.category || p.category === filters.category;
+      const matchBrand = !filters.brand || p.brand === filters.brand;
       const matchCond = !filters.condition || p.condition === filters.condition;
 
       return matchQ && matchCat && matchBrand && matchCond;
@@ -187,9 +226,15 @@ const SearchPage = () => {
   }, [debouncedQuery, allProducts, filters]);
 
   // Derived filter options from loaded products
-  const categories = [...new Set(allProducts.map((p) => p.category).filter(Boolean))].sort();
-  const brands      = [...new Set(allProducts.map((p) => p.brand).filter(Boolean))].sort();
-  const conditions  = [...new Set(allProducts.map((p) => p.condition).filter(Boolean))].sort();
+  const categories = [
+    ...new Set(allProducts.map((p) => p.category).filter(Boolean)),
+  ].sort();
+  const brands = [
+    ...new Set(allProducts.map((p) => p.brand).filter(Boolean)),
+  ].sort();
+  const conditions = [
+    ...new Set(allProducts.map((p) => p.condition).filter(Boolean)),
+  ].sort();
 
   const handleProductClick = (product) => {
     if (query.trim()) {
@@ -199,19 +244,29 @@ const SearchPage = () => {
     navigate(`/products/${product._id || product.id}`);
   };
 
-  const clearQuery = () => { setQuery(""); inputRef.current?.focus(); };
+  const clearQuery = () => {
+    setQuery("");
+    inputRef.current?.focus();
+  };
 
-  const applyRecent = (term) => { setQuery(term); inputRef.current?.focus(); };
+  const applyRecent = (term) => {
+    setQuery(term);
+    inputRef.current?.focus();
+  };
 
-  const clearAllFilters = () => setFilters({ category: "", brand: "", condition: "" });
+  const clearAllFilters = () =>
+    setFilters({ category: "", brand: "", condition: "" });
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
-  const showEmpty     = !loading && debouncedQuery.trim() && filtered.length === 0;
-  const showResults   = !loading && filtered.length > 0;
-  const showIdle      = !loading && !debouncedQuery.trim() && !activeFilterCount;
+  const showEmpty = !loading && debouncedQuery.trim() && filtered.length === 0;
+  const showResults = !loading && filtered.length > 0;
+  const showIdle = !loading && !debouncedQuery.trim() && !activeFilterCount;
 
   return (
-    <div className="min-h-screen bg-[#faf9ff]" style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif" }}>
+    <div
+      className="min-h-screen bg-[#faf9ff]"
+      style={{ fontFamily: "'DM Sans','Segoe UI',sans-serif" }}
+    >
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap');
         .search-input::placeholder { color: #c4b8e8; }
@@ -234,7 +289,10 @@ const SearchPage = () => {
 
           {/* Search input */}
           <div className="flex-1 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-violet-400" size={16} />
+            <Search
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-violet-400"
+              size={16}
+            />
             <input
               ref={inputRef}
               type="text"
@@ -276,9 +334,14 @@ const SearchPage = () => {
         {filterOpen && (
           <div className="bg-white border-t border-gray-100 px-4 py-4 max-w-2xl mx-auto fade-in">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Filters</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Filters
+              </p>
               {activeFilterCount > 0 && (
-                <button onClick={clearAllFilters} className="text-xs text-violet-600 hover:opacity-75 font-medium">
+                <button
+                  onClick={clearAllFilters}
+                  className="text-xs text-violet-600 hover:opacity-75 font-medium"
+                >
                   Clear all
                 </button>
               )}
@@ -289,11 +352,20 @@ const SearchPage = () => {
               <p className="text-xs text-gray-400 mb-1.5">Category</p>
               <div className="flex flex-wrap gap-1.5">
                 {categories.map((c) => (
-                  <button key={c}
-                    onClick={() => setFilters((f) => ({ ...f, category: f.category === c ? "" : c }))}
+                  <button
+                    key={c}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        category: f.category === c ? "" : c,
+                      }))
+                    }
                     className={`filter-chip text-xs px-3 py-1 rounded-full border font-medium ${
-                      filters.category === c ? "active" : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
-                    }`}>
+                      filters.category === c
+                        ? "active"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
+                    }`}
+                  >
                     {c}
                   </button>
                 ))}
@@ -305,11 +377,20 @@ const SearchPage = () => {
               <p className="text-xs text-gray-400 mb-1.5">Brand</p>
               <div className="flex flex-wrap gap-1.5">
                 {brands.map((b) => (
-                  <button key={b}
-                    onClick={() => setFilters((f) => ({ ...f, brand: f.brand === b ? "" : b }))}
+                  <button
+                    key={b}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        brand: f.brand === b ? "" : b,
+                      }))
+                    }
                     className={`filter-chip text-xs px-3 py-1 rounded-full border font-medium ${
-                      filters.brand === b ? "active" : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
-                    }`}>
+                      filters.brand === b
+                        ? "active"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
+                    }`}
+                  >
                     {b}
                   </button>
                 ))}
@@ -321,11 +402,20 @@ const SearchPage = () => {
               <p className="text-xs text-gray-400 mb-1.5">Condition</p>
               <div className="flex flex-wrap gap-1.5">
                 {conditions.map((c) => (
-                  <button key={c}
-                    onClick={() => setFilters((f) => ({ ...f, condition: f.condition === c ? "" : c }))}
+                  <button
+                    key={c}
+                    onClick={() =>
+                      setFilters((f) => ({
+                        ...f,
+                        condition: f.condition === c ? "" : c,
+                      }))
+                    }
                     className={`filter-chip text-xs px-3 py-1 rounded-full border font-medium ${
-                      filters.condition === c ? "active" : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
-                    }`}>
+                      filters.condition === c
+                        ? "active"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-violet-300"
+                    }`}
+                  >
                     {c}
                   </button>
                 ))}
@@ -337,11 +427,12 @@ const SearchPage = () => {
 
       {/* ── Body ── */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-
         {/* Loading */}
         {loading && (
           <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+            {Array.from({ length: 5 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         )}
 
@@ -355,7 +446,10 @@ const SearchPage = () => {
                     <Clock size={12} /> Recent
                   </div>
                   <button
-                    onClick={() => { localStorage.removeItem(RECENT_KEY); setRecentSearches([]); }}
+                    onClick={() => {
+                      localStorage.removeItem(RECENT_KEY);
+                      setRecentSearches([]);
+                    }}
                     className="text-xs text-gray-400 hover:text-gray-600"
                   >
                     Clear
@@ -363,8 +457,11 @@ const SearchPage = () => {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {recentSearches.map((term) => (
-                    <button key={term} onClick={() => applyRecent(term)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-700 hover:border-violet-400 hover:text-violet-700 transition-colors">
+                    <button
+                      key={term}
+                      onClick={() => applyRecent(term)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-700 hover:border-violet-400 hover:text-violet-700 transition-colors"
+                    >
                       <Clock size={11} className="text-gray-300" />
                       {term}
                     </button>
@@ -380,7 +477,12 @@ const SearchPage = () => {
               </div>
               <div className="space-y-2">
                 {allProducts.slice(0, 6).map((p) => (
-                  <ProductCard key={p._id || p.id} product={p} query="" onClick={handleProductClick} />
+                  <ProductCard
+                    key={p._id || p.id}
+                    product={p}
+                    query=""
+                    onClick={handleProductClick}
+                  />
                 ))}
               </div>
             </div>
@@ -391,10 +493,22 @@ const SearchPage = () => {
         {showResults && (
           <div className="mb-4 fade-in">
             <p className="text-sm text-gray-500">
-              <span className="font-semibold text-gray-900">{filtered.length}</span>{" "}
+              <span className="font-semibold text-gray-900">
+                {filtered.length}
+              </span>{" "}
               result{filtered.length !== 1 ? "s" : ""} for{" "}
-              {debouncedQuery && <span className="font-semibold text-violet-700">"{debouncedQuery}"</span>}
-              {activeFilterCount > 0 && <span className="text-gray-400"> · {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""} applied</span>}
+              {debouncedQuery && (
+                <span className="font-semibold text-violet-700">
+                  "{debouncedQuery}"
+                </span>
+              )}
+              {activeFilterCount > 0 && (
+                <span className="text-gray-400">
+                  {" "}
+                  · {activeFilterCount} filter{activeFilterCount > 1 ? "s" : ""}{" "}
+                  applied
+                </span>
+              )}
             </p>
           </div>
         )}
@@ -403,8 +517,16 @@ const SearchPage = () => {
         {showResults && (
           <div className="space-y-2">
             {filtered.map((p, i) => (
-              <div key={p._id || p.id} className="result-row" style={{ animationDelay: `${i * 30}ms` }}>
-                <ProductCard product={p} query={debouncedQuery} onClick={handleProductClick} />
+              <div
+                key={p._id || p.id}
+                className="result-row"
+                style={{ animationDelay: `${i * 30}ms` }}
+              >
+                <ProductCard
+                  product={p}
+                  query={debouncedQuery}
+                  onClick={handleProductClick}
+                />
               </div>
             ))}
           </div>
@@ -416,14 +538,21 @@ const SearchPage = () => {
             <div className="w-16 h-16 rounded-2xl bg-violet-50 flex items-center justify-center mx-auto mb-4">
               <Search size={28} className="text-violet-300" />
             </div>
-            <p className="font-semibold text-gray-800 text-lg mb-1">No results found</p>
+            <p className="font-semibold text-gray-800 text-lg mb-1">
+              No results found
+            </p>
             <p className="text-sm text-gray-400">
-              No products match <span className="font-medium text-gray-600">"{debouncedQuery}"</span>
+              No products match{" "}
+              <span className="font-medium text-gray-600">
+                "{debouncedQuery}"
+              </span>
               {activeFilterCount > 0 && " with the current filters"}.
             </p>
             {activeFilterCount > 0 && (
-              <button onClick={clearAllFilters}
-                className="mt-4 text-sm text-violet-600 hover:opacity-75 font-medium underline underline-offset-2">
+              <button
+                onClick={clearAllFilters}
+                className="mt-4 text-sm text-violet-600 hover:opacity-75 font-medium underline underline-offset-2"
+              >
                 Clear filters and try again
               </button>
             )}

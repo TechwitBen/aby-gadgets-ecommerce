@@ -8,7 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import { wishlistService } from "@/services/Wishlist.service";
-import type { Product } from "@/services/Products.service";
+import type { Product } from "@/services/products.service";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -33,29 +33,35 @@ const LOCAL_KEY = "aby_wishlist_ids";
 const saveLocal = (ids: Set<string>) => {
   try {
     localStorage.setItem(LOCAL_KEY, JSON.stringify([...ids]));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 };
 
 const loadLocal = (): Set<string> => {
   try {
     const raw = localStorage.getItem(LOCAL_KEY);
     if (raw) return new Set(JSON.parse(raw) as string[]);
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return new Set();
 };
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
-  const [wishlistIds, setWishlistIds]           = useState<Set<string>>(loadLocal);
+  const [wishlistIds, setWishlistIds] = useState<Set<string>>(loadLocal);
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading]               = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { isAuthenticated } = useAuth();
 
   // ── Stable ref so callbacks never capture stale isAuthenticated ───────────
   const isAuthRef = useRef(isAuthenticated);
-  useEffect(() => { isAuthRef.current = isAuthenticated; }, [isAuthenticated]);
+  useEffect(() => {
+    isAuthRef.current = isAuthenticated;
+  }, [isAuthenticated]);
 
   // ── Fetch wishlist from server ─────────────────────────────────────────────
   // Empty deps — always reads auth via ref, so the function itself is stable
@@ -86,75 +92,92 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated]); // intentionally only isAuthenticated, not refreshWishlist
 
   // ── Toggle ─────────────────────────────────────────────────────────────────
-  const toggleWishlist = useCallback(async (productId: string) => {
-    const wasInList = wishlistIds.has(productId);
-    console.log(`🔁 Toggling product ${productId}, currently in wishlist: ${wasInList}`);
+  const toggleWishlist = useCallback(
+    async (productId: string) => {
+      const wasInList = wishlistIds.has(productId);
+      console.log(
+        `🔁 Toggling product ${productId}, currently in wishlist: ${wasInList}`,
+      );
 
-    // 1. Optimistic update
-    setWishlistIds((prev) => {
-      const next = new Set(prev);
-      wasInList ? next.delete(productId) : next.add(productId);
-      saveLocal(next);
-      console.log(`📦 Optimistic update: wishlistIds size = ${next.size}`);
-      return next;
-    });
-
-    // Guest: localStorage only — done
-    if (!isAuthRef.current) {
-      console.log("👤 Guest mode, no server call");
-      return;
-    }
-
-    try {
-      console.log(`📡 Sending toggle request for product ${productId} to /api/v1/wishlist/toggle/${productId}`);
-      const res = await wishlistService.toggle(productId);
-      console.log("✅ Server response:", res);
-
-      const serverIds = new Set(res.productIds);
-      console.log(`🔄 Server returned wishlist IDs (${serverIds.size} items):`, [...serverIds]);
-
-      setWishlistIds(serverIds);
-      saveLocal(serverIds);
-
-      console.log("🔄 Refreshing full wishlist products...");
-      await refreshWishlist();
-
-      if (!res.inWishlist) {
-        console.log(`🗑️ Product ${productId} removed from wishlist, updating product list`);
-        setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
-      } else {
-        console.log(`✨ Product ${productId} added to wishlist, will appear after refresh`);
-      }
-    } catch (error) {
-      console.error("❌ Toggle failed, reverting optimistic update:", error);
+      // 1. Optimistic update
       setWishlistIds((prev) => {
         const next = new Set(prev);
-        wasInList ? next.add(productId) : next.delete(productId);
+        wasInList ? next.delete(productId) : next.add(productId);
         saveLocal(next);
-        console.log(`↩️ Reverted: wishlistIds size = ${next.size}`);
+        console.log(`📦 Optimistic update: wishlistIds size = ${next.size}`);
         return next;
       });
-    }
-  }, [wishlistIds, refreshWishlist]); // ← add refreshWishlist to dependencies
+
+      // Guest: localStorage only — done
+      if (!isAuthRef.current) {
+        console.log("👤 Guest mode, no server call");
+        return;
+      }
+
+      try {
+        console.log(
+          `📡 Sending toggle request for product ${productId} to /api/v1/wishlist/toggle/${productId}`,
+        );
+        const res = await wishlistService.toggle(productId);
+        console.log("✅ Server response:", res);
+
+        const serverIds = new Set(res.productIds);
+        console.log(
+          `🔄 Server returned wishlist IDs (${serverIds.size} items):`,
+          [...serverIds],
+        );
+
+        setWishlistIds(serverIds);
+        saveLocal(serverIds);
+
+        console.log("🔄 Refreshing full wishlist products...");
+        await refreshWishlist();
+
+        if (!res.inWishlist) {
+          console.log(
+            `🗑️ Product ${productId} removed from wishlist, updating product list`,
+          );
+          setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
+        } else {
+          console.log(
+            `✨ Product ${productId} added to wishlist, will appear after refresh`,
+          );
+        }
+      } catch (error) {
+        console.error("❌ Toggle failed, reverting optimistic update:", error);
+        setWishlistIds((prev) => {
+          const next = new Set(prev);
+          wasInList ? next.add(productId) : next.delete(productId);
+          saveLocal(next);
+          console.log(`↩️ Reverted: wishlistIds size = ${next.size}`);
+          return next;
+        });
+      }
+    },
+    [wishlistIds, refreshWishlist],
+  ); // ← add refreshWishlist to dependencies
 
   // ── Explicit remove (trash icon on wishlist page) ─────────────────────────
-  const removeFromWishlist = useCallback(async (productId: string) => {
-    // Optimistic
-    setWishlistIds((prev) => {
-      const next = new Set(prev);
-      next.delete(productId);
-      saveLocal(next);
-      return next;
-    });
-    setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
+  const removeFromWishlist = useCallback(
+    async (productId: string) => {
+      // Optimistic
+      setWishlistIds((prev) => {
+        const next = new Set(prev);
+        next.delete(productId);
+        saveLocal(next);
+        return next;
+      });
+      setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
 
-    if (!isAuthRef.current) return;
-    try {
-      await wishlistService.remove(productId);
-    } catch {
-      refreshWishlist(); // rollback by re-syncing
-    }
-  }, [refreshWishlist]);
+      if (!isAuthRef.current) return;
+      try {
+        await wishlistService.remove(productId);
+      } catch {
+        refreshWishlist(); // rollback by re-syncing
+      }
+    },
+    [refreshWishlist],
+  );
 
   // ── Clear ──────────────────────────────────────────────────────────────────
   const clearWishlist = useCallback(async () => {
@@ -162,13 +185,17 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     setWishlistProducts([]);
     saveLocal(new Set());
     if (!isAuthRef.current) return;
-    try { await wishlistService.clear(); } catch { /* silent */ }
+    try {
+      await wishlistService.clear();
+    } catch {
+      /* silent */
+    }
   }, []);
 
   // ── isInWishlist ───────────────────────────────────────────────────────────
   const isInWishlist = useCallback(
     (productId: string) => wishlistIds.has(productId),
-    [wishlistIds]
+    [wishlistIds],
   );
 
   return (
@@ -176,7 +203,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
       value={{
         wishlistIds,
         wishlistProducts,
-        wishlistCount: wishlistIds.size,  // derived from Set — always accurate
+        wishlistCount: wishlistIds.size, // derived from Set — always accurate
         isLoading,
         isInWishlist,
         toggleWishlist,
@@ -194,7 +221,8 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
 
 export const useWishlist = (): WishlistContextValue => {
   const ctx = useContext(WishlistContext);
-  if (!ctx) throw new Error("useWishlist must be used inside <WishlistProvider>");
+  if (!ctx)
+    throw new Error("useWishlist must be used inside <WishlistProvider>");
   return ctx;
 };
 

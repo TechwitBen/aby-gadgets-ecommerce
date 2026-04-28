@@ -26,7 +26,7 @@ export const getVariantsByProduct = async (req, res) => {
 
 export const createVariant = async (req, res) => {
   try {
-   const { productId, color, storage, ram, price, compare_at_price, stock, sku, is_active } = req.body;
+  const { productId, color, storage, ram, image, price, compare_at_price, stock, sku, is_active } = req.body;
     if (!productId || !price || !sku) {
       return res.status(400).json({
         message: "Product ID, price, and SKU are required",
@@ -77,6 +77,7 @@ export const createVariant = async (req, res) => {
       color:    color   || undefined,
       storage:  storage || undefined,
       ram:      ram     || undefined,
+      image:   image   || undefined,
       price,
       compare_at_price: compare_at_price || undefined,
       stock:    stock ?? 0,
@@ -163,6 +164,7 @@ export const updateVariant = async (req, res) => {
     if (stock !== undefined) variant.stock = stock;
     if (sku !== undefined) variant.sku = sku;
     if (is_active !== undefined) variant.is_active = is_active;
+    if (image !== undefined) variant.image = image || null;
 
     const updatedVariant = await variant.save();
 

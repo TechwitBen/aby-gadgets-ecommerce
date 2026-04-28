@@ -1,11 +1,7 @@
 // src/pages/admin/data/mockData.ts
 
 // ── Product type ──────────────────────────────────────────────────────────────
-// Extends the admin-specific fields (images[], stock, status, batteryHealth,
-// color) with every field from the storefront Product interface so that
-// ProductDetailPage and AddProductPage can read/write them without TS errors.
 export interface AdminProduct {
-  // ── Admin-only ──
   id: string;
   name: string;
   condition: string;
@@ -18,12 +14,10 @@ export interface AdminProduct {
   batteryHealth: string;
   color: string;
   description: string;
-  images: string[];          // admin thumbnail slots
-
-  // ── Storefront Product interface fields (all optional) ──
-  image?: string;            // primary URL (synced from images[0])
-  image2?: string;           // hover URL  (synced from images[1])
-  type?: string;             // e.g. "smartphone", "laptop"
+  images: string[];
+  image?: string;
+  image2?: string;
+  type?: string;
   section?: "New Arrivals" | "Popular Products" | "Sweet Deals";
   features?: string[];
   screenSize?: string;
@@ -358,33 +352,103 @@ export const customersData = [
 ];
 
 // ── Staff ─────────────────────────────────────────────────────────────────────
-export const staffData = {
-  fullName: "Egoh .J.",
-  email: "egohjimmy422@gmail.com",
-  phone: "09030834028",
-  role: "Staff",
-  status: "Active.",
-  homeAddress: "8, Oni-Oladipupo Street Mowe Ogun State, Nigeria",
-  permissions: {
-    order: {
-      viewOrder: true,
-      updateOrderStatus: true,
-      addInternalNotes: true,
-    },
-    payments: {
-      contactCustomers: true,
-    },
-    delivery: {
-      confirmDelivery: false,
-    },
-    products: {
-      confirmPaymentStatus: false,
+
+export interface StaffPermissions {
+  order: {
+    viewOrder: boolean;
+    updateOrderStatus: boolean;
+    addInternalNotes: boolean;
+  };
+  payments: {
+    contactCustomers: boolean;
+  };
+  delivery: {
+    confirmDelivery: boolean;
+  };
+  products: {
+    confirmPaymentStatus: boolean;
+  };
+}
+
+export interface Staff {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  role: string;
+  status: "Active" | "Inactive";
+  homeAddress: string;
+  permissions: StaffPermissions;
+}
+
+export const staffList: Staff[] = [
+  {
+    id: "1",
+    fullName: "Egoh .J.",
+    email: "egohjimmy422@gmail.com",
+    phone: "09030834028",
+    role: "Staff",
+    status: "Active",
+    homeAddress: "8, Oni-Oladipupo Street Mowe Ogun State, Nigeria",
+    permissions: {
+      order: { viewOrder: true, updateOrderStatus: true, addInternalNotes: true },
+      payments: { contactCustomers: true },
+      delivery: { confirmDelivery: false },
+      products: { confirmPaymentStatus: false },
     },
   },
-};
+  {
+    id: "2",
+    fullName: "Amara Okafor",
+    email: "amara@abygadgets.com",
+    phone: "+234 801 234 5678",
+    role: "Order Manager",
+    status: "Active",
+    homeAddress: "14 Broad Street, Lagos Island, Lagos",
+    permissions: {
+      order: { viewOrder: true, updateOrderStatus: true, addInternalNotes: false },
+      payments: { contactCustomers: false },
+      delivery: { confirmDelivery: true },
+      products: { confirmPaymentStatus: false },
+    },
+  },
+  {
+    id: "3",
+    fullName: "Emeka Nwosu",
+    email: "emeka@abygadgets.com",
+    phone: "+234 802 987 6543",
+    role: "Delivery Staff",
+    status: "Active",
+    homeAddress: "7 Allen Avenue, Ikeja, Lagos",
+    permissions: {
+      order: { viewOrder: true, updateOrderStatus: false, addInternalNotes: false },
+      payments: { contactCustomers: false },
+      delivery: { confirmDelivery: true },
+      products: { confirmPaymentStatus: false },
+    },
+  },
+  {
+    id: "4",
+    fullName: "Fatima Abdullahi",
+    email: "fatima@abygadgets.com",
+    phone: "+234 803 456 7890",
+    role: "Customer Support",
+    status: "Inactive",
+    homeAddress: "22 Adeola Odeku, Victoria Island, Lagos",
+    permissions: {
+      order: { viewOrder: true, updateOrderStatus: false, addInternalNotes: true },
+      payments: { contactCustomers: true },
+      delivery: { confirmDelivery: false },
+      products: { confirmPaymentStatus: false },
+    },
+  },
+];
+
+// Keep staffData pointing at the first entry for any legacy imports
+export const staffData = staffList[0];
 
 // ── Lookup lists ──────────────────────────────────────────────────────────────
-export const categories = ["phones", "laptops", "tablets", "accessories", "gadget", "wearable",  "Others"];
+export const categories = ["phones", "laptops", "tablets", "accessories", "gadget", "wearable", "Others"];
 export const brands     = ["Apple", "Samsung", "Dell", "HP", "Lenovo", "Microsoft", "Others"];
 export const conditions = ["Brand New", "UK Used", "Fairly Used", "Open Box", "Refurbished"];
 

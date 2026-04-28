@@ -1,21 +1,49 @@
 import { Router } from "express";
 import {
-  getProducts,
-  getProductBySlug,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  patchProduct,
+  getProducts, getProductBySlug,
+  createProduct, updateProduct, patchProduct, deleteProduct,
 } from "../controllers/product.controllers.js";
-import { isAdmin } from "../middlewares/auth.middleware.js";
+import {
+  isAuthenticated, isAdmin, isAdminOrStaff, checkPermission,
+} from "../middlewares/auth.middleware.js";
 
 const productRouter = Router();
 
-productRouter.get("/", getProducts); // GET /api/products?category=phone&page=1
-productRouter.get("/:slug", getProductBySlug); // GET /api/products/iphone-15-pro
-productRouter.post("/", isAdmin, createProduct); // POST /api/products
-productRouter.put("/:id", isAdmin, updateProduct); // PUT /api/products/:id
-productRouter.patch("/:id", isAdmin, patchProduct); // PUT /api/products/:id
-productRouter.delete("/:id", isAdmin, deleteProduct); // DELETE /api/products/:id
+// ── Public reads ──────────────────────────────────────────────────────────────
+productRouter.get("/",      getProducts);        // storefront listing
+productRouter.get("/:slug", getProductBySlug);   // storefront detail
+
+// ── Admin + staff with product permissions ────────────────────────────────────
+productRouter.post(
+  "/",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("products", "addProducts"),
+  createProduct
+);
+
+productRouter.put(
+  "/:id",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("products", "editProducts"),
+  updateProduct
+);
+
+productRouter.patch(
+  "/:id",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("products", "editProducts"),
+  patchProduct
+);
+
+productRouter.delete(
+  "/:id",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("products", "deleteProducts"),
+  deleteProduct
+);
 
 export default productRouter;

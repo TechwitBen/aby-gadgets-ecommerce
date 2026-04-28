@@ -1,27 +1,58 @@
 import { Router } from "express";
 import {
-  createOrder,
-  getMyOrders,
-  getOrderById,
-  getAllOrders,
-  updateOrderStatus,
-  updateOrderPaymentStatus,
-  deleteOrder,
+  createOrder, getMyOrders, getOrderById,
+  getAllOrders, updateOrderStatus, updateOrderPaymentStatus, deleteOrder,
 } from "../controllers/order.controllers.js";
-import { isAuthenticated, isAdmin } from "../middlewares/auth.middleware.js";
+import {
+  isAuthenticated, isAdmin, isAdminOrStaff, checkPermission,
+} from "../middlewares/auth.middleware.js";
 
 const orderRouter = Router();
 
-orderRouter.post("/", isAuthenticated, createOrder); // POST /api/orders
-orderRouter.get("/my-orders", isAuthenticated, getMyOrders); // GET /api/orders/my-orders
-// ✅ Static routes BEFORE dynamic /:id
-orderRouter.get("/",            isAdmin,         getAllOrders);   // ← moved up
-orderRouter.get("/:id",         isAuthenticated, getOrderById);  // ← now after
+// ── Customer routes ───────────────────────────────────────────────────────────
+orderRouter.post(      "/",          isAuthenticated,                                                  createOrder);
+orderRouter.get(       "/my-orders", isAuthenticated,                                                  getMyOrders);
 
-orderRouter.patch("/:id/status", isAdmin, updateOrderStatus); // PATCH /api/orders/:id/status
+// ── Static before dynamic ─────────────────────────────────────────────────────
+// GET all — admin always passes; staff needs viewOrder permission
+orderRouter.get(
+  "/",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("order", "viewOrder"),
+  getAllOrders
+);
 
+// GET single — users can see their own (controller enforces ownership); staff needs viewOrder
+orderRouter.get(
+  "/:id",
+  isAuthenticated,
+  getOrderById  // ownership check is inside the controller
+);
 
-orderRouter.patch("/:id/payment-status", isAdmin, updateOrderPaymentStatus);
-// 2. Add the delete route with admin protection
-orderRouter.route("/:id").delete(isAuthenticated, isAdmin, deleteOrder);
+// PATCH status — staff needs updateOrderStatus permission
+orderRouter.patch(
+  "/:id/status",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("order", "updateOrderStatus"),
+  updateOrderStatus
+);
+
+// PATCH payment status — admin only (financial action)
+orderRouter.patch(
+  "/:id/payment-status",
+  isAuthenticated,
+  isAdmin,
+  updateOrderPaymentStatus
+);
+
+// DELETE — admin only
+orderRouter.delete(
+  "/:id",
+  isAuthenticated,
+  isAdmin,
+  deleteOrder
+);
+
 export default orderRouter;

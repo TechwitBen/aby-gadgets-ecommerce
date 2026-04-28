@@ -2,8 +2,8 @@ import nodemailer from "nodemailer";
 
 // ─── Transporter (Gmail) ──────────────────────────────────────────────────────
 // In .env set:
-//   EMAIL_USER=yourgmail@gmail.com
-//   EMAIL_APP_PASS=your_16char_app_password   ← NOT your normal Gmail password
+//   SMTP_USER=yourgmail@gmail.com
+//   SMTP_PASS=your_16char_app_password   ← NOT your normal Gmail password
 //   FRONTEND_URL=https://your-store.com
 //
 // To generate an App Password:
@@ -13,8 +13,8 @@ const createTransporter = () =>
   nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_APP_PASS,
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
     },
   });
 
@@ -36,7 +36,7 @@ const logo = `
 
 // ─── 1. ORDER CONFIRMATION ────────────────────────────────────────────────────
 export const sendOrderConfirmationEmail = async ({ to, username, order }) => {
-  const orderNumber = order._id.toString().slice(-8).toUpperCase();
+  const orderNumber = `Order number ${order.order_number ?? '#' + order._id.slice(-8).toUpperCase()}`;
   const trackingUrl = `${process.env.FRONTEND_URL}/track-order/${order._id}`;
 
   const itemRows = order.items
@@ -155,7 +155,7 @@ export const sendOrderConfirmationEmail = async ({ to, username, order }) => {
 </html>`;
 
   return createTransporter().sendMail({
-    from: `"Aby Gadgets" <${process.env.EMAIL_USER}>`,
+    from: `"Aby Gadgets" <${process.env.SMTP_USER}>`,
     to,
     subject: `Order Confirmed 🎉 – #${orderNumber} | Aby Gadgets`,
     html,
@@ -242,15 +242,15 @@ export const sendContactEmail = async ({ name, email, phone, service, message })
   await Promise.all([
     // Notify store
     transporter.sendMail({
-      from: `"Aby Gadgets Contact" <${process.env.EMAIL_USER}>`,
-      to: process.env.EMAIL_USER,
+      from: `"Aby Gadgets Contact" <${process.env.SMTP_USER}>`,
+      to: process.env.SMTP_USER,
       replyTo: email,
       subject: `New Contact: ${service || "General"} from ${name}`,
       html: adminHtml,
     }),
     // Auto-reply to sender
     transporter.sendMail({
-      from: `"Aby Gadgets" <${process.env.EMAIL_USER}>`,
+      from: `"Aby Gadgets" <${process.env.SMTP_USER}>`,
       to: email,
       subject: `We received your message – Aby Gadgets`,
       html: customerHtml,

@@ -1,21 +1,28 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
 import {
-  Heart, ShoppingCart, Trash2,
-  Star, Sparkles, CheckCircle, Bell, Grid, List,
+  Heart,
+  ShoppingCart,
+  Trash2,
+  Star,
+  Sparkles,
+  CheckCircle,
+  Bell,
+  Grid,
+  List,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/services/Products.service";
+import { formatPrice } from "@/services/products.service";
 
 const Wishlist = () => {
   const { wishlistProducts, removeFromWishlist } = useWishlist();
-  const { addToCart }                            = useCart();
-  const { toast }                                = useToast();
-  const [selectedItems, setSelectedItems]        = useState<string[]>([]);
-  const [viewMode, setViewMode]                  = useState<"grid" | "list">("list");
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+  const [selectedItems, setSelectedItems] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const removeItem = (id: string) => {
     removeFromWishlist(id);
@@ -29,7 +36,9 @@ const Wishlist = () => {
 
   const toggleSelectItem = (id: string) => {
     setSelectedItems((prev) =>
-      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id]
+      prev.includes(id)
+        ? prev.filter((itemId) => itemId !== id)
+        : [...prev, id],
     );
   };
 
@@ -44,15 +53,18 @@ const Wishlist = () => {
   const handleAddToCart = (product: (typeof wishlistProducts)[number]) => {
     const variant = product.variants?.[0];
     addToCart({
-      id:        product.id,
+      id: product.id,
       variantId: variant._id,
-      name:      product.name,
-      price:     product.price,
-      image:     product.image,
-      quantity:  1,
-      storage:   product.storage ?? undefined,
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      quantity: 1,
+      storage: product.storage ?? undefined,
     });
-    toast({ title: "Added to cart", description: `${product.name} added to your cart.` });
+    toast({
+      title: "Added to cart",
+      description: `${product.name} added to your cart.`,
+    });
   };
 
   const moveToCartSelected = () => {
@@ -64,19 +76,25 @@ const Wishlist = () => {
   };
 
   // ── Grid Card ──────────────────────────────────────────────────────────────
-  const GridCard = ({ item }: { item: typeof wishlistProducts[0] }) => {
+  const GridCard = ({ item }: { item: (typeof wishlistProducts)[0] }) => {
     const isSelected = selectedItems.includes(item.id);
-    const inStock    = item.inStock ?? true;
+    const inStock = item.inStock ?? true;
 
     return (
-      <div className={`relative bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
-        isSelected ? "border-blue-500 shadow-lg" : "border-gray-200 hover:border-blue-300 hover:shadow-md"
-      }`}>
+      <div
+        className={`relative bg-white rounded-2xl border-2 transition-all duration-200 overflow-hidden ${
+          isSelected
+            ? "border-blue-500 shadow-lg"
+            : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+        }`}
+      >
         {/* Selection indicator */}
         <button
           onClick={() => toggleSelectItem(item.id)}
           className={`absolute top-2.5 left-2.5 z-10 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-            isSelected ? "bg-blue-600 border-blue-600" : "bg-white/90 border-gray-300"
+            isSelected
+              ? "bg-blue-600 border-blue-600"
+              : "bg-white/90 border-gray-300"
           }`}
         >
           {isSelected && <CheckCircle className="w-4 h-4 text-white" />}
@@ -91,18 +109,29 @@ const Wishlist = () => {
         </button>
 
         {/* Image */}
-        <Link to={`/products/${item.id}`} className="block relative aspect-square bg-gray-50">
-          <img src={item.image} alt={item.name} className="w-full h-full object-contain p-4" />
+        <Link
+          to={`/products/${item.id}`}
+          className="block relative aspect-square bg-gray-50"
+        >
+          <img
+            src={item.image}
+            alt={item.name}
+            className="w-full h-full object-contain p-4"
+          />
           {!inStock && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-t-xl">
-              <span className="text-white text-xs font-bold bg-gray-800 px-2 py-1 rounded-full">SOLD OUT</span>
+              <span className="text-white text-xs font-bold bg-gray-800 px-2 py-1 rounded-full">
+                SOLD OUT
+              </span>
             </div>
           )}
         </Link>
 
         {/* Info */}
         <div className="p-3">
-          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">{item.brand}</span>
+          <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">
+            {item.brand}
+          </span>
           <Link to={`/products/${item.id}`}>
             <h3 className="font-semibold text-gray-900 text-sm mt-1.5 line-clamp-2 leading-snug hover:text-blue-600 transition-colors">
               {item.name}
@@ -115,7 +144,9 @@ const Wishlist = () => {
             </div>
           )}
           <div className="flex items-center justify-between mt-2">
-            <span className="text-base font-bold text-blue-600">{formatPrice(item.price)}</span>
+            <span className="text-base font-bold text-blue-600">
+              {formatPrice(item.price)}
+            </span>
             <span className="text-xs text-gray-500">{item.condition}</span>
           </div>
           {inStock ? (
@@ -136,14 +167,18 @@ const Wishlist = () => {
   };
 
   // ── List Row ───────────────────────────────────────────────────────────────
-  const ListRow = ({ item }: { item: typeof wishlistProducts[0] }) => {
+  const ListRow = ({ item }: { item: (typeof wishlistProducts)[0] }) => {
     const isSelected = selectedItems.includes(item.id);
-    const inStock    = item.inStock ?? true;
+    const inStock = item.inStock ?? true;
 
     return (
-      <div className={`bg-white rounded-2xl border-2 transition-all p-3 sm:p-4 ${
-        isSelected ? "border-blue-500 bg-blue-50/30" : "border-gray-200 hover:border-blue-300 hover:shadow-md"
-      }`}>
+      <div
+        className={`bg-white rounded-2xl border-2 transition-all p-3 sm:p-4 ${
+          isSelected
+            ? "border-blue-500 bg-blue-50/30"
+            : "border-gray-200 hover:border-blue-300 hover:shadow-md"
+        }`}
+      >
         <div className="flex items-center gap-3">
           {/* Selection checkbox */}
           <button
@@ -156,8 +191,15 @@ const Wishlist = () => {
           </button>
 
           {/* Image */}
-          <Link to={`/products/${item.id}`} className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden">
-            <img src={item.image} alt={item.name} className="w-full h-full object-contain p-2" />
+          <Link
+            to={`/products/${item.id}`}
+            className="relative w-16 h-16 sm:w-20 sm:h-20 bg-gray-100 rounded-xl flex-shrink-0 overflow-hidden"
+          >
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-full object-contain p-2"
+            />
             {!inStock && (
               <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                 <span className="text-white text-xs font-bold">OUT</span>
@@ -182,7 +224,9 @@ const Wishlist = () => {
               )}
             </div>
             <div className="flex items-center justify-between mt-2 gap-2">
-              <span className="text-base font-bold text-blue-600">{formatPrice(item.price)}</span>
+              <span className="text-base font-bold text-blue-600">
+                {formatPrice(item.price)}
+              </span>
               <div className="flex items-center gap-2">
                 {inStock ? (
                   <button
@@ -194,7 +238,9 @@ const Wishlist = () => {
                     <span className="sm:hidden">Add</span>
                   </button>
                 ) : (
-                  <span className="text-xs text-red-500 font-medium px-2 py-1 bg-red-50 rounded-lg">Out of Stock</span>
+                  <span className="text-xs text-red-500 font-medium px-2 py-1 bg-red-50 rounded-lg">
+                    Out of Stock
+                  </span>
                 )}
                 <button
                   onClick={() => removeItem(item.id)}
@@ -220,7 +266,9 @@ const Wishlist = () => {
               <h1 className="text-base sm:text-xl font-bold text-gray-900 flex items-center gap-2">
                 <Heart className="w-4 h-4 sm:w-5 sm:h-5 fill-red-500 text-red-500" />
                 Wishlist
-                <span className="text-sm font-normal text-gray-500">({wishlistProducts.length})</span>
+                <span className="text-sm font-normal text-gray-500">
+                  ({wishlistProducts.length})
+                </span>
               </h1>
             </div>
             {wishlistProducts.length > 0 && (
@@ -233,7 +281,11 @@ const Wishlist = () => {
                       onClick={() => setViewMode(mode)}
                       className={`p-1.5 rounded-lg transition-colors ${viewMode === mode ? "bg-white shadow-sm text-blue-600" : "text-gray-400"}`}
                     >
-                      {mode === "grid" ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                      {mode === "grid" ? (
+                        <Grid className="w-4 h-4" />
+                      ) : (
+                        <List className="w-4 h-4" />
+                      )}
                     </button>
                   ))}
                 </div>
@@ -251,7 +303,9 @@ const Wishlist = () => {
               onClick={selectAllItems}
               className="text-xs sm:text-sm font-medium text-gray-700 px-3 py-2 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
             >
-              {selectedItems.length === wishlistProducts.length ? "Deselect All" : "Select All"}
+              {selectedItems.length === wishlistProducts.length
+                ? "Deselect All"
+                : "Select All"}
             </button>
             {selectedItems.length > 0 && (
               <>
@@ -279,11 +333,15 @@ const Wishlist = () => {
           <>
             {viewMode === "grid" ? (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                {wishlistProducts.map((item) => <GridCard key={item.id} item={item} />)}
+                {wishlistProducts.map((item) => (
+                  <GridCard key={item.id} item={item} />
+                ))}
               </div>
             ) : (
               <div className="space-y-3">
-                {wishlistProducts.map((item) => <ListRow key={item.id} item={item} />)}
+                {wishlistProducts.map((item) => (
+                  <ListRow key={item.id} item={item} />
+                ))}
               </div>
             )}
 
@@ -311,7 +369,9 @@ const Wishlist = () => {
             <div className="w-20 h-20 sm:w-24 sm:h-24 mx-auto mb-5 bg-gradient-to-br from-pink-50 to-red-50 rounded-3xl flex items-center justify-center">
               <Heart className="w-10 h-10 sm:w-12 sm:h-12 text-red-400" />
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Your wishlist is empty</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
+              Your wishlist is empty
+            </h3>
             <p className="text-gray-500 text-sm sm:text-base mb-8 max-w-xs mx-auto">
               Tap the heart icon on any product to save it here.
             </p>

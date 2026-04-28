@@ -21,7 +21,11 @@ import {
   getStockStatus,
   formatPrice,
   type Product,
-} from "@/services/Products.service";
+} from "@/services/products.service";
+import { usePermission } from "@/contexts/PermissionContext";
+import { PermissionBanner } from "@/components/ui/PermissionBanner";
+import { PermissionToast } from "@/components/ui/PermissionToast";
+import { usePermissionToast } from "@/hooks/usePermissionToast";
 
 // ── Delete Modal ──────────────────────────────────────────────────────────────
 const DeleteConfirmModal = ({
@@ -100,7 +104,7 @@ const DeleteConfirmModal = ({
   );
 };
 
-// ── Inline filter dropdown (desktop) ─────────────────────────────────────────
+// ── Filter Dropdown ───────────────────────────────────────────────────────────
 const FilterDropdown = ({
   label,
   value,
@@ -217,17 +221,11 @@ const MobileFilterSheet = ({
   brandOptions: string[];
   categoryOptions: string[];
   statusOptions: string[];
-  priceRanges: { label: string }[];
+  priceRanges: readonly { label: string }[];
   sortFields: readonly { label: string }[];
   clearAll: () => void;
 }) => {
   if (!open) return null;
-
-  const SectionHeader = ({ title }: { title: string }) => (
-    <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">
-      {title}
-    </p>
-  );
 
   const PillGroup = ({
     options,
@@ -267,6 +265,12 @@ const MobileFilterSheet = ({
     </div>
   );
 
+  const SH = ({ title }: { title: string }) => (
+    <p className="text-xs text-muted-foreground mb-2 font-medium uppercase tracking-wide">
+      {title}
+    </p>
+  );
+
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-end md:hidden"
@@ -296,10 +300,9 @@ const MobileFilterSheet = ({
             </div>
           </div>
         </div>
-
         <div className="px-6 py-5 space-y-5">
           <div>
-            <SectionHeader title="Category" />
+            <SH title="Category" />
             <PillGroup
               options={categoryOptions}
               value={filterCategory}
@@ -308,7 +311,7 @@ const MobileFilterSheet = ({
             />
           </div>
           <div>
-            <SectionHeader title="Brand" />
+            <SH title="Brand" />
             <PillGroup
               options={brandOptions}
               value={filterBrand}
@@ -317,7 +320,7 @@ const MobileFilterSheet = ({
             />
           </div>
           <div>
-            <SectionHeader title="Condition" />
+            <SH title="Condition" />
             <PillGroup
               options={conditionOptions}
               value={filterCondition}
@@ -326,7 +329,7 @@ const MobileFilterSheet = ({
             />
           </div>
           <div>
-            <SectionHeader title="Status" />
+            <SH title="Status" />
             <PillGroup
               options={statusOptions}
               value={filterStatus}
@@ -335,7 +338,7 @@ const MobileFilterSheet = ({
             />
           </div>
           <div>
-            <SectionHeader title="Price Range" />
+            <SH title="Price Range" />
             <PillGroup
               options={priceRanges.map((r) => r.label)}
               value={filterPrice}
@@ -344,15 +347,11 @@ const MobileFilterSheet = ({
             />
           </div>
           <div>
-            <SectionHeader title="Sort By" />
+            <SH title="Sort By" />
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setSortLabel("Sort")}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  sortLabel === "Sort"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-secondary text-muted-foreground"
-                }`}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${sortLabel === "Sort" ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
               >
                 Default
               </button>
@@ -360,11 +359,7 @@ const MobileFilterSheet = ({
                 <button
                   key={s.label}
                   onClick={() => setSortLabel(s.label)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                    sortLabel === s.label
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-secondary text-muted-foreground"
-                  }`}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${sortLabel === s.label ? "bg-primary text-primary-foreground" : "bg-secondary text-muted-foreground"}`}
                 >
                   {s.label}
                 </button>
@@ -372,10 +367,9 @@ const MobileFilterSheet = ({
             </div>
           </div>
         </div>
-
         <div className="sticky bottom-0 bg-popover px-6 py-4 border-t border-border">
           <Button className="w-full" onClick={onClose}>
-            Show {" "}results
+            Show results
           </Button>
         </div>
       </div>
@@ -383,13 +377,14 @@ const MobileFilterSheet = ({
   );
 };
 
+// ── Constants ─────────────────────────────────────────────────────────────────
 const priceRanges = [
   { label: "Under ₦100k", min: 0, max: 100_000 },
   { label: "₦100k – ₦300k", min: 100_000, max: 300_000 },
   { label: "₦300k – ₦600k", min: 300_000, max: 600_000 },
   { label: "₦600k – ₦1m", min: 600_000, max: 1_000_000 },
   { label: "Over ₦1m", min: 1_000_000, max: Infinity },
-];
+] as const;
 
 const sortFields = [
   { label: "Name A–Z", key: "name", dir: "asc" },
@@ -403,89 +398,37 @@ const sortFields = [
 const totalStock = (p: Product) =>
   (p.variants || []).reduce((s, v) => s + (v.is_active ? v.stock : 0), 0);
 
-// ── Product Card (mobile) ─────────────────────────────────────────────────────
-const ProductCard = ({
-  product,
-  onNavigate,
-  onDelete,
-}: {
-  product: Product;
-  onNavigate: () => void;
-  onDelete: (e: React.MouseEvent) => void;
-}) => {
-  const stock = totalStock(product);
-  const status = getStockStatus(product);
-
-  const statusColor =
-    status === "In Stock"
-      ? "text-green-600"
-      : status === "Out of Stock"
-      ? "text-destructive"
-      : "text-yellow-500";
-
-  const dotColor =
-    status === "In Stock"
-      ? "bg-green-500"
-      : status === "Low Stock"
-      ? "bg-yellow-500"
-      : "bg-destructive";
-
-  return (
-    <div
-      className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 active:bg-secondary/30 transition-colors"
-      onClick={onNavigate}
-    >
-      <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center p-1 overflow-hidden flex-shrink-0 border border-border/50">
-        {product.image ? (
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-full h-full object-contain"
-          />
-        ) : (
-          <span className="text-[10px] text-muted-foreground">No img</span>
-        )}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">
-          {product.name}
-        </p>
-        <p className="text-xs text-muted-foreground">
-          {product.brand} · {product.condition}
-        </p>
-        <div className="flex items-center gap-3 mt-1">
-          <p className="text-sm font-bold text-primary">
-            {formatPrice(product.price)}
-          </p>
-          <span className={`text-xs font-medium flex items-center gap-1 ${statusColor}`}>
-            <span className={`w-1.5 h-1.5 rounded-full ${dotColor}`} />
-            {status}
-          </span>
-        </div>
-      </div>
-      <div
-        className="flex items-center gap-1 flex-shrink-0"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          onClick={onDelete}
-          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
-        >
-          <Trash2 size={15} />
-        </button>
-        <ChevronRight size={16} className="text-muted-foreground" />
-      </div>
-    </div>
-  );
+const getStatusClass = (status: string) => {
+  if (status === "In Stock") return "text-green-600";
+  if (status === "Out of Stock") return "text-destructive";
+  if (status === "Low Stock") return "text-yellow-500";
+  return "text-muted-foreground";
 };
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const ProductsPage = () => {
   const navigate = useNavigate();
+  const { isAdmin, can } = usePermission();
+  const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
+
+  const canView = isAdmin || can("products", "viewProducts");
+  const canAdd = isAdmin || can("products", "addProducts");
+  const canDelete = isAdmin || can("products", "deleteProducts");
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterCategory, setFilterCategory] = useState("Category");
+  const [filterCondition, setFilterCondition] = useState("Condition");
+  const [filterStatus, setFilterStatus] = useState("Status");
+  const [filterBrand, setFilterBrand] = useState("Brand");
+  const [filterPrice, setFilterPrice] = useState("Price");
+  const [sortLabel, setSortLabel] = useState("Sort");
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
@@ -504,38 +447,27 @@ const ProductsPage = () => {
     fetchProducts();
   }, [fetchProducts]);
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("Category");
-  const [filterCondition, setFilterCondition] = useState("Condition");
-  const [filterStatus, setFilterStatus] = useState("Status");
-  const [filterBrand, setFilterBrand] = useState("Brand");
-  const [filterPrice, setFilterPrice] = useState("Price");
-  const [sortLabel, setSortLabel] = useState("Sort");
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-
-  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  const toggleDropdown = (name: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenDropdown((prev) => (prev === name ? null : name));
+  const clearAll = () => {
+    setFilterCategory("Category");
+    setFilterCondition("Condition");
+    setFilterStatus("Status");
+    setFilterBrand("Brand");
+    setFilterPrice("Price");
+    setSortLabel("Sort");
+    setSearchTerm("");
   };
-  const closeDropdown = () => setOpenDropdown(null);
 
   const conditionOptions = useMemo(
     () =>
       [...new Set((products || []).map((p) => p.condition))]
         .filter(Boolean)
         .sort(),
-    [products]
+    [products],
   );
   const brandOptions = useMemo(
     () =>
-      [...new Set((products || []).map((p) => p.brand))]
-        .filter(Boolean)
-        .sort(),
-    [products]
+      [...new Set((products || []).map((p) => p.brand))].filter(Boolean).sort(),
+    [products],
   );
   const statusOptions = ["In Stock", "Low Stock", "Out of Stock"];
   const categoryOptions = [...new Set(categories)].sort();
@@ -547,18 +479,8 @@ const ProductsPage = () => {
     filterBrand,
     filterPrice,
   ].filter(
-    (v) => !["Category", "Condition", "Status", "Brand", "Price"].includes(v)
+    (v) => !["Category", "Condition", "Status", "Brand", "Price"].includes(v),
   ).length;
-
-  const clearAll = () => {
-    setFilterCategory("Category");
-    setFilterCondition("Condition");
-    setFilterStatus("Status");
-    setFilterBrand("Brand");
-    setFilterPrice("Price");
-    setSortLabel("Sort");
-    setSearchTerm("");
-  };
 
   const filteredProducts = useMemo(() => {
     let list = [...(products || [])];
@@ -568,12 +490,12 @@ const ProductsPage = () => {
         (p) =>
           p.name.toLowerCase().includes(q) ||
           p.brand.toLowerCase().includes(q) ||
-          p.condition.toLowerCase().includes(q)
+          p.condition.toLowerCase().includes(q),
       );
     }
     if (filterCategory !== "Category")
       list = list.filter(
-        (p) => p.category?.toLowerCase() === filterCategory.toLowerCase()
+        (p) => p.category?.toLowerCase() === filterCategory.toLowerCase(),
       );
     if (filterCondition !== "Condition")
       list = list.filter((p) => p.condition === filterCondition);
@@ -584,9 +506,7 @@ const ProductsPage = () => {
     if (filterPrice !== "Price") {
       const range = priceRanges.find((r) => r.label === filterPrice);
       if (range)
-        list = list.filter(
-          (p) => p.price >= range.min && p.price <= range.max
-        );
+        list = list.filter((p) => p.price >= range.min && p.price <= range.max);
     }
     const sort = sortFields.find((s) => s.label === sortLabel);
     if (sort) {
@@ -621,51 +541,61 @@ const ProductsPage = () => {
     setIsDeleting(true);
     try {
       await productService.delete(deletingProduct._id);
-      setProducts((prev) =>
-        prev.filter((p) => p._id !== deletingProduct._id)
-      );
+      setProducts((prev) => prev.filter((p) => p._id !== deletingProduct._id));
       setDeletingProduct(null);
     } catch {
-      // keep modal open
+      /* keep modal open */
     } finally {
       setIsDeleting(false);
     }
   };
 
+  const handleDeleteClick = (e: React.MouseEvent, product: Product) => {
+    e.stopPropagation();
+    if (!canDelete) {
+      deny(
+        "You don't have permission to delete products. Ask your admin to enable 'Delete Products'.",
+      );
+      return;
+    }
+    setDeletingProduct(product);
+  };
+
+  const handleAddProductClick = (e: React.MouseEvent) => {
+    if (!canAdd) {
+      e.preventDefault();
+      deny(
+        "You don't have permission to add products. Ask your admin to enable 'Add Products'.",
+      );
+    }
+  };
+
   const safeProducts = products || [];
   const totalCount = safeProducts.length;
-  const activeCount2 = safeProducts.filter(
-    (p) => getStockStatus(p) === "In Stock"
+  const activeCount = safeProducts.filter(
+    (p) => getStockStatus(p) === "In Stock",
   ).length;
   const outCount = safeProducts.filter(
-    (p) => getStockStatus(p) === "Out of Stock"
+    (p) => getStockStatus(p) === "Out of Stock",
   ).length;
   const invValue = safeProducts.reduce(
     (s, p) => s + (p.price || 0) * totalStock(p),
-    0
+    0,
   );
   const invDisplay =
     invValue >= 1_000_000
       ? `₦${(invValue / 1_000_000).toFixed(1)}m`
       : formatPrice(invValue);
 
-  const getStatusClass = (status: string) => {
-    if (status === "In Stock") return "text-green-600";
-    if (status === "Out of Stock") return "text-destructive";
-    if (status === "Low Stock") return "text-yellow-500";
-    return "text-muted-foreground";
-  };
-
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-3">
         <Loader2 size={20} className="animate-spin text-primary" />
         <span className="text-sm">Loading products…</span>
       </div>
     );
-  }
 
-  if (fetchError) {
+  if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <p className="text-sm text-destructive">{fetchError}</p>
@@ -674,15 +604,27 @@ const ProductsPage = () => {
         </Button>
       </div>
     );
-  }
+
+  if (!canView)
+    return (
+      <PermissionBanner
+        message="You don't have permission to view products."
+        hint="Ask your admin to enable the 'View Products' permission for your account."
+      />
+    );
 
   return (
-    <div onClick={closeDropdown} className="animate-in fade-in duration-500">
+    <div
+      onClick={() => setOpenDropdown(null)}
+      className="animate-in fade-in duration-500"
+    >
+      {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
+
       <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-5">
         Product Information
       </h1>
 
-      {/* Stats — 2×2 on mobile, 4 on lg */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
         <StatsCard
           title="Total Products"
@@ -691,7 +633,7 @@ const ProductsPage = () => {
         />
         <StatsCard
           title="Active"
-          value={String(activeCount2)}
+          value={String(activeCount)}
           variant="default"
         />
         <StatsCard
@@ -699,14 +641,10 @@ const ProductsPage = () => {
           value={String(outCount)}
           variant="primary"
         />
-        <StatsCard
-          title="Inv. Value"
-          value={invDisplay}
-          variant="success"
-        />
+        <StatsCard title="Inv. Value" value={invDisplay} variant="success" />
       </div>
 
-      {/* Filter toolbar */}
+      {/* Toolbar */}
       <div className="bg-card border border-border rounded-xl p-3 sm:p-4 mb-5 shadow-sm">
         <div className="flex items-center gap-3 mb-0 sm:mb-4">
           <SearchInput
@@ -715,7 +653,6 @@ const ProductsPage = () => {
             onChange={setSearchTerm}
             className="flex-1 min-w-0"
           />
-          {/* Mobile: filter button + add */}
           <button
             className="md:hidden inline-flex items-center gap-1.5 bg-secondary text-secondary-foreground rounded-lg px-3 py-2 flex-shrink-0 relative"
             onClick={(e) => {
@@ -724,15 +661,20 @@ const ProductsPage = () => {
             }}
           >
             <Filter size={14} />
-            <span className="text-sm hidden sm:inline">Filters</span>
             {(activeFilterCount > 0 || sortLabel !== "Sort") && (
               <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground rounded-full text-[10px] flex items-center justify-center font-bold">
                 {activeFilterCount + (sortLabel !== "Sort" ? 1 : 0)}
               </span>
             )}
           </button>
-          <Link to="add" className="flex-shrink-0">
-            <Button className="gap-1 whitespace-nowrap px-3 sm:px-4">
+          <Link
+            to={canAdd ? "add" : "#"}
+            onClick={handleAddProductClick}
+            className="flex-shrink-0"
+          >
+            <Button
+              className={`gap-1 whitespace-nowrap px-3 sm:px-4 ${!canAdd ? "opacity-50 cursor-not-allowed" : ""}`}
+            >
               <Plus size={16} />
               <span className="hidden sm:inline">Add Product</span>
             </Button>
@@ -751,8 +693,11 @@ const ProductsPage = () => {
             options={categoryOptions}
             onChange={setFilterCategory}
             isOpen={openDropdown === "category"}
-            onToggle={(e) => toggleDropdown("category", e)}
-            onClose={closeDropdown}
+            onToggle={(e) => {
+              e.stopPropagation();
+              setOpenDropdown((p) => (p === "category" ? null : "category"));
+            }}
+            onClose={() => setOpenDropdown(null)}
           />
           <FilterDropdown
             label="Brand"
@@ -760,8 +705,11 @@ const ProductsPage = () => {
             options={brandOptions}
             onChange={setFilterBrand}
             isOpen={openDropdown === "brand"}
-            onToggle={(e) => toggleDropdown("brand", e)}
-            onClose={closeDropdown}
+            onToggle={(e) => {
+              e.stopPropagation();
+              setOpenDropdown((p) => (p === "brand" ? null : "brand"));
+            }}
+            onClose={() => setOpenDropdown(null)}
           />
           <FilterDropdown
             label="Condition"
@@ -769,8 +717,11 @@ const ProductsPage = () => {
             options={conditionOptions}
             onChange={setFilterCondition}
             isOpen={openDropdown === "condition"}
-            onToggle={(e) => toggleDropdown("condition", e)}
-            onClose={closeDropdown}
+            onToggle={(e) => {
+              e.stopPropagation();
+              setOpenDropdown((p) => (p === "condition" ? null : "condition"));
+            }}
+            onClose={() => setOpenDropdown(null)}
           />
           <FilterDropdown
             label="Status"
@@ -778,8 +729,11 @@ const ProductsPage = () => {
             options={statusOptions}
             onChange={setFilterStatus}
             isOpen={openDropdown === "status"}
-            onToggle={(e) => toggleDropdown("status", e)}
-            onClose={closeDropdown}
+            onToggle={(e) => {
+              e.stopPropagation();
+              setOpenDropdown((p) => (p === "status" ? null : "status"));
+            }}
+            onClose={() => setOpenDropdown(null)}
           />
           <FilterDropdown
             label="Price"
@@ -787,14 +741,20 @@ const ProductsPage = () => {
             options={priceRanges.map((r) => r.label)}
             onChange={setFilterPrice}
             isOpen={openDropdown === "price"}
-            onToggle={(e) => toggleDropdown("price", e)}
-            onClose={closeDropdown}
+            onToggle={(e) => {
+              e.stopPropagation();
+              setOpenDropdown((p) => (p === "price" ? null : "price"));
+            }}
+            onClose={() => setOpenDropdown(null)}
           />
           <div className="hidden md:block w-px h-6 bg-border mx-1" />
           {/* Sort */}
           <div className="relative">
             <button
-              onClick={(e) => toggleDropdown("sort", e)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setOpenDropdown((p) => (p === "sort" ? null : "sort"));
+              }}
               className={`inline-flex items-center gap-1.5 text-sm rounded-lg px-3 py-2 border transition-colors whitespace-nowrap ${
                 sortLabel !== "Sort"
                   ? "bg-primary text-primary-foreground border-primary"
@@ -805,9 +765,7 @@ const ProductsPage = () => {
               {sortLabel === "Sort" ? "Sort" : sortLabel}
               <ChevronDown
                 size={13}
-                className={`transition-transform ${
-                  openDropdown === "sort" ? "rotate-180" : ""
-                }`}
+                className={`transition-transform ${openDropdown === "sort" ? "rotate-180" : ""}`}
               />
             </button>
             {openDropdown === "sort" && (
@@ -818,7 +776,7 @@ const ProductsPage = () => {
                 <button
                   onClick={() => {
                     setSortLabel("Sort");
-                    closeDropdown();
+                    setOpenDropdown(null);
                   }}
                   className="w-full text-left px-4 py-2 text-sm hover:bg-secondary/70 text-muted-foreground"
                 >
@@ -829,13 +787,9 @@ const ProductsPage = () => {
                     key={s.label}
                     onClick={() => {
                       setSortLabel(s.label);
-                      closeDropdown();
+                      setOpenDropdown(null);
                     }}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-secondary/70 ${
-                      sortLabel === s.label
-                        ? "text-primary font-medium"
-                        : "text-popover-foreground"
-                    }`}
+                    className={`w-full text-left px-4 py-2 text-sm hover:bg-secondary/70 ${sortLabel === s.label ? "text-primary font-medium" : "text-popover-foreground"}`}
                   >
                     {s.label}
                   </button>
@@ -843,9 +797,7 @@ const ProductsPage = () => {
               </div>
             )}
           </div>
-          {(activeFilterCount > 0 ||
-            sortLabel !== "Sort" ||
-            searchTerm) && (
+          {(activeFilterCount > 0 || sortLabel !== "Sort" || searchTerm) && (
             <button
               onClick={clearAll}
               className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-destructive transition-colors ml-auto"
@@ -855,7 +807,7 @@ const ProductsPage = () => {
           )}
         </div>
 
-        {/* Active filter chips (desktop) */}
+        {/* Active filter chips */}
         {activeFilterCount > 0 && (
           <div className="hidden md:flex items-center gap-2 flex-wrap mt-3 pt-3 border-t border-border">
             <span className="text-xs text-muted-foreground">Active:</span>
@@ -905,7 +857,7 @@ const ProductsPage = () => {
         )}
       </div>
 
-      {/* Product count */}
+      {/* Count */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm sm:text-base font-medium text-foreground">
           Product List
@@ -915,7 +867,7 @@ const ProductsPage = () => {
         </h2>
       </div>
 
-      {/* ── Desktop table ───────────────────────────────────────────── */}
+      {/* Desktop table */}
       <div className="hidden md:block bg-card rounded-xl border border-border overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -928,7 +880,7 @@ const ProductsPage = () => {
                   "Price",
                   "Stock",
                   "Status",
-                  "Actions",
+                  ...(canDelete ? ["Actions"] : []),
                 ].map((h) => (
                   <th
                     key={h}
@@ -961,12 +913,10 @@ const ProductsPage = () => {
                   return (
                     <tr
                       key={product._id}
-                      className="hover:bg-muted/50 transition-colors group"
+                      className="hover:bg-muted/50 transition-colors group cursor-pointer"
+                      onClick={() => navigate(product.slug)}
                     >
-                      <td
-                        className="p-4 font-medium cursor-pointer"
-                        onClick={() => navigate(product.slug)}
-                      >
+                      <td className="p-4 font-medium">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-secondary/30 flex items-center justify-center p-1 overflow-hidden shrink-0 border border-border/50">
                             {product.image ? (
@@ -986,58 +936,37 @@ const ProductsPage = () => {
                           </span>
                         </div>
                       </td>
-                      <td
-                        className="p-4 text-muted-foreground cursor-pointer"
-                        onClick={() => navigate(product.slug)}
-                      >
+                      <td className="p-4 text-muted-foreground">
                         {product.brand}
                       </td>
-                      <td
-                        className="p-4 text-muted-foreground cursor-pointer"
-                        onClick={() => navigate(product.slug)}
-                      >
+                      <td className="p-4 text-muted-foreground">
                         {product.condition}
                       </td>
-                      <td
-                        className="p-4 text-primary font-bold cursor-pointer"
-                        onClick={() => navigate(product.slug)}
-                      >
+                      <td className="p-4 text-primary font-bold">
                         {formatPrice(product.price)}
                       </td>
-                      <td
-                        className="p-4 text-muted-foreground cursor-pointer"
-                        onClick={() => navigate(product.slug)}
-                      >
-                        {stock}
-                      </td>
-                      <td
-                        className={`p-4 font-bold cursor-pointer ${getStatusClass(status)}`}
-                        onClick={() => navigate(product.slug)}
-                      >
+                      <td className="p-4 text-muted-foreground">{stock}</td>
+                      <td className={`p-4 font-bold ${getStatusClass(status)}`}>
                         <span className="flex items-center gap-1.5">
                           <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              status === "In Stock"
-                                ? "bg-green-500"
-                                : status === "Low Stock"
-                                ? "bg-yellow-500"
-                                : "bg-destructive"
-                            }`}
+                            className={`w-1.5 h-1.5 rounded-full ${status === "In Stock" ? "bg-green-500" : status === "Low Stock" ? "bg-yellow-500" : "bg-destructive"}`}
                           />
                           {status}
                         </span>
                       </td>
-                      <td
-                        className="p-4"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <button
-                          onClick={() => setDeletingProduct(product)}
-                          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
+                      {canDelete && (
+                        <td
+                          className="p-4"
+                          onClick={(e) => e.stopPropagation()}
                         >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
+                          <button
+                            onClick={(e) => handleDeleteClick(e, product)}
+                            className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -1047,7 +976,7 @@ const ProductsPage = () => {
         </div>
       </div>
 
-      {/* ── Mobile card list ─────────────────────────────────────────── */}
+      {/* Mobile cards */}
       <div className="md:hidden space-y-2">
         {filteredProducts.length === 0 ? (
           <div className="text-center py-12">
@@ -1062,21 +991,80 @@ const ProductsPage = () => {
             </button>
           </div>
         ) : (
-          filteredProducts.map((product) => (
-            <ProductCard
-              key={product._id}
-              product={product}
-              onNavigate={() => navigate(product.slug)}
-              onDelete={(e) => {
-                e.stopPropagation();
-                setDeletingProduct(product);
-              }}
-            />
-          ))
+          filteredProducts.map((product) => {
+            const status = getStockStatus(product);
+            const statusColor =
+              status === "In Stock"
+                ? "text-green-600"
+                : status === "Out of Stock"
+                  ? "text-destructive"
+                  : "text-yellow-500";
+            const dotColor =
+              status === "In Stock"
+                ? "bg-green-500"
+                : status === "Low Stock"
+                  ? "bg-yellow-500"
+                  : "bg-destructive";
+            return (
+              <div
+                key={product._id}
+                className="bg-card border border-border rounded-xl p-3 flex items-center gap-3 active:bg-secondary/30 transition-colors"
+                onClick={() => navigate(product.slug)}
+              >
+                <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center p-1 overflow-hidden flex-shrink-0 border border-border/50">
+                  {product.image ? (
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-[10px] text-muted-foreground">
+                      No img
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground truncate">
+                    {product.name}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {product.brand} · {product.condition}
+                  </p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-sm font-bold text-primary">
+                      {formatPrice(product.price)}
+                    </p>
+                    <span
+                      className={`text-xs font-medium flex items-center gap-1 ${statusColor}`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
+                      />
+                      {status}
+                    </span>
+                  </div>
+                </div>
+                <div
+                  className="flex items-center gap-1 flex-shrink-0"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {canDelete && (
+                    <button
+                      onClick={(e) => handleDeleteClick(e, product)}
+                      className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
 
-      {/* Mobile filter sheet */}
       <MobileFilterSheet
         open={showMobileFilters}
         onClose={() => setShowMobileFilters(false)}

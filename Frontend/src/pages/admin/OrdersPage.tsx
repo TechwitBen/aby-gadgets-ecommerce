@@ -1,10 +1,92 @@
 import { useState, useEffect, useCallback } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
-import { Trash2, X, Loader2, RefreshCw, AlertTriangle, ChevronRight } from "lucide-react";
-import { orderService, type OrderDoc } from "@/services/Order.service";
+import {
+  Trash2,
+  X,
+  Loader2,
+  RefreshCw,
+  AlertTriangle,
+  ChevronRight,
+} from "lucide-react";
+import {
+  orderService,
+  type OrderDoc,
+  type FulfillmentType,
+} from "@/services/order.service";
 import { OrderDetailModal } from "@/pages/admin/OrderDetailModal";
 import { useToast } from "@/hooks/use-toast";
+import { usePermission } from "@/contexts/PermissionContext";
+import { PermissionBanner } from "@/components/ui/PermissionBanner";
+import { PermissionToast } from "@/components/ui/PermissionToast";
+import { usePermissionToast } from "@/hooks/usePermissionToast";
+
+// ── Human-readable ID helper ──────────────────────────────────────────────────
+const displayOrderId = (order: OrderDoc): string =>
+  order.order_number ?? `#${order._id.slice(-8).toUpperCase()}`;
+
+// ── Status helpers ────────────────────────────────────────────────────────────
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-700",
+  confirmed: "bg-blue-100 text-blue-700",
+  shipped: "bg-indigo-100 text-indigo-700",
+  out_for_delivery: "bg-purple-100 text-purple-700",
+  delivered: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
+  refunded: "bg-orange-100 text-orange-700",
+  ready_for_pickup: "bg-teal-100 text-teal-700",
+  collected: "bg-emerald-100 text-emerald-700",
+};
+const statusClass = (s: string) =>
+  STATUS_STYLES[s] ?? "bg-gray-100 text-gray-700";
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  shipped: "Shipped",
+  out_for_delivery: "Out for Delivery",
+  delivered: "Delivered",
+  cancelled: "Cancelled",
+  refunded: "Refunded",
+  ready_for_pickup: "Ready for Pickup",
+  collected: "Collected",
+};
+
+const ACTIVE_STATUSES = new Set([
+  "pending",
+  "confirmed",
+  "shipped",
+  "out_for_delivery",
+  "ready_for_pickup",
+]);
+const COMPLETED_STATUSES = new Set([
+  "delivered",
+  "collected",
+  "cancelled",
+  "refunded",
+]);
+
+// ── Fulfillment badge ─────────────────────────────────────────────────────────
+const FulfillmentBadge = ({ type }: { type?: FulfillmentType }) =>
+  type === "pickup" ? (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-700 whitespace-nowrap">
+      🏪 Pickup
+    </span>
+  ) : (
+    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 whitespace-nowrap">
+      🚚 Delivery
+    </span>
+  );
+
+// ── Address helpers ───────────────────────────────────────────────────────────
+const getShippingName = (o: OrderDoc) => o.shipping_address?.full_name ?? "—";
+const getShippingPhone = (o: OrderDoc) => o.shipping_address?.phone ?? "—";
+const getShippingAddress = (o: OrderDoc) => {
+  if (o.fulfillment_type === "pickup") return "Store Pickup";
+  const a = o.shipping_address;
+  if (!a) return "—";
+  return [a.street, a.city, a.state].filter(Boolean).join(", ");
+};
 
 // ── Delete Confirmation Modal ─────────────────────────────────────────────────
 const DeleteConfirmModal = ({
@@ -19,28 +101,27 @@ const DeleteConfirmModal = ({
   onCancel: () => void;
 }) => {
   if (!open || !order) return null;
-
   const isHighRisk =
-    order.payment_status === "paid" && order.status === "delivered";
+    order.payment_status === "paid" &&
+    (order.status === "delivered" || order.status === "collected");
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 backdrop-blur-sm">
+    <div
+      className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onCancel();
+      }}
+    >
       <div className="bg-popover text-popover-foreground rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl overflow-hidden border border-border">
-        {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
-
         <div
-          className={`flex items-center justify-between px-6 py-4 border-b ${
-            isHighRisk ? "bg-amber-50/50" : ""
-          }`}
+          className={`flex items-center justify-between px-6 py-4 border-b border-border ${isHighRisk ? "bg-amber-50/50" : ""}`}
         >
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                isHighRisk ? "bg-amber-100" : "bg-destructive/10"
-              }`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center ${isHighRisk ? "bg-amber-100" : "bg-destructive/10"}`}
             >
               {isHighRisk ? (
                 <AlertTriangle size={20} className="text-amber-600" />
@@ -59,12 +140,11 @@ const DeleteConfirmModal = ({
             <X size={18} />
           </button>
         </div>
-
         <div className="px-6 py-5">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Are you sure you want to delete order{" "}
             <span className="font-mono font-bold text-foreground">
-              #{order._id.slice(-8).toUpperCase()}
+              {displayOrderId(order)}
             </span>
             ?
           </p>
@@ -75,13 +155,15 @@ const DeleteConfirmModal = ({
               </p>
               <p className="text-xs text-red-600">
                 This order is marked as <strong>PAID</strong> and{" "}
-                <strong>DELIVERED</strong>. Deleting this will permanently
-                remove this transaction from your financial records.
+                <strong>
+                  {order.status === "collected" ? "COLLECTED" : "DELIVERED"}
+                </strong>
+                . Deleting this will permanently remove this transaction from
+                your financial records.
               </p>
             </div>
           )}
         </div>
-
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-secondary/20">
           <Button variant="ghost" size="sm" onClick={onCancel}>
             Cancel
@@ -89,9 +171,7 @@ const DeleteConfirmModal = ({
           <Button
             size="sm"
             onClick={onConfirm}
-            className={`${
-              isHighRisk ? "bg-red-600 hover:bg-red-700" : "bg-destructive hover:bg-destructive/90"
-            } text-white font-bold px-6`}
+            className={`${isHighRisk ? "bg-red-600 hover:bg-red-700" : "bg-destructive hover:bg-destructive/90"} text-white font-bold px-6`}
           >
             {isHighRisk ? "Yes, Delete Record" : "Confirm Delete"}
           </Button>
@@ -101,43 +181,32 @@ const DeleteConfirmModal = ({
   );
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-const getShippingName = (order: OrderDoc) =>
-  order.shipping_address?.full_name ?? "—";
-const getShippingPhone = (order: OrderDoc) =>
-  order.shipping_address?.phone ?? "—";
-const getShippingAddress = (order: OrderDoc) => {
-  const a = order.shipping_address;
-  if (!a) return "—";
-  return [a.street, a.city, a.state].filter(Boolean).join(", ");
-};
-
-const statusClass = (status: string) => {
-  if (status === "delivered") return "bg-green-100 text-green-700";
-  if (status === "cancelled" || status === "refunded")
-    return "bg-red-100 text-red-700";
-  return "bg-blue-100 text-blue-700";
-};
-
-// ── Order Card (mobile) ───────────────────────────────────────────────────────
+// ── Mobile Order Card ─────────────────────────────────────────────────────────
 const OrderCard = ({
   order,
   onSelect,
   onDelete,
+  canDelete,
+  canViewContact,
 }: {
   order: OrderDoc;
   onSelect: (o: OrderDoc) => void;
   onDelete: (o: OrderDoc) => void;
+  canDelete: boolean;
+  canViewContact: boolean;
 }) => (
   <div
-    className="bg-card border border-border rounded-xl p-4 active:bg-secondary/30 transition-colors"
+    className="bg-card border border-border rounded-xl p-4 active:bg-secondary/30 transition-colors cursor-pointer"
     onClick={() => onSelect(order)}
   >
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
-        <p className="text-sm font-mono font-bold text-primary">
-          #{order._id.slice(-8).toUpperCase()}
-        </p>
+        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+          <p className="text-sm font-mono font-bold text-primary">
+            {displayOrderId(order)}
+          </p>
+          <FulfillmentBadge type={order.fulfillment_type} />
+        </div>
         <p className="text-sm font-medium text-foreground mt-0.5 truncate">
           {getShippingName(order)}
         </p>
@@ -149,7 +218,7 @@ const OrderCard = ({
         <span
           className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusClass(order.status)}`}
         >
-          {order.status}
+          {STATUS_LABELS[order.status] ?? order.status}
         </span>
         <p className="text-sm font-bold text-foreground">
           ₦{order.total.toLocaleString()}
@@ -157,17 +226,25 @@ const OrderCard = ({
       </div>
     </div>
     <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-      <p className="text-xs text-muted-foreground">{getShippingPhone(order)}</p>
+      <p className="text-xs text-muted-foreground">
+        {canViewContact ? (
+          getShippingPhone(order)
+        ) : (
+          <span className="italic">Phone hidden</span>
+        )}
+      </p>
       <div
         className="flex items-center gap-2"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          onClick={() => onDelete(order)}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
-        >
-          <Trash2 size={14} />
-        </button>
+        {canDelete && (
+          <button
+            onClick={() => onDelete(order)}
+            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 active:bg-destructive/20 transition-colors"
+          >
+            <Trash2 size={14} />
+          </button>
+        )}
         <button
           onClick={() => onSelect(order)}
           className="p-1.5 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
@@ -179,16 +256,162 @@ const OrderCard = ({
   </div>
 );
 
+// ── Orders Table ──────────────────────────────────────────────────────────────
+const OrdersTable = ({
+  orders,
+  onSelect,
+  onDelete,
+  canDelete,
+  canViewContact,
+  emptyMessage,
+}: {
+  orders: OrderDoc[];
+  onSelect: (o: OrderDoc) => void;
+  onDelete: (o: OrderDoc) => void;
+  canDelete: boolean;
+  canViewContact: boolean;
+  emptyMessage: string;
+}) => {
+  const headers = [
+    "Order ID",
+    "Type",
+    "Customer",
+    ...(canViewContact ? ["Phone"] : []),
+    "Address / Zone",
+    "Status",
+    "Total",
+    ...(canDelete ? ["Actions"] : []),
+  ];
+
+  return (
+    <>
+      {/* Desktop */}
+      <div className="hidden md:block bg-card rounded-xl overflow-hidden border border-border shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                {headers.map((h) => (
+                  <th
+                    key={h}
+                    className="p-4 text-muted-foreground font-semibold whitespace-nowrap"
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {orders.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan={headers.length}
+                    className="p-12 text-center text-muted-foreground italic"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              ) : (
+                orders.map((order) => (
+                  <tr
+                    key={order._id}
+                    className="hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => onSelect(order)}
+                  >
+                    <td className="p-4 font-mono font-medium text-primary">
+                      {displayOrderId(order)}
+                    </td>
+                    <td className="p-4">
+                      <FulfillmentBadge type={order.fulfillment_type} />
+                    </td>
+                    <td className="p-4 font-medium text-foreground">
+                      {getShippingName(order)}
+                    </td>
+                    {canViewContact && (
+                      <td className="p-4 text-muted-foreground">
+                        {getShippingPhone(order)}
+                      </td>
+                    )}
+                    <td className="p-4 text-muted-foreground max-w-[200px] truncate">
+                      {order.fulfillment_type === "pickup" ? (
+                        <span className="text-teal-600 font-medium">
+                          Store Pickup
+                        </span>
+                      ) : (
+                        order.delivery_city || getShippingAddress(order)
+                      )}
+                    </td>
+                    <td className="p-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass(order.status)}`}
+                      >
+                        {STATUS_LABELS[order.status] ?? order.status}
+                      </span>
+                    </td>
+                    <td className="p-4 font-bold text-foreground">
+                      ₦{order.total.toLocaleString()}
+                    </td>
+                    {canDelete && (
+                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => onDelete(order)}
+                          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Mobile */}
+      <div className="md:hidden space-y-2">
+        {orders.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm py-12 italic">
+            {emptyMessage}
+          </p>
+        ) : (
+          orders.map((order) => (
+            <OrderCard
+              key={order._id}
+              order={order}
+              onSelect={onSelect}
+              onDelete={onDelete}
+              canDelete={canDelete}
+              canViewContact={canViewContact}
+            />
+          ))
+        )}
+      </div>
+    </>
+  );
+};
+
+// ── Tab type ──────────────────────────────────────────────────────────────────
+type Tab = "active" | "completed";
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const OrdersPage = () => {
+  const { isAdmin, can } = usePermission();
+  const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
+  const { toast } = useToast();
+
+  const canViewOrders = isAdmin || can("order", "viewOrder");
+  const canDeleteOrders = isAdmin;
+  const canViewContact = isAdmin || can("payments", "contactCustomers");
+
   const [orders, setOrders] = useState<OrderDoc[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<Tab>("active");
   const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDoc | null>(null);
-
-  const { toast } = useToast();
 
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
@@ -196,7 +419,7 @@ const OrdersPage = () => {
     try {
       const data = await orderService.getAllOrders();
       setOrders(Array.isArray(data) ? data : []);
-    } catch (err) {
+    } catch {
       setFetchError("Failed to load orders. Please try again.");
     } finally {
       setIsLoading(false);
@@ -207,14 +430,39 @@ const OrdersPage = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const filteredOrders = (orders || []).filter((o) => {
-    if (!o || !o._id) return false;
+  const activeCount = orders.filter((o) =>
+    ACTIVE_STATUSES.has(o.status),
+  ).length;
+  const completedCount = orders.filter((o) =>
+    COMPLETED_STATUSES.has(o.status),
+  ).length;
+
+  const tabFiltered = orders.filter((o) =>
+    activeTab === "active"
+      ? ACTIVE_STATUSES.has(o.status)
+      : COMPLETED_STATUSES.has(o.status),
+  );
+
+  const filteredOrders = tabFiltered.filter((o) => {
+    if (!o?._id) return false;
     const q = searchTerm.toLowerCase();
     return (
       o._id.toLowerCase().includes(q) ||
-      getShippingName(o).toLowerCase().includes(q)
+      (o.order_number ?? "").toLowerCase().includes(q) ||
+      getShippingName(o).toLowerCase().includes(q) ||
+      (o.delivery_city ?? "").toLowerCase().includes(q)
     );
   });
+
+  const handleDeleteClick = (order: OrderDoc) => {
+    if (!canDeleteOrders) {
+      deny(
+        "You don't have permission to delete orders. Only admins can delete orders.",
+      );
+      return;
+    }
+    setDeletingOrder(order);
+  };
 
   const handleConfirmDelete = async () => {
     if (!deletingOrder) return;
@@ -224,7 +472,7 @@ const OrdersPage = () => {
       if (selectedOrder?._id === deletingOrder._id) setSelectedOrder(null);
       toast({
         title: "Order Deleted",
-        description: `Order ${deletingOrder._id.slice(-8).toUpperCase()} has been removed`,
+        description: `Order ${displayOrderId(deletingOrder)} has been removed`,
       });
     } catch {
       toast({
@@ -237,16 +485,15 @@ const OrdersPage = () => {
     }
   };
 
-  if (isLoading) {
+  if (isLoading)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
         <Loader2 size={32} className="animate-spin text-primary" />
         <span className="text-sm font-medium">Fetching orders...</span>
       </div>
     );
-  }
 
-  if (fetchError) {
+  if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <div className="p-4 bg-destructive/10 rounded-full">
@@ -258,11 +505,26 @@ const OrdersPage = () => {
         </Button>
       </div>
     );
-  }
+
+  if (!canViewOrders)
+    return (
+      <PermissionBanner
+        message="You don't have permission to view orders."
+        hint="Ask your admin to enable the 'View Orders' permission for your account."
+      />
+    );
+
+  const emptyMessage = searchTerm
+    ? `No ${activeTab} orders match "${searchTerm}".`
+    : activeTab === "active"
+      ? "No active orders at the moment."
+      : "No completed orders yet.";
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Header section */}
+      {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
+
+      {/* Dashboard header */}
       <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm">
         <div>
           <p className="text-muted-foreground text-sm sm:text-lg">
@@ -280,7 +542,7 @@ const OrdersPage = () => {
         </div>
       </div>
 
-      {/* Orders Table section */}
+      {/* Orders section */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -288,11 +550,12 @@ const OrdersPage = () => {
               Customer Orders
             </h2>
             <p className="text-muted-foreground text-sm">
-              Total found: {filteredOrders.length}
+              {filteredOrders.length} order
+              {filteredOrders.length !== 1 ? "s" : ""} shown
             </p>
           </div>
           <SearchInput
-            placeholder="Search by ID or name..."
+            placeholder="Search by ID, order number, name, or zone..."
             value={searchTerm}
             onChange={setSearchTerm}
             className="w-full sm:w-80"
@@ -300,102 +563,45 @@ const OrdersPage = () => {
           />
         </div>
 
-        {/* ── Desktop table ───────────────────────────────────────────── */}
-        <div className="hidden md:block bg-card rounded-xl overflow-hidden border border-border shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  {[
-                    "Order ID",
-                    "Customer",
-                    "Phone",
-                    "Address",
-                    "Status",
-                    "Total",
-                    "Actions",
-                  ].map((h) => (
-                    <th
-                      key={h}
-                      className="p-4 text-muted-foreground font-semibold"
-                    >
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredOrders.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="p-12 text-center text-muted-foreground italic"
-                    >
-                      No orders found matching your criteria.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredOrders.map((order) => (
-                    <tr
-                      key={order._id}
-                      className="hover:bg-muted/50 transition-colors group cursor-default"
-                      onClick={() => setSelectedOrder(order)}
-                    >
-                      <td className="p-4 font-mono font-medium text-primary cursor-pointer hover:underline">
-                        #{order._id.slice(-8).toUpperCase()}
-                      </td>
-                      <td className="p-4 font-medium text-foreground">
-                        {getShippingName(order)}
-                      </td>
-                      <td className="p-4 text-muted-foreground">
-                        {getShippingPhone(order)}
-                      </td>
-                      <td className="p-4 text-muted-foreground max-w-[200px] truncate">
-                        {getShippingAddress(order)}
-                      </td>
-                      <td className="p-4">
-                        <span
-                          className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass(order.status)}`}
-                        >
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="p-4 font-bold text-foreground">
-                        ₦{order.total.toLocaleString()}
-                      </td>
-                      <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => setDeletingOrder(order)}
-                          className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* Tabs */}
+        <div className="flex items-center gap-1 bg-secondary/50 rounded-xl p-1 w-fit">
+          {(["active", "completed"] as Tab[]).map((tab) => {
+            const count = tab === "active" ? activeCount : completedCount;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  activeTab === tab
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {tab === "active" ? "Active" : "Completed"}
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${
+                    activeTab === tab
+                      ? tab === "active"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-green-100 text-green-700"
+                      : "bg-secondary text-muted-foreground"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* ── Mobile card list ─────────────────────────────────────────── */}
-        <div className="md:hidden space-y-2">
-          {filteredOrders.length === 0 ? (
-            <p className="text-center text-muted-foreground text-sm py-12 italic">
-              No orders found matching your criteria.
-            </p>
-          ) : (
-            filteredOrders.map((order) => (
-              <OrderCard
-                key={order._id}
-                order={order}
-                onSelect={setSelectedOrder}
-                onDelete={setDeletingOrder}
-              />
-            ))
-          )}
-        </div>
+        <OrdersTable
+          orders={filteredOrders}
+          onSelect={setSelectedOrder}
+          onDelete={handleDeleteClick}
+          canDelete={canDeleteOrders}
+          canViewContact={canViewContact}
+          emptyMessage={emptyMessage}
+        />
       </div>
 
       {/* Modals */}
@@ -409,12 +615,12 @@ const OrdersPage = () => {
             const o = orders.find((x) => x._id === id);
             if (o) {
               setSelectedOrder(null);
-              setDeletingOrder(o);
+              handleDeleteClick(o);
             }
           }}
           onStatusUpdated={(updated) => {
             setOrders((prev) =>
-              prev.map((o) => (o._id === updated._id ? updated : o))
+              prev.map((o) => (o._id === updated._id ? updated : o)),
             );
             setSelectedOrder(updated);
           }}

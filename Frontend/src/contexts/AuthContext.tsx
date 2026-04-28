@@ -1,24 +1,32 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI, toAuthUser, type AuthUser } from '@/services/api';
-import axios from 'axios';
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
+
+import { authAPI, toAuthUser, type AuthUser } from "@/services/api";
+import axios from "axios";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
 interface AuthContextType {
-  user:            AuthUser | null;
-  isLoading:       boolean;
+  user: AuthUser | null;
+  isLoading: boolean;
   isAuthenticated: boolean;
-  login:           (username: string, password: string) => Promise<void>;
-  register:        (username: string, email: string, password: string) => Promise<void>;
-  logout:          () => Promise<void>;
+  login: (username: string, password: string) => Promise<void>;
+  register: (username: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   setUserManually: (user: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user,      setUser]      = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // true until /me resolves
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // ── Check session on app load ─────────────────────────────
   useEffect(() => {
     checkAuth();
   }, []);
@@ -26,7 +34,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const checkAuth = async () => {
     try {
       const currentUser = await authAPI.getCurrentUser();
-      setUser(currentUser);
+      // Block inactive staff from proceeding
+      if (currentUser.role === "staff" && currentUser.staffStatus === "inactive") {
+        await authAPI.logout();
+        setUser(null);
+      } else {
+        setUser(currentUser);
+      }
     } catch {
       setUser(null);
     } finally {
@@ -34,48 +48,66 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
+  
+  // ── REGISTER ───────────────────────────────────────────────
+  const register = async (
+    username: string,
+    email: string,
+    password: string
+  ) => {
     try {
       await authAPI.register({ username, email, password });
-      setUser({ id: '', username, email });
+
+      // Always fetch real user from backend (NO fake user)
+      const currentUser = await authAPI.getCurrentUser();
+      setUser(currentUser);
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        throw new Error(err.response?.data?.error || 'Registration failed');
+        throw new Error(err.response?.data?.error || "Registration failed");
       }
       throw err;
     }
   };
 
+  // ── LOGIN ──────────────────────────────────────────────────
   const login = async (username: string, password: string) => {
     try {
       const result = await authAPI.login({ username, password });
+
       if (result.data) {
-        setUser(toAuthUser(result.data));
+        const user = toAuthUser(result.data);
+        setUser(user);
       } else {
-        setUser({ id: '', username, email: '' });
+        // fallback: always trust backend session
+        const currentUser = await authAPI.getCurrentUser();
+        setUser(currentUser);
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
-        throw new Error(err.response?.data?.error || 'Login failed');
+        throw new Error(err.response?.data?.error || "Login failed");
       }
       throw err;
     }
   };
 
+  // ── LOGOUT ────────────────────────────────────────────────
   const logout = async () => {
     try {
       await authAPI.logout();
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error("Logout failed:", error);
     } finally {
       setUser(null);
     }
   };
 
+  // ── MANUAL SET (admin use/debug only) ─────────────────────
   const setUserManually = (userData: AuthUser) => setUser(userData);
 
-  // Block render until session check completes — prevents flash of logged-out UI
- if (isLoading) return <LoadingScreen message="Checking session..." />;
+  // ── Prevent UI flash before auth check completes ──────────
+  if (isLoading) {
+    return <LoadingScreen message="Checking session..." />;
+  }
 
   return (
     <AuthContext.Provider
@@ -94,10 +126,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// ── Hook ────────────────────────────────────────────────────
 export const useAuth = () => {
   const context = useContext(AuthContext);
+
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
+
   return context;
 };

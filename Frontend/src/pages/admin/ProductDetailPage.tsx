@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,10 @@ import {
   variantService,
   type Product,
   type Variant,
-} from "@/services/Products.service";
+} from "@/services/products.service";
+import { usePermission } from "@/contexts/PermissionContext";
+import { PermissionToast } from "@/components/ui/PermissionToast";
+import { usePermissionToast } from "@/hooks/usePermissionToast";
 
 const sectionOptions = [
   "New Arrivals",
@@ -27,7 +30,7 @@ const sectionOptions = [
 ] as const;
 type SectionOption = "" | (typeof sectionOptions)[number];
 
-// ── Delete Confirmation Modal ─────────────────────────────────────────────────
+// ── Delete Confirm Modals ─────────────────────────────────────────────────────
 const DeleteConfirmModal = ({
   open,
   name,
@@ -154,6 +157,7 @@ const DeleteVariantModal = ({
   );
 };
 
+// ── Types ─────────────────────────────────────────────────────────────────────
 interface VariantDraft {
   id: string;
   product: string;
@@ -166,6 +170,7 @@ interface VariantDraft {
   stock: string;
   is_active: boolean;
   isNew: boolean;
+  image: string;
 }
 
 const toVariantDraft = (v: Variant): VariantDraft => ({
@@ -180,6 +185,7 @@ const toVariantDraft = (v: Variant): VariantDraft => ({
   stock: String(v.stock),
   is_active: v.is_active,
   isNew: false,
+  image: v.image ?? "", // ← reads existing image from backend
 });
 
 const emptyVariantDraft = (productId: string): VariantDraft => ({
@@ -194,6 +200,7 @@ const emptyVariantDraft = (productId: string): VariantDraft => ({
   stock: "",
   is_active: true,
   isNew: true,
+  image: "", // ← just empty, no v to read from
 });
 
 const buildForm = (product: Product) => ({
@@ -205,29 +212,27 @@ const buildForm = (product: Product) => ({
   deliveryFee: product.deliveryFee?.toLocaleString() ?? "",
   type: product.type ?? "",
   section: (product.section ?? "") as SectionOption,
-  image: product.images?.[0] ?? product.image ?? "",
-  image2: product.images?.[1] ?? product.image2 ?? "",
   tagsInput: product.tags?.join(", ") ?? "",
   specCamera: product.specs?.camera ?? "",
   specBattery: product.specs?.battery ?? "",
   specScreenSize: product.specs?.screenSize ?? "",
 });
 
+// ── 6-image builder: reads product.images[0..5] ───────────────────────────────
 const buildImages = (product: Product): (string | null)[] =>
-  Array(6)
+  Array(4)
     .fill(null)
-    .map((_, i) =>
-      i === 0
-        ? product.images?.[0] ?? product.image ?? null
-        : i === 1
-        ? product.images?.[1] ?? product.image2 ?? null
-        : null
-    );
+    .map((_, i) => product.images?.[i] ?? null);
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── Main Component ────────────────────────────────────────────────────────────
 const ProductDetailPage = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { isAdmin, can } = usePermission();
+  const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
+
+  const canEdit = isAdmin || can("products", "editProducts");
+  const canDelete = isAdmin || can("products", "deleteProducts");
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -255,8 +260,9 @@ const ProductDetailPage = () => {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [deletingVariantIdx, setDeletingVariantIdx] = useState<number | null>(null);
-
+  const [deletingVariantIdx, setDeletingVariantIdx] = useState<number | null>(
+    null,
+  );
   const [images, setImages] = useState<(string | null)[]>(Array(6).fill(null));
   const [features, setFeatures] = useState<string[]>([""]);
   const [variants, setVariants] = useState<VariantDraft[]>([]);
@@ -270,8 +276,6 @@ const ProductDetailPage = () => {
     deliveryFee: "",
     type: "",
     section: "",
-    image: "",
-    image2: "",
     tagsInput: "",
     specCamera: "",
     specBattery: "",
@@ -279,38 +283,40 @@ const ProductDetailPage = () => {
   });
 
   const fileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const variantFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  if (isLoading) {
+  // ── Loading / error guards ──────────────────────────────────────────────────
+  if (isLoading)
     return (
       <div className="flex items-center justify-center py-32 text-muted-foreground gap-3">
         <Loader2 size={20} className="animate-spin" />
         <span className="text-sm">Loading product…</span>
       </div>
     );
-  }
 
-  if (fetchError || !product) {
+  if (fetchError || !product)
     return (
       <div className="text-foreground p-4 sm:p-8">
         <p className="mb-4 text-destructive">
           {fetchError ?? "Product not found."}
         </p>
-        <Button onClick={() => navigate(-1)} variant="outline" className="gap-2">
+        <Button
+          onClick={() => navigate(-1)}
+          variant="outline"
+          className="gap-2"
+        >
           <ArrowLeft size={16} /> Go Back
         </Button>
       </div>
     );
-  }
 
+  // ── Helpers ─────────────────────────────────────────────────────────────────
   const formatNum = (v: string) => {
     const n = v.replace(/[^0-9]/g, "");
     return n ? Number(n).toLocaleString() : "";
   };
-
-  const handleChange = (
-    field: keyof typeof form,
-    value: string | boolean
-  ) => setForm((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (field: keyof typeof form, value: string | boolean) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
 
   const handleCancel = () => {
     setForm(buildForm(product));
@@ -333,14 +339,14 @@ const ProductDetailPage = () => {
     }
   };
 
-  const handleImageClick = (index: number) => {
+  // ── Image handling ──────────────────────────────────────────────────────────
+  const handleImageClick = (i: number) => {
     if (!isEditing) return;
-    fileInputRefs.current[index]?.click();
+    fileInputRefs.current[i]?.click();
   };
-
   const handleImageChange = (
-    index: number,
-    e: React.ChangeEvent<HTMLInputElement>
+    i: number,
+    e: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -348,70 +354,79 @@ const ProductDetailPage = () => {
     reader.onload = () =>
       setImages((prev) => {
         const next = [...prev];
-        next[index] = reader.result as string;
+        next[i] = reader.result as string;
         return next;
       });
     reader.readAsDataURL(file);
     e.target.value = "";
   };
-
-  const handleRemoveImage = (index: number, e: React.MouseEvent) => {
+  const handleRemoveImage = (i: number, e: React.MouseEvent) => {
     e.stopPropagation();
     setImages((prev) => {
       const next = [...prev];
-      next[index] = null;
+      next[i] = null;
       return next;
     });
   };
 
-  const addFeature = () => setFeatures((prev) => [...prev, ""]);
+  // ── Feature helpers ─────────────────────────────────────────────────────────
+  const addFeature = () => setFeatures((p) => [...p, ""]);
   const updateFeature = (i: number, val: string) =>
-    setFeatures((prev) => {
-      const next = [...prev];
-      next[i] = val;
-      return next;
+    setFeatures((p) => {
+      const n = [...p];
+      n[i] = val;
+      return n;
     });
   const removeFeature = (i: number) =>
-    setFeatures((prev) => prev.filter((_, idx) => idx !== i));
+    setFeatures((p) => p.filter((_, idx) => idx !== i));
 
+  // ── Variant helpers ─────────────────────────────────────────────────────────
   const addVariant = () =>
-    setVariants((prev) => [...prev, emptyVariantDraft(product._id)]);
-
+    setVariants((p) => [...p, emptyVariantDraft(product._id)]);
   const updateVariant = (
     i: number,
     field: keyof VariantDraft,
-    value: string | boolean
+    value: string | boolean,
   ) =>
-    setVariants((prev) => {
-      const next = [...prev];
+    setVariants((p) => {
+      const next = [...p];
       next[i] = { ...next[i], [field]: value };
       return next;
     });
-
   const formatVariantPrice = (
     i: number,
     field: "price" | "compare_at_price",
-    raw: string
+    raw: string,
   ) => updateVariant(i, field, formatNum(raw));
-
   const handleRemoveVariant = (i: number) => {
     const v = variants[i];
-    if (!v.isNew && v.id) setDeletedVariantIds((prev) => [...prev, v.id]);
-    setVariants((prev) => prev.filter((_, idx) => idx !== i));
+    if (!v.isNew && v.id) setDeletedVariantIds((p) => [...p, v.id]);
+    setVariants((p) => p.filter((_, idx) => idx !== i));
     setDeletingVariantIdx(null);
   };
 
+  // ── Dropdown helpers ────────────────────────────────────────────────────────
   const toggleDropdown = (name: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!isEditing) return;
-    setOpenDropdown((prev) => (prev === name ? null : name));
+    setOpenDropdown((p) => (p === name ? null : name));
   };
   const closeAllDropdowns = () => setOpenDropdown(null);
 
+  // ── Save ────────────────────────────────────────────────────────────────────
   const handleSave = async () => {
+    if (!canEdit) {
+      deny(
+        "You don't have permission to edit products. Ask your admin to enable 'Edit Products'.",
+      );
+      return;
+    }
     setIsSaving(true);
     setSaveError(null);
     try {
+      // Build the images array from all 6 slots, filtering nulls
+      const imagesArray = images.filter((img): img is string => !!img);
+
       await productService.patch(product._id, {
         name: form.name,
         category: form.category,
@@ -420,8 +435,7 @@ const ProductDetailPage = () => {
         description: form.description || undefined,
         type: form.type || undefined,
         section: form.section || undefined,
-        image: images[0] || form.image || undefined,
-        image2: images[1] || form.image2 || undefined,
+        images: imagesArray.length ? imagesArray : undefined,
         deliveryFee: form.deliveryFee
           ? Number(form.deliveryFee.replace(/[^0-9]/g, ""))
           : undefined,
@@ -438,14 +452,16 @@ const ProductDetailPage = () => {
           screenSize: form.specScreenSize || undefined,
         },
       });
+
       await Promise.all(
-        deletedVariantIds.map((vid) => variantService.delete(vid))
+        deletedVariantIds.map((vid) => variantService.delete(vid)),
       );
       await Promise.all(
         variants.map((v) => {
           const shared = {
             color: v.color || undefined,
             storage: v.storage || undefined,
+            image: v.image || undefined,
             ram: v.ram || undefined,
             sku: v.sku,
             price: Number(v.price.replace(/[^0-9]/g, "")),
@@ -458,9 +474,16 @@ const ProductDetailPage = () => {
           return v.isNew
             ? variantService.create({ productId: product._id, ...shared })
             : variantService.update(v.id, shared);
-        })
+        }),
       );
+
       setSaveSuccess(true);
+      // Re-fetch so Cancel reverts to the just-saved data, not the original load
+      productService.getBySlug(slug!).then((fresh) => {
+        setProduct(fresh);
+        setVariants(fresh.variants?.map(toVariantDraft) ?? []);
+      });
+
       setTimeout(() => {
         setSaveSuccess(false);
         setIsEditing(false);
@@ -468,20 +491,22 @@ const ProductDetailPage = () => {
       }, 1500);
     } catch (err: any) {
       setSaveError(
-        err.response?.data?.message || "Failed to save. Please try again."
+        err.response?.data?.message || "Failed to save. Please try again.",
       );
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ── Shared CSS ──────────────────────────────────────────────────────────────
   const lavInput =
-    "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
+    "w-full bg-lavender text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
   const mintInput =
-    "w-full bg-mint text-mint-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
+    "w-full bg-mint text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary";
   const dropBtnCls =
     "w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm text-left flex justify-between items-center";
 
+  // ── Dropdown sub-component ──────────────────────────────────────────────────
   const Dropdown = ({
     name,
     value,
@@ -502,9 +527,7 @@ const ProductDetailPage = () => {
         {value || <span className="text-muted-foreground">Select…</span>}
         <ChevronDown
           size={14}
-          className={`text-muted-foreground transition-transform ${
-            openDropdown === name ? "rotate-180" : ""
-          }`}
+          className={`text-muted-foreground transition-transform ${openDropdown === name ? "rotate-180" : ""}`}
         />
       </button>
       {isEditing && openDropdown === name && (
@@ -543,9 +566,7 @@ const ProductDetailPage = () => {
         {form.section || <span className="text-muted-foreground">None</span>}
         <ChevronDown
           size={14}
-          className={`text-muted-foreground transition-transform ${
-            openDropdown === "section" ? "rotate-180" : ""
-          }`}
+          className={`text-muted-foreground transition-transform ${openDropdown === "section" ? "rotate-180" : ""}`}
         />
       </button>
       {isEditing && openDropdown === "section" && (
@@ -609,15 +630,7 @@ const ProductDetailPage = () => {
       </div>
     );
 
-  const PriceField = ({
-    field,
-    bg = "bg-lavender",
-    fg = "text-lavender-foreground",
-  }: {
-    field: "deliveryFee";
-    bg?: string;
-    fg?: string;
-  }) =>
+  const PriceField = ({ field }: { field: "deliveryFee" }) =>
     isEditing ? (
       <input
         type="text"
@@ -625,22 +638,23 @@ const ProductDetailPage = () => {
         placeholder="₦0"
         onChange={(e) => {
           const raw = e.target.value.replace(/[^0-9]/g, "");
-          setForm((prev) => ({
-            ...prev,
+          setForm((p) => ({
+            ...p,
             [field]: raw ? Number(raw).toLocaleString() : "",
           }));
         }}
-        className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary`}
+        className={lavInput}
       />
     ) : (
-      <div className={`w-full ${bg} ${fg} rounded-lg p-3 text-sm`}>
-        {form[field] ? `₦${form[field]}` : "—"}
-      </div>
+      <div className={lavInput}>{form[field] ? `₦${form[field]}` : "—"}</div>
     );
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div onClick={closeAllDropdowns}>
-      {/* Header */}
+      {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
+
+      {/* ── Header ─────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between mb-5 gap-2 flex-wrap">
         <div className="flex items-center gap-3">
           <button
@@ -653,19 +667,33 @@ const ProductDetailPage = () => {
             Product Information
           </h1>
         </div>
+
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Delete */}
           <Button
             size="sm"
             variant="outline"
-            className="gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+            className={`gap-1.5 ${
+              canDelete
+                ? "text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                : "text-muted-foreground border-border opacity-50 cursor-not-allowed"
+            }`}
             onClick={(e) => {
               e.stopPropagation();
+              if (!canDelete) {
+                deny(
+                  "You don't have permission to delete products. Ask your admin to enable 'Delete Products'.",
+                );
+                return;
+              }
               setShowDeleteModal(true);
             }}
           >
             <Trash2 size={14} />
             <span className="hidden sm:inline">Delete</span>
           </Button>
+
+          {/* Edit / Cancel */}
           {isEditing ? (
             <Button
               size="sm"
@@ -678,18 +706,32 @@ const ProductDetailPage = () => {
           ) : (
             <Button
               size="sm"
-              className="gap-1 bg-primary text-primary-foreground hover:opacity-90"
-              onClick={() => setIsEditing(true)}
+              className={`gap-1 ${
+                canEdit
+                  ? "bg-primary text-primary-foreground hover:opacity-90"
+                  : "bg-secondary text-muted-foreground cursor-not-allowed opacity-60"
+              }`}
+              onClick={() => {
+                if (!canEdit) {
+                  deny(
+                    "You don't have permission to edit products. Ask your admin to enable 'Edit Products'.",
+                  );
+                  return;
+                }
+                setIsEditing(true);
+              }}
             >
               <Edit size={14} />
-              <span className="hidden sm:inline">Edit Product</span>
-              <span className="sm:hidden">Edit</span>
+              <span className="hidden sm:inline">
+                {canEdit ? "Edit Product" : "View Only"}
+              </span>
+              <span className="sm:hidden">{canEdit ? "Edit" : "View"}</span>
             </Button>
           )}
         </div>
       </div>
 
-      {/* Save error banner */}
+      {/* Save error */}
       {saveError && (
         <div className="mb-5 flex items-center gap-3 px-4 py-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive text-sm">
           <X size={15} className="flex-shrink-0" />
@@ -704,7 +746,7 @@ const ProductDetailPage = () => {
         </div>
       )}
 
-      {/* Image grid — 3 cols on mobile, 6 on sm+ */}
+      {/* ── 6-image grid ───────────────────────────────────────────── */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-3 mb-6">
         {Array(6)
           .fill(null)
@@ -727,8 +769,8 @@ const ProductDetailPage = () => {
                     img
                       ? "bg-secondary border border-border"
                       : isEditing
-                      ? "border-2 border-dashed border-border bg-card hover:border-primary cursor-pointer"
-                      : "border-2 border-dashed border-border bg-card"
+                        ? "border-2 border-dashed border-border bg-card hover:border-primary cursor-pointer"
+                        : "border-2 border-dashed border-border bg-card"
                   } ${isEditing && img ? "cursor-pointer hover:opacity-80" : ""}`}
                 >
                   {img ? (
@@ -741,7 +783,7 @@ const ProductDetailPage = () => {
                     <div className="flex flex-col items-center">
                       <Plus size={16} className="text-muted-foreground" />
                       <span className="text-[10px] text-muted-foreground mt-1">
-                        {i === 0 ? "Main" : i === 1 ? "Alt" : "Img"}
+                        {i === 0 ? "Main" : i === 1 ? "Alt" : `Img ${i + 1}`}
                       </span>
                     </div>
                   )}
@@ -759,7 +801,7 @@ const ProductDetailPage = () => {
           })}
       </div>
 
-      {/* Image URLs */}
+      {/* ── Per-slot image URL inputs ───────────────────────────────── */}
       <div className="mb-7">
         <h2 className="text-base font-medium text-foreground mb-1">
           Image URLs
@@ -768,48 +810,50 @@ const ProductDetailPage = () => {
           Uploads above fill these automatically. You can also paste URLs
           directly.
         </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Image URL (Main){" "}
-              <span className="text-destructive">Required</span>
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="https://…"
-                value={images[0] || form.image}
-                onChange={(e) => handleChange("image", e.target.value)}
-                className={lavInput}
-              />
-            ) : (
-              <div className={`${lavInput} truncate`}>
-                {images[0] || form.image || "—"}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Array(6)
+            .fill(null)
+            .map((_, i) => (
+              <div key={i}>
+                <label className="text-xs text-muted-foreground block mb-1">
+                  {i === 0
+                    ? "Image 1 — Main"
+                    : i === 1
+                      ? "Image 2 — Hover"
+                      : `Image ${i + 1}`}
+                  {i === 0 && (
+                    <span className="text-destructive ml-1">Required</span>
+                  )}
+                </label>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    placeholder="https://…"
+                    value={images[i] ?? ""}
+                    onChange={(e) =>
+                      setImages((prev) => {
+                        const next = [...prev];
+                        next[i] = e.target.value || null;
+                        return next;
+                      })
+                    }
+                    className={lavInput}
+                  />
+                ) : (
+                  <div className={`${lavInput} truncate text-xs`}>
+                    {images[i] || (
+                      <span className="text-muted-foreground/50 italic">
+                        Empty
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Image URL 2 (Hover)
-            </label>
-            {isEditing ? (
-              <input
-                type="text"
-                placeholder="https://…"
-                value={images[1] || form.image2}
-                onChange={(e) => handleChange("image2", e.target.value)}
-                className={lavInput}
-              />
-            ) : (
-              <div className={`${lavInput} truncate`}>
-                {images[1] || form.image2 || "—"}
-              </div>
-            )}
-          </div>
+            ))}
         </div>
       </div>
 
-      {/* Basic Info */}
+      {/* ── Basic Info ─────────────────────────────────────────────── */}
       <div className="mb-7">
         <h2 className="text-base font-medium text-foreground mb-3">
           Basic Info
@@ -874,7 +918,7 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Description */}
+      {/* ── Description ────────────────────────────────────────────── */}
       <div className="mb-7">
         <label className="text-xs text-muted-foreground block mb-1">
           Product Description <span className="text-destructive">Required</span>
@@ -884,7 +928,7 @@ const ProductDetailPage = () => {
             value={form.description}
             rows={4}
             onChange={(e) =>
-              setForm((prev) => ({ ...prev, description: e.target.value }))
+              setForm((p) => ({ ...p, description: e.target.value }))
             }
             className="w-full bg-lavender text-lavender-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none"
           />
@@ -897,7 +941,7 @@ const ProductDetailPage = () => {
         )}
       </div>
 
-      {/* Key Features */}
+      {/* ── Key Features ───────────────────────────────────────────── */}
       <div className="mb-7">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-medium text-foreground">
@@ -948,7 +992,7 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Specifications */}
+      {/* ── Specifications ─────────────────────────────────────────── */}
       <div className="mb-7">
         <h2 className="text-base font-medium text-foreground mb-3">
           Specifications
@@ -987,7 +1031,7 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Tags */}
+      {/* ── Tags ───────────────────────────────────────────────────── */}
       <div className="mb-7">
         <h2 className="text-base font-medium text-foreground mb-1">Tags</h2>
         <p className="text-xs text-muted-foreground mb-3">
@@ -1000,7 +1044,7 @@ const ProductDetailPage = () => {
           {isEditing ? (
             <input
               type="text"
-              placeholder="Flagship, UK Used, New…"
+              placeholder="Flagship, UK Used…"
               value={form.tagsInput}
               onChange={(e) => handleChange("tagsInput", e.target.value)}
               className={lavInput}
@@ -1027,7 +1071,7 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Variants */}
+      {/* ── Variants ───────────────────────────────────────────────── */}
       <div className="mb-7">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-medium text-foreground">Variants</h2>
@@ -1058,8 +1102,11 @@ const ProductDetailPage = () => {
 
         <div className="space-y-3">
           {variants.map((v, i) => (
-            <div key={i} className="p-3 sm:p-4 bg-card border border-border rounded-xl">
-              {/* Header row */}
+            <div
+              key={i}
+              className="p-3 sm:p-4 bg-card border border-border rounded-xl"
+            >
+              {/* Variant header */}
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -1080,20 +1127,14 @@ const ProductDetailPage = () => {
                       isEditing && updateVariant(i, "is_active", !v.is_active)
                     }
                     style={{ cursor: isEditing ? "pointer" : "default" }}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      v.is_active ? "bg-primary" : "bg-border"
-                    }`}
+                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${v.is_active ? "bg-primary" : "bg-border"}`}
                   >
                     <span
-                      className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${
-                        v.is_active ? "translate-x-5" : "translate-x-1"
-                      }`}
+                      className={`inline-block h-3 w-3 transform rounded-full bg-white shadow-sm transition-transform ${v.is_active ? "translate-x-5" : "translate-x-1"}`}
                     />
                   </button>
                   <span
-                    className={`text-xs hidden sm:inline ${
-                      v.is_active ? "text-primary" : "text-muted-foreground"
-                    }`}
+                    className={`text-xs hidden sm:inline ${v.is_active ? "text-primary" : "text-muted-foreground"}`}
                   >
                     {v.is_active ? "Active" : "Inactive"}
                   </span>
@@ -1109,7 +1150,7 @@ const ProductDetailPage = () => {
                 </div>
               </div>
 
-              {/* Fields — 2 cols on mobile, 3 on sm */}
+              {/* Color / RAM / Storage */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 mb-3">
                 {(["color", "ram", "storage"] as const).map((field) => (
                   <div key={field}>
@@ -1123,11 +1164,13 @@ const ProductDetailPage = () => {
                           field === "color"
                             ? "e.g. Black"
                             : field === "ram"
-                            ? "e.g. 8GB"
-                            : "e.g. 256GB"
+                              ? "e.g. 8GB"
+                              : "e.g. 256GB"
                         }
                         value={v[field]}
-                        onChange={(e) => updateVariant(i, field, e.target.value)}
+                        onChange={(e) =>
+                          updateVariant(i, field, e.target.value)
+                        }
                         className={lavInput}
                       />
                     ) : (
@@ -1137,7 +1180,100 @@ const ProductDetailPage = () => {
                 ))}
               </div>
 
-              {/* Price / SKU — 2 cols on mobile, 4 on sm */}
+              {/* Variant Image */}
+              <div className="mb-3">
+                <label className="text-xs text-muted-foreground block mb-1">
+                  Variant Image{" "}
+                  <span className="text-muted-foreground/60">
+                    (shown when this color is selected by the customer)
+                  </span>
+                </label>
+                <div className="flex items-center gap-3">
+                  {/* Hidden file input */}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    ref={(el) => {
+                      variantFileInputRefs.current[i] = el;
+                    }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () =>
+                        updateVariant(i, "image", reader.result as string);
+                      reader.readAsDataURL(file);
+                      e.target.value = "";
+                    }}
+                  />
+
+                  {/* Click-to-upload preview box */}
+                  <div
+                    onClick={() =>
+                      isEditing && variantFileInputRefs.current[i]?.click()
+                    }
+                    className={`w-16 h-16 rounded-xl overflow-hidden border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+                      v.image
+                        ? "border-primary bg-secondary"
+                        : isEditing
+                          ? "border-dashed border-border bg-card hover:border-primary cursor-pointer"
+                          : "border-dashed border-border bg-card"
+                    } ${isEditing && v.image ? "cursor-pointer hover:opacity-80" : ""}`}
+                  >
+                    {v.image ? (
+                      <img
+                        src={v.image}
+                        alt={`Variant ${i + 1}`}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <Plus size={14} className="text-muted-foreground" />
+                        <span className="text-[10px] text-muted-foreground leading-tight text-center">
+                          Upload
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* URL input */}
+                  <div className="flex-1">
+                    {isEditing ? (
+                      <input
+                        type="text"
+                        placeholder="Or paste image URL…"
+                        value={v.image}
+                        onChange={(e) =>
+                          updateVariant(i, "image", e.target.value)
+                        }
+                        className={lavInput}
+                      />
+                    ) : (
+                      <div className={`${lavInput} truncate text-xs`}>
+                        {v.image || (
+                          <span className="text-muted-foreground/50 italic">
+                            No variant image set
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Clear button */}
+                  {isEditing && v.image && (
+                    <button
+                      type="button"
+                      onClick={() => updateVariant(i, "image", "")}
+                      className="flex-shrink-0 w-7 h-7 rounded-full bg-destructive/10 text-destructive hover:bg-destructive hover:text-destructive-foreground flex items-center justify-center transition-colors"
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* SKU / Price / Compare / Stock */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                 <div>
                   <label className="text-xs text-muted-foreground block mb-1">
@@ -1168,7 +1304,7 @@ const ProductDetailPage = () => {
                         formatVariantPrice(
                           i,
                           "price",
-                          e.target.value.replace(/[^0-9]/g, "")
+                          e.target.value.replace(/[^0-9]/g, ""),
                         )
                       }
                       className={lavInput}
@@ -1192,7 +1328,7 @@ const ProductDetailPage = () => {
                         formatVariantPrice(
                           i,
                           "compare_at_price",
-                          e.target.value.replace(/[^0-9]/g, "")
+                          e.target.value.replace(/[^0-9]/g, ""),
                         )
                       }
                       className={mintInput}
@@ -1213,7 +1349,9 @@ const ProductDetailPage = () => {
                       min="0"
                       placeholder="0"
                       value={v.stock}
-                      onChange={(e) => updateVariant(i, "stock", e.target.value)}
+                      onChange={(e) =>
+                        updateVariant(i, "stock", e.target.value)
+                      }
                       className={mintInput}
                     />
                   ) : (
@@ -1226,7 +1364,7 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Pricing */}
+      {/* ── Delivery Fee ───────────────────────────────────────────── */}
       <div className="mb-7">
         <h2 className="text-base font-medium text-foreground mb-3">Pricing</h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -1239,19 +1377,14 @@ const ProductDetailPage = () => {
         </div>
       </div>
 
-      {/* Sticky footer save button on mobile */}
+      {/* ── Footer save ────────────────────────────────────────────── */}
       {isEditing && (
         <>
-          {/* Desktop inline footer */}
           <div className="hidden sm:flex justify-end pt-4 border-t border-border">
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className={`gap-1 disabled:opacity-60 text-primary-foreground ${
-                saveSuccess
-                  ? "bg-green-500 hover:bg-green-500"
-                  : "bg-primary hover:opacity-90"
-              }`}
+              className={`gap-1 disabled:opacity-60 text-primary-foreground ${saveSuccess ? "bg-green-500 hover:bg-green-500" : "bg-primary hover:opacity-90"}`}
             >
               {saveSuccess ? (
                 <>
@@ -1271,11 +1404,7 @@ const ProductDetailPage = () => {
             <Button
               onClick={handleSave}
               disabled={isSaving}
-              className={`w-full gap-1 disabled:opacity-60 text-primary-foreground ${
-                saveSuccess
-                  ? "bg-green-500 hover:bg-green-500"
-                  : "bg-primary hover:opacity-90"
-              }`}
+              className={`w-full gap-1 disabled:opacity-60 text-primary-foreground ${saveSuccess ? "bg-green-500 hover:bg-green-500" : "bg-primary hover:opacity-90"}`}
             >
               {saveSuccess ? (
                 <>
@@ -1290,7 +1419,6 @@ const ProductDetailPage = () => {
               )}
             </Button>
           </div>
-          {/* Spacer for sticky footer on mobile */}
           <div className="sm:hidden h-20" />
         </>
       )}

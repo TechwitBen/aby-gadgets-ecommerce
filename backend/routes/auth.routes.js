@@ -22,7 +22,7 @@ import { facebookAuth, facebookAuthCallback } from "../controllers/facebook.auth
 
 
 
-import { isAuthenticated, isAdmin } from "../middlewares/auth.middleware.js";
+import { isAuthenticated, isAdmin, isAdminOrStaff,checkPermission } from "../middlewares/auth.middleware.js";
 
 export const authRouter = Router();
 
@@ -48,11 +48,15 @@ authRouter.post("/logout", isAuthenticated, logoutController);
 // promote user → admin
 authRouter.post("/promote", isAuthenticated, isAdmin, promoteToAdmin);
 
-// get all users (admin only)
-authRouter.get("/users", isAuthenticated, isAdmin, getAllUsersController);
-
+authRouter.get(
+  "/users",
+  isAuthenticated,
+  isAdminOrStaff,
+  checkPermission("customers", "viewCustomers"),
+  getAllUsersController
+);
 // delete user (admin only)
-authRouter.delete("/:id", isAuthenticated, isAdmin, deleteUserController);
+authRouter.delete("/users/:id", isAuthenticated, isAdmin, deleteUserController);
 
 
 authRouter.get("/facebook", facebookAuth);
