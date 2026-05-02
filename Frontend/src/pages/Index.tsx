@@ -11,7 +11,10 @@ import FeaturedProducts from "@/components/FeaturedProducts";
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      <HeroSection />
+      {/* Negative margin pulls hero up under the sticky header (h-14 = 56px / sm:h-16 = 64px) */}
+      <div className="-mt-14 sm:-mt-16">
+        <HeroSection />
+      </div>
       <ProductCategories />
       <FeaturedProducts />
       <ServicesSection />
@@ -24,3 +27,4 @@ const Index = () => {
 };
 
 export default Index;
+

@@ -2,15 +2,14 @@ import { useState, useEffect } from "react";
 import {
   User, Lock, MapPin, Bell, Eye, EyeOff,
   Plus, Trash2, Edit2, Check, Star, Loader2, AlertCircle,
-  Home, Briefcase, Save,
+  Home, Briefcase, Save, ChevronRight,
 } from "lucide-react";
 import { userService, type UserProfile, type UserAddress } from "@/services/user.service";
 import { useToast } from "@/hooks/use-toast";
-import { Input }  from "@/components/ui/input";
-import { Label }  from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
-// ── Nigerian states list ──────────────────────────────────────────────────────
 const NIGERIAN_STATES = [
   "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
   "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT","Gombe","Imo",
@@ -20,62 +19,84 @@ const NIGERIAN_STATES = [
 
 const ADDRESS_LABELS = ["Home", "Work", "School", "Other"];
 
+// Address type WITHOUT name and phone — those live on the profile
+export type AddressFormData = {
+  _id?: string;
+  label: string;
+  street: string;
+  city: string;
+  state: string;
+  country: string;
+  postal_code: string;
+  isDefault: boolean;
+};
+
 type SettingsTab = "profile" | "security" | "addresses" | "notifications";
 
-// ── Tab config ────────────────────────────────────────────────────────────────
 const TABS: { key: SettingsTab; label: string; icon: React.FC<{ className?: string }> }[] = [
-  { key: "profile",       label: "Profile",          icon: User    },
-  { key: "security",      label: "Security",          icon: Lock    },
-  { key: "addresses",     label: "Address Book",      icon: MapPin  },
-  { key: "notifications", label: "Notifications",     icon: Bell    },
+  { key: "profile",       label: "Profile",       icon: User  },
+  { key: "security",      label: "Security",       icon: Lock  },
+  { key: "addresses",     label: "Addresses",      icon: MapPin},
+  { key: "notifications", label: "Notifications",  icon: Bell  },
 ];
 
-// ── Toggle component ──────────────────────────────────────────────────────────
-const Toggle = ({
-  checked, onChange, label, description,
-}: { checked: boolean; onChange: (v: boolean) => void; label: string; description?: string }) => (
+// ── Toggle ────────────────────────────────────────────────────────────────────
+const Toggle = ({ checked, onChange, label, description }: {
+  checked: boolean; onChange: (v: boolean) => void; label: string; description?: string;
+}) => (
   <div className="flex items-start justify-between gap-4 py-4">
-    <div>
+    <div className="flex-1 min-w-0">
       <p className="text-sm font-semibold text-gray-800">{label}</p>
-      {description && <p className="text-xs text-gray-400 mt-0.5">{description}</p>}
+      {description && <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>}
     </div>
     <button
       onClick={() => onChange(!checked)}
-      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 ${
-        checked ? "bg-[#6426E1]" : "bg-gray-200"
+      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors duration-200 mt-0.5 ${
+        checked ? "bg-emerald-500" : "bg-gray-200"
       }`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200 ${
+      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
         checked ? "translate-x-5" : "translate-x-0"
       }`} />
     </button>
   </div>
 );
 
-// ── Address Form Modal ────────────────────────────────────────────────────────
-const AddressModal = ({
-  open, address, onClose, onSave,
-}: {
+// ── Address Modal — no name/phone fields ──────────────────────────────────────
+const AddressModal = ({ open, address, onClose, onSave }: {
   open: boolean;
-  address: Partial<UserAddress> | null;
+  address: AddressFormData | null;
   onClose: () => void;
-  onSave: (data: Partial<UserAddress>) => Promise<void>;
+  onSave: (data: AddressFormData) => Promise<void>;
 }) => {
-  const [form, setForm] = useState<Partial<UserAddress>>({
-    label: "Home", full_name: "", phone: "", street: "", city: "",
-    state: "Lagos", country: "Nigeria", postal_code: "", isDefault: false,
+  const [form, setForm] = useState<AddressFormData>({
+    label: "Home", street: "", city: "", state: "Lagos",
+    country: "Nigeria", postal_code: "", isDefault: false,
   });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (address) setForm(address);
-    else setForm({ label: "Home", full_name: "", phone: "", street: "", city: "", state: "Lagos", country: "Nigeria", postal_code: "", isDefault: false });
+    if (address) {
+      setForm({
+        _id: address._id,
+        label: address.label ?? "Home",
+        street: address.street ?? "",
+        city: address.city ?? "",
+        state: address.state ?? "Lagos",
+        country: address.country ?? "Nigeria",
+        postal_code: address.postal_code ?? "",
+        isDefault: address.isDefault ?? false,
+      });
+    } else {
+      setForm({ label: "Home", street: "", city: "", state: "Lagos", country: "Nigeria", postal_code: "", isDefault: false });
+    }
   }, [address, open]);
 
   if (!open) return null;
 
-  const set = (key: keyof UserAddress) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key: keyof AddressFormData) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+      setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSave = async () => {
     setSaving(true);
@@ -84,78 +105,125 @@ const AddressModal = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+        {/* Handle bar (mobile) */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-gray-200" />
         </div>
+
         <div className="px-5 py-4 border-b border-gray-100">
-          <h3 className="font-bold text-gray-900">{address?._id ? "Edit Address" : "Add New Address"}</h3>
+          <h3 className="font-bold text-gray-900 text-base">
+            {address?._id ? "Edit Address" : "Add New Address"}
+          </h3>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Delivery name & phone are taken from your profile
+          </p>
         </div>
-        <div className="px-5 py-4 space-y-4">
-          {/* Label */}
+
+        <div className="px-5 py-5 space-y-4">
+          {/* Label chips */}
           <div>
-            <Label className="text-xs font-semibold text-gray-600 mb-2 block">Label</Label>
+            <Label className="text-xs font-semibold text-gray-600 mb-2 block">Address Label</Label>
             <div className="flex gap-2 flex-wrap">
               {ADDRESS_LABELS.map((l) => (
-                <button key={l} onClick={() => setForm((f) => ({ ...f, label: l }))}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                    form.label === l ? "bg-[#6426E1] text-white border-[#6426E1]" : "bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300"
-                  }`}>
+                <button
+                  key={l}
+                  onClick={() => setForm((f) => ({ ...f, label: l }))}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    form.label === l
+                      ? "bg-gray-900 text-white border-gray-900"
+                      : "bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300"
+                  }`}
+                >
+                  {l === "Work" ? <Briefcase className="w-3 h-3" /> : <Home className="w-3 h-3" />}
                   {l}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">Full Name</Label>
-              <Input value={form.full_name ?? ""} onChange={set("full_name")} placeholder="John Doe" className="h-10 text-sm rounded-xl border-gray-200" />
-            </div>
-            <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">Phone</Label>
-              <Input value={form.phone ?? ""} onChange={set("phone")} placeholder="+234..." className="h-10 text-sm rounded-xl border-gray-200" type="tel" />
-            </div>
-          </div>
-
+          {/* Street */}
           <div>
-            <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">Street Address</Label>
-            <Input value={form.street ?? ""} onChange={set("street")} placeholder="123 Main Street, Lekki" className="h-10 text-sm rounded-xl border-gray-200" />
+            <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">Street Address *</Label>
+            <Input
+              value={form.street}
+              onChange={set("street")}
+              placeholder="e.g. 9, Adepele Street, Lekki"
+              className="h-11 rounded-xl border-gray-200 text-sm focus:ring-2 focus:ring-gray-900/20"
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">City</Label>
-              <Input value={form.city ?? ""} onChange={set("city")} placeholder="Lagos" className="h-10 text-sm rounded-xl border-gray-200" />
+              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">City *</Label>
+              <Input
+                value={form.city}
+                onChange={set("city")}
+                placeholder="Lagos"
+                className="h-11 rounded-xl border-gray-200 text-sm"
+              />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">State</Label>
+              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">State *</Label>
               <select
-                value={form.state ?? "Lagos"}
+                value={form.state}
                 onChange={set("state")}
-                className="w-full h-10 text-sm border border-gray-200 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-purple-300 bg-white"
+                className="w-full h-11 text-sm border border-gray-200 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/20 bg-white"
               >
                 {NIGERIAN_STATES.map((s) => <option key={s}>{s}</option>)}
               </select>
             </div>
           </div>
 
+          <div>
+            <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              Postal Code <span className="text-gray-300 font-normal">(optional)</span>
+            </Label>
+            <Input
+              value={form.postal_code}
+              onChange={set("postal_code")}
+              placeholder="100001"
+              className="h-11 rounded-xl border-gray-200 text-sm"
+            />
+          </div>
+
           {/* Default toggle */}
-          <label className="flex items-center gap-3 cursor-pointer py-2">
-            <div onClick={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
-              className={`w-11 h-6 rounded-full transition-colors ${form.isDefault ? "bg-[#6426E1]" : "bg-gray-200"}`}>
-              <span className={`block mt-0.5 ml-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${form.isDefault ? "translate-x-5" : ""}`} />
+          <label className="flex items-center gap-3 cursor-pointer py-2 px-3 rounded-xl bg-gray-50 border border-gray-100">
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
+              className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
+                form.isDefault ? "bg-emerald-500" : "bg-gray-200"
+              }`}
+            >
+              <span className={`block mt-0.5 ml-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                form.isDefault ? "translate-x-5" : ""
+              }`} />
+            </button>
+            <div>
+              <p className="text-sm font-semibold text-gray-700">Set as default</p>
+              <p className="text-xs text-gray-400">Used automatically at checkout</p>
             </div>
-            <span className="text-sm font-medium text-gray-700">Set as default address</span>
           </label>
         </div>
-        <div className="px-5 pb-5 flex gap-3">
-          <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl">Cancel</Button>
-          <Button onClick={handleSave} disabled={saving}
-            className="flex-1 rounded-xl bg-[#6426E1] hover:bg-purple-700">
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4 mr-1.5" /> Save Address</>}
+
+        <div className="px-5 pb-6 flex gap-3 border-t border-gray-100 pt-4">
+          <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl h-11">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={saving || !form.street || !form.city}
+            className="flex-1 rounded-xl h-11 bg-gray-900 hover:bg-gray-800 text-white"
+          >
+            {saving
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <><Save className="w-4 h-4 mr-1.5" /> Save Address</>
+            }
           </Button>
         </div>
       </div>
@@ -167,33 +235,34 @@ const AddressModal = ({
 const UserSettingsPage = () => {
   const { toast } = useToast();
 
-  const [tab,     setTab]     = useState<SettingsTab>("profile");
+  const [tab, setTab] = useState<SettingsTab>("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Profile form
-  const [name,  setName]  = useState("");
+  const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Password form
-  const [currentPw,  setCurrentPw]  = useState("");
-  const [newPw,      setNewPw]      = useState("");
-  const [confirmPw,  setConfirmPw]  = useState("");
-  const [showCurr,   setShowCurr]   = useState(false);
-  const [showNew,    setShowNew]    = useState(false);
-  const [pwSaving,   setPwSaving]   = useState(false);
-  const [pwError,    setPwError]    = useState<string | null>(null);
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showCurr, setShowCurr] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [pwSaving, setPwSaving] = useState(false);
+  const [pwError, setPwError] = useState<string | null>(null);
 
   // Addresses
-  const [addresses,     setAddresses]     = useState<UserAddress[]>([]);
-  const [addrModal,     setAddrModal]     = useState<{ open: boolean; address: Partial<UserAddress> | null }>({ open: false, address: null });
+  const [addresses, setAddresses] = useState<UserAddress[]>([]);
+  const [addrModal, setAddrModal] = useState<{ open: boolean; address: AddressFormData | null }>({
+    open: false, address: null,
+  });
 
   // Notification prefs
   const [prefs, setPrefs] = useState({ orderUpdates: true, emailNotifications: true, paymentAlerts: true });
   const [prefSaving, setPrefSaving] = useState(false);
 
-  // Load on mount
   useEffect(() => {
     Promise.all([
       userService.getProfile(),
@@ -209,13 +278,12 @@ const UserSettingsPage = () => {
     }).finally(() => setLoading(false));
   }, []);
 
-  // ── Profile save ────────────────────────────────────────────────────────────
   const handleProfileSave = async () => {
     setSaving(true);
     try {
       const updated = await userService.updateProfile({ name: name.trim(), phone: phone.trim() });
       setProfile(updated);
-      toast({ title: "Profile updated ✓", description: "Your changes have been saved." });
+      toast({ title: "Profile updated", description: "Your changes have been saved." });
     } catch {
       toast({ variant: "destructive", title: "Failed to update profile" });
     } finally {
@@ -223,16 +291,15 @@ const UserSettingsPage = () => {
     }
   };
 
-  // ── Password change ─────────────────────────────────────────────────────────
   const handlePasswordSave = async () => {
     setPwError(null);
     if (newPw !== confirmPw) { setPwError("Passwords do not match"); return; }
-    if (newPw.length < 8)   { setPwError("Password must be at least 8 characters"); return; }
+    if (newPw.length < 8) { setPwError("Password must be at least 8 characters"); return; }
     setPwSaving(true);
     try {
       await userService.changePassword({ currentPassword: currentPw, newPassword: newPw });
       setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      toast({ title: "Password changed ✓", description: "Your password has been updated securely." });
+      toast({ title: "Password changed", description: "Your password has been updated securely." });
     } catch (err: any) {
       setPwError(err?.response?.data?.message ?? "Failed to change password");
     } finally {
@@ -240,17 +307,27 @@ const UserSettingsPage = () => {
     }
   };
 
-  // ── Address ops ─────────────────────────────────────────────────────────────
-  const handleAddrSave = async (data: Partial<UserAddress>) => {
+  // Address save — strips name/phone before sending
+  const handleAddrSave = async (data: AddressFormData) => {
     try {
       let updated: UserAddress[];
-      if (addrModal.address?._id) {
-        updated = await userService.updateAddress(addrModal.address._id, data);
+      // Build payload without name/phone — backend no longer needs them from here
+      const payload = {
+        label: data.label,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        country: data.country,
+        postal_code: data.postal_code,
+        isDefault: data.isDefault,
+      };
+      if (data._id) {
+        updated = await userService.updateAddress(data._id, payload);
       } else {
-        updated = await userService.addAddress(data as Omit<UserAddress, "_id">);
+        updated = await userService.addAddress(payload as any);
       }
       setAddresses(updated);
-      toast({ title: addrModal.address?._id ? "Address updated ✓" : "Address added ✓" });
+      toast({ title: data._id ? "Address updated" : "Address added" });
     } catch {
       toast({ variant: "destructive", title: "Failed to save address" });
     }
@@ -275,15 +352,13 @@ const UserSettingsPage = () => {
     }
   };
 
-  // ── Notification pref save ──────────────────────────────────────────────────
   const handlePrefChange = async (key: keyof typeof prefs, val: boolean) => {
     const next = { ...prefs, [key]: val };
     setPrefs(next);
     setPrefSaving(true);
-    try {
-      await userService.updateNotificationPreferences(next);
-    } catch {
-      setPrefs(prefs); // revert
+    try { await userService.updateNotificationPreferences(next); }
+    catch {
+      setPrefs(prefs);
       toast({ variant: "destructive", title: "Failed to update preferences" });
     } finally {
       setPrefSaving(false);
@@ -291,8 +366,8 @@ const UserSettingsPage = () => {
   };
 
   if (loading) return (
-    <div className="min-h-screen flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-[#6426E1]" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <Loader2 className="w-7 h-7 animate-spin text-gray-400" />
     </div>
   );
 
@@ -300,53 +375,46 @@ const UserSettingsPage = () => {
     ? profile.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
     : (profile?.username ?? "U").substring(0, 2).toUpperCase();
 
+  const pwStrength = newPw.length === 0 ? 0 : newPw.length < 6 ? 1 : newPw.length < 8 ? 2 : newPw.length < 12 ? 3 : 4;
+  const pwStrengthLabel = ["", "Too weak", "Weak", "Good", "Strong"][pwStrength];
+  const pwStrengthColor = ["", "bg-red-400", "bg-amber-400", "bg-blue-400", "bg-emerald-400"][pwStrength];
+
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div
-        className="relative overflow-hidden"
-        style={{ background: "linear-gradient(135deg, #6426E1 0%, #4f1dbf 100%)" }}
-      >
-        <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full opacity-10"
-          style={{ background: "radial-gradient(circle, #fff 0%, transparent 70%)" }} />
-        <div className="relative max-w-3xl mx-auto px-4 pt-8 pb-10">
-          <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
-
-          {/* Profile mini card */}
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <div className="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-bold text-white overflow-hidden">
-                {profile?.profilePhoto
-                  ? <img src={profile.profilePhoto} alt="" className="w-full h-full object-cover" />
-                  : initials}
-              </div>
+      {/* ── Page Header — clean white, distinct from purple nav ── */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-3xl mx-auto px-4 pt-6 pb-0">
+          {/* User identity row */}
+          <div className="flex items-center gap-4 pb-5">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0 shadow-md overflow-hidden">
+              {profile?.profilePhoto
+                ? <img src={profile.profilePhoto} alt="" className="w-full h-full object-cover" />
+                : initials}
             </div>
-            <div>
-              <p className="font-bold text-white text-lg">{profile?.name || profile?.username}</p>
-              <p className="text-purple-200 text-xs">{profile?.email}</p>
-              <span className="mt-1 inline-block text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/20 text-white capitalize">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
+                {profile?.name || profile?.username}
+              </h1>
+              <p className="text-xs text-gray-400 truncate">{profile?.email}</p>
+              <span className="mt-1.5 inline-block text-[10px] font-bold px-2.5 py-1 rounded-full bg-gray-100 text-gray-600 capitalize">
                 {profile?.role}
               </span>
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Tab bar */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10 shadow-sm -mt-4">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="flex overflow-x-auto no-scrollbar">
+          {/* Tab bar — flush with header bottom */}
+          <div className="flex overflow-x-auto no-scrollbar -mx-4 px-4 gap-0">
             {TABS.map(({ key, label, icon: Icon }) => (
               <button
                 key={key}
                 onClick={() => setTab(key)}
-                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3.5 text-sm font-semibold border-b-2 transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-2 px-4 py-3.5 text-xs sm:text-sm font-semibold border-b-2 transition-all ${
                   tab === key
-                    ? "border-[#6426E1] text-[#6426E1]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
+                    ? "border-gray-900 text-gray-900"
+                    : "border-transparent text-gray-400 hover:text-gray-600 hover:border-gray-200"
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                 {label}
               </button>
             ))}
@@ -354,100 +422,97 @@ const UserSettingsPage = () => {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* ── Content ── */}
+      <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
 
         {/* ── PROFILE TAB ── */}
         {tab === "profile" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-5">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Personal Information</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Update your display name and contact details</p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                  Full Name
-                </Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="John Doe"
-                  className="h-11 rounded-xl border-gray-200 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                  Username <span className="text-gray-300 font-normal">(read only)</span>
-                </Label>
-                <Input
-                  value={profile?.username ?? ""}
-                  readOnly
-                  className="h-11 rounded-xl border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                  Phone Number
-                </Label>
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+234 800 000 0000"
-                  type="tel"
-                  className="h-11 rounded-xl border-gray-200 text-sm"
-                />
-              </div>
-              <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                  Email Address <span className="text-gray-300 font-normal">(read only)</span>
-                </Label>
-                <Input
-                  value={profile?.email ?? ""}
-                  readOnly
-                  className="h-11 rounded-xl border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <Button
-                onClick={handleProfileSave}
-                disabled={saving}
-                className="rounded-xl bg-[#6426E1] hover:bg-purple-700 px-6"
-              >
-                {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                {saving ? "Saving…" : "Save Changes"}
-              </Button>
-            </div>
-
-            <div className="pt-4 border-t border-gray-100">
-              <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                Your updated name will be pre-filled at checkout automatically.
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 sm:px-6 py-5 border-b border-gray-50">
+              <h2 className="text-sm font-bold text-gray-900">Personal Information</h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Your name and phone are used on all delivery orders
               </p>
+            </div>
+
+            <div className="px-5 sm:px-6 py-5 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Full Name</Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="h-11 rounded-xl border-gray-200 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                    Username <span className="text-gray-300 font-normal">(read only)</span>
+                  </Label>
+                  <Input
+                    value={profile?.username ?? ""}
+                    readOnly
+                    className="h-11 rounded-xl border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Phone Number</Label>
+                  <Input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+234 800 000 0000"
+                    type="tel"
+                    className="h-11 rounded-xl border-gray-200 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                    Email Address <span className="text-gray-300 font-normal">(read only)</span>
+                  </Label>
+                  <Input
+                    value={profile?.email ?? ""}
+                    readOnly
+                    className="h-11 rounded-xl border-gray-200 text-sm bg-gray-50 text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <p className="text-xs text-gray-400 flex items-center gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                  Name & phone are auto-filled at checkout on all your addresses
+                </p>
+                <Button
+                  onClick={handleProfileSave}
+                  disabled={saving}
+                  className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6 h-10 text-sm font-semibold flex-shrink-0"
+                >
+                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {saving ? "Saving…" : "Save Changes"}
+                </Button>
+              </div>
             </div>
           </div>
         )}
 
         {/* ── SECURITY TAB ── */}
         {tab === "security" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6 space-y-5">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Change Password</h2>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 sm:px-6 py-5 border-b border-gray-50">
+              <h2 className="text-sm font-bold text-gray-900">Change Password</h2>
               <p className="text-xs text-gray-400 mt-0.5">Use a strong password with at least 8 characters</p>
             </div>
 
-            {pwError && (
-              <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {pwError}
-              </div>
-            )}
+            <div className="px-5 sm:px-6 py-5 space-y-4">
+              {pwError && (
+                <div className="flex items-center gap-2 px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-700">
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {pwError}
+                </div>
+              )}
 
-            <div className="space-y-4">
-              {/* Current password */}
+              {/* Current */}
               <div>
                 <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Current Password</Label>
                 <div className="relative">
@@ -458,17 +523,14 @@ const UserSettingsPage = () => {
                     placeholder="••••••••"
                     className="h-11 rounded-xl border-gray-200 text-sm pr-10"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurr(!showCurr)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
+                  <button type="button" onClick={() => setShowCurr(!showCurr)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     {showCurr ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* New password */}
+              {/* New */}
               <div>
                 <Label className="text-xs font-semibold text-gray-600 block mb-1.5">New Password</Label>
                 <div className="relative">
@@ -479,34 +541,26 @@ const UserSettingsPage = () => {
                     placeholder="At least 8 characters"
                     className="h-11 rounded-xl border-gray-200 text-sm pr-10"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
+                  <button type="button" onClick={() => setShowNew(!showNew)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
                     {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
-                {/* Strength bar */}
                 {newPw && (
-                  <div className="mt-2 space-y-1">
+                  <div className="mt-2.5 space-y-1.5">
                     <div className="flex gap-1">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className={`h-1 flex-1 rounded-full transition-colors ${
-                          i < (newPw.length < 6 ? 1 : newPw.length < 8 ? 2 : newPw.length < 12 ? 3 : 4)
-                            ? (newPw.length < 6 ? "bg-red-400" : newPw.length < 8 ? "bg-amber-400" : newPw.length < 12 ? "bg-blue-400" : "bg-emerald-400")
-                            : "bg-gray-100"
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                          i < pwStrength ? pwStrengthColor : "bg-gray-100"
                         }`} />
                       ))}
                     </div>
-                    <p className="text-[10px] text-gray-400">
-                      {newPw.length < 6 ? "Too weak" : newPw.length < 8 ? "Weak" : newPw.length < 12 ? "Good" : "Strong"} password
-                    </p>
+                    <p className="text-[11px] text-gray-400">{pwStrengthLabel} password</p>
                   </div>
                 )}
               </div>
 
-              {/* Confirm password */}
+              {/* Confirm */}
               <div>
                 <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Confirm New Password</Label>
                 <div className="relative">
@@ -524,16 +578,19 @@ const UserSettingsPage = () => {
                   )}
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-end pt-2">
-              <Button
-                onClick={handlePasswordSave}
-                disabled={pwSaving || !currentPw || !newPw || !confirmPw}
-                className="rounded-xl bg-[#6426E1] hover:bg-purple-700 px-6"
-              >
-                {pwSaving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Changing…</> : <><Lock className="w-4 h-4 mr-2" />Change Password</>}
-              </Button>
+              <div className="flex justify-end pt-1">
+                <Button
+                  onClick={handlePasswordSave}
+                  disabled={pwSaving || !currentPw || !newPw || !confirmPw}
+                  className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6 h-10 text-sm font-semibold"
+                >
+                  {pwSaving
+                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Changing…</>
+                    : <><Lock className="w-4 h-4 mr-2" />Change Password</>
+                  }
+                </Button>
+              </div>
             </div>
           </div>
         )}
@@ -541,79 +598,128 @@ const UserSettingsPage = () => {
         {/* ── ADDRESSES TAB ── */}
         {tab === "addresses" && (
           <div className="space-y-4">
+            {/* Info notice — explains name/phone come from profile */}
+            <div className="flex items-start gap-3 px-4 py-3.5 bg-blue-50 border border-blue-100 rounded-2xl">
+              <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-semibold text-blue-800">Delivery name & phone</p>
+                <p className="text-xs text-blue-600 mt-0.5 leading-relaxed">
+                  Orders are delivered to <strong>{profile?.name || profile?.username}</strong>
+                  {profile?.phone ? ` · ${profile.phone}` : ""}. To change these, update your{" "}
+                  <button onClick={() => setTab("profile")} className="underline font-semibold">
+                    Profile
+                  </button>.
+                </p>
+              </div>
+            </div>
+
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-base font-bold text-gray-900">Address Book</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Manage your saved delivery addresses</p>
+                <h2 className="text-sm font-bold text-gray-900">Address Book</h2>
+                <p className="text-xs text-gray-400 mt-0.5">{addresses.length} saved address{addresses.length !== 1 ? "es" : ""}</p>
               </div>
               <Button
                 onClick={() => setAddrModal({ open: true, address: null })}
-                className="rounded-xl bg-[#6426E1] hover:bg-purple-700 text-sm"
+                className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-xs h-9 px-3.5 font-semibold"
                 size="sm"
               >
-                <Plus className="w-4 h-4 mr-1.5" /> Add Address
+                <Plus className="w-3.5 h-3.5 mr-1.5" /> Add Address
               </Button>
             </div>
 
             {addresses.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-purple-50 flex items-center justify-center mx-auto mb-4">
-                  <MapPin className="w-8 h-8 text-purple-400" />
+              <div className="bg-white rounded-2xl border border-gray-100 p-10 text-center shadow-sm">
+                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                  <MapPin className="w-7 h-7 text-gray-400" />
                 </div>
-                <h3 className="font-bold text-gray-800 mb-1">No addresses saved</h3>
-                <p className="text-xs text-gray-400 mb-5">Add your delivery addresses for faster checkout.</p>
-                <Button onClick={() => setAddrModal({ open: true, address: null })}
-                  className="rounded-xl bg-[#6426E1] hover:bg-purple-700" size="sm">
+                <h3 className="font-bold text-gray-800 text-sm mb-1">No addresses saved</h3>
+                <p className="text-xs text-gray-400 mb-5 max-w-xs mx-auto leading-relaxed">
+                  Add delivery addresses for faster checkout. Your name & phone from your profile will be used automatically.
+                </p>
+                <Button
+                  onClick={() => setAddrModal({ open: true, address: null })}
+                  className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white text-sm h-10"
+                  size="sm"
+                >
                   <Plus className="w-4 h-4 mr-1.5" /> Add First Address
                 </Button>
               </div>
             ) : (
               <div className="grid gap-3">
                 {addresses.map((addr) => (
-                  <div key={addr._id}
-                    className={`bg-white rounded-2xl border p-4 shadow-sm transition-all ${
-                      addr.isDefault ? "border-purple-300 ring-1 ring-purple-200" : "border-gray-100"
-                    }`}>
+                  <div
+                    key={addr._id}
+                    className={`bg-white rounded-2xl border p-4 sm:p-5 shadow-sm transition-all ${
+                      addr.isDefault
+                        ? "border-gray-900 ring-1 ring-gray-900/10"
+                        : "border-gray-100 hover:border-gray-200"
+                    }`}
+                  >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          addr.isDefault ? "bg-purple-100" : "bg-gray-100"
+                          addr.isDefault ? "bg-gray-900" : "bg-gray-100"
                         }`}>
                           {addr.label === "Work"
-                            ? <Briefcase className={`w-4 h-4 ${addr.isDefault ? "text-purple-600" : "text-gray-500"}`} />
-                            : <Home className={`w-4 h-4 ${addr.isDefault ? "text-purple-600" : "text-gray-500"}`} />}
+                            ? <Briefcase className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`} />
+                            : <Home className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`} />}
                         </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-0.5">
                             <span className="text-sm font-bold text-gray-800">{addr.label}</span>
                             {addr.isDefault && (
-                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900 text-white">
                                 Default
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 mt-0.5 font-medium">{addr.full_name}</p>
-                          <p className="text-xs text-gray-400 mt-0.5">
+                          <p className="text-xs text-gray-700 font-medium">
                             {[addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
                           </p>
-                          {addr.phone && <p className="text-xs text-gray-400">{addr.phone}</p>}
+                          {addr.postal_code && (
+                            <p className="text-xs text-gray-400 mt-0.5">{addr.postal_code}</p>
+                          )}
+                          {/* Show whose name/phone will be used */}
+                          <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            Delivers to: {profile?.name || profile?.username}
+                            {profile?.phone ? ` · ${profile.phone}` : ""}
+                          </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-1 flex-shrink-0">
                         {!addr.isDefault && (
-                          <button onClick={() => handleSetDefault(addr._id)}
+                          <button
+                            onClick={() => handleSetDefault(addr._id)}
                             title="Set as default"
-                            className="w-8 h-8 rounded-lg hover:bg-purple-50 flex items-center justify-center text-gray-400 hover:text-purple-600 transition-colors">
+                            className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-700 transition-colors"
+                          >
                             <Star className="w-3.5 h-3.5" />
                           </button>
                         )}
-                        <button onClick={() => setAddrModal({ open: true, address: addr })}
-                          className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors">
+                        <button
+                          onClick={() => setAddrModal({
+                            open: true,
+                            address: {
+                              _id: addr._id,
+                              label: addr.label,
+                              street: addr.street,
+                              city: addr.city,
+                              state: addr.state,
+                              country: addr.country,
+                              postal_code: addr.postal_code,
+                              isDefault: addr.isDefault,
+                            },
+                          })}
+                          className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
+                        >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDeleteAddr(addr._id)}
-                          className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors">
+                        <button
+                          onClick={() => handleDeleteAddr(addr._id)}
+                          className="w-8 h-8 rounded-lg hover:bg-red-50 flex items-center justify-center text-gray-400 hover:text-red-500 transition-colors"
+                        >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
@@ -627,42 +733,47 @@ const UserSettingsPage = () => {
 
         {/* ── NOTIFICATIONS TAB ── */}
         {tab === "notifications" && (
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
-            <div className="mb-5">
-              <h2 className="text-base font-bold text-gray-900">Notification Preferences</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Control which notifications you receive</p>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-5 sm:px-6 py-5 border-b border-gray-50 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-gray-900">Notification Preferences</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Control which notifications you receive</p>
+              </div>
               {prefSaving && (
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-purple-600">
-                  <Loader2 className="w-3 h-3 animate-spin" /> Saving...
+                <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Saving…
                 </div>
               )}
             </div>
 
-            <div className="divide-y divide-gray-100">
+            <div className="px-5 sm:px-6 divide-y divide-gray-50">
               <Toggle
                 checked={prefs.orderUpdates}
                 onChange={(v) => handlePrefChange("orderUpdates", v)}
                 label="Order Updates"
-                description="Get notified when your order status changes (confirmed, shipped, delivered, etc.)"
+                description="Status changes: confirmed, shipped, out for delivery, delivered"
               />
               <Toggle
                 checked={prefs.paymentAlerts}
                 onChange={(v) => handlePrefChange("paymentAlerts", v)}
                 label="Payment Alerts"
-                description="Receive notifications for payment confirmations, failures, and refunds"
+                description="Confirmations, failures, and refund updates"
               />
               <Toggle
                 checked={prefs.emailNotifications}
                 onChange={(v) => handlePrefChange("emailNotifications", v)}
                 label="Email Notifications"
-                description="Receive order confirmation and update emails to your registered email address"
+                description="Order confirmations and updates sent to your email"
               />
             </div>
 
-            <div className="mt-5 pt-4 border-t border-gray-100 bg-blue-50 rounded-xl px-4 py-3">
-              <p className="text-xs text-blue-700 leading-relaxed">
-                <strong>Note:</strong> Account notifications (password changes, new logins) are always enabled for your security and cannot be turned off.
-              </p>
+            <div className="px-5 sm:px-6 py-4">
+              <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
+                <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 leading-relaxed">
+                  <strong>Security alerts</strong> (password changes, new logins) are always enabled and cannot be turned off.
+                </p>
+              </div>
             </div>
           </div>
         )}

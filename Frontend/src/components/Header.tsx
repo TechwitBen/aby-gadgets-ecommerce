@@ -9,7 +9,6 @@ import {
   Heart,
   Package,
   HelpCircle,
-  Truck,
   LogOut,
   ChevronRight,
   Settings,
@@ -74,9 +73,7 @@ const Header = ({
     }
   }, [isAuthenticated]);
 
-  useEffect(() => {
-    fetchOrderCount();
-  }, [fetchOrderCount]);
+  useEffect(() => { fetchOrderCount(); }, [fetchOrderCount]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -86,10 +83,7 @@ const Header = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (
-        userDropdownRef.current &&
-        !userDropdownRef.current.contains(e.target as Node)
-      ) {
+      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
         setUserDropdownOpen(false);
       }
     };
@@ -97,16 +91,9 @@ const Header = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Lock body scroll when mobile menu is open
   useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
+    document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
   }, [mobileMenuOpen]);
 
   const navLinks = [
@@ -117,39 +104,28 @@ const Header = ({
     { name: "Contact", path: "/contact", icon: Phone },
   ];
 
-  const getHeaderBackground = () => {
-    if (variant === "transparent" && !isScrolled)
-      return "bg-transparent backdrop-blur-none";
-    if (variant === "default" && !isScrolled) return "bg-[#6426E1]";
-    return "bg-white/95 backdrop-blur-md supports-[backdrop-filter]:bg-white/60";
-  };
+  // ── Scroll-aware style helpers ─────────────────────────────────────────────
+  // When at top: fully transparent regardless of variant
+  // When scrolled: crisp white with shadow
+  const isAtTop = !isScrolled;
 
-  const getTextColor = () => {
-    if (variant === "transparent" && !isScrolled) return "text-white";
-    if (variant === "default" && !isScrolled) return "text-white";
-    return "text-gray-900";
-  };
+  const headerBg = isAtTop
+    ? "bg-transparent"
+    : "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm";
 
-  const getBorderColor = () => {
-    if (variant === "transparent" && !isScrolled) return "border-transparent";
-    if (variant === "default" && !isScrolled) return "border-purple-700/30";
-    return "border-gray-200";
-  };
+  const headerBorder = isAtTop ? "border-transparent" : "border-gray-200";
 
-  const getSearchPlaceholderColor = () => {
-    if (variant === "transparent" && !isScrolled) return "placeholder-gray-300";
-    if (variant === "default" && !isScrolled) return "placeholder-purple-200";
-    return "placeholder-gray-500";
-  };
+  // Text is white on the transparent hero, dark after scroll
+  const textColor = isAtTop ? "text-white" : "text-gray-800";
+  const subtextColor = isAtTop ? "text-white/70" : "text-gray-500";
+  const iconColor = isAtTop ? "text-white" : "text-gray-600";
+  const iconHoverBg = isAtTop ? "hover:bg-white/15" : "hover:bg-gray-100";
 
-  const handleLogin = () => {
-    navigate("/login");
-    setMobileMenuOpen(false);
-  };
-  const handleSignup = () => {
-    navigate("/signup");
-    setMobileMenuOpen(false);
-  };
+  // Logo: white version on transparent, coloured on white
+  const logoSrc = isAtTop ? whiteLogoImg : blueLogoImg;
+
+  const handleLogin = () => { navigate("/login"); setMobileMenuOpen(false); };
+  const handleSignup = () => { navigate("/signup"); setMobileMenuOpen(false); };
   const handleLogout = async () => {
     await logout();
     setUserDropdownOpen(false);
@@ -157,59 +133,38 @@ const Header = ({
     navigate("/");
   };
 
-  const isTransparentUnscrolled = variant === "transparent" && !isScrolled;
-  const isDefaultUnscrolled = variant === "default" && !isScrolled;
-  const isLight = isTransparentUnscrolled || isDefaultUnscrolled;
-
   return (
     <>
       <header
-        className={`sticky top-0 z-50 w-full border-b ${getBorderColor()} ${getHeaderBackground()} transition-all duration-300 shadow-sm`}
+        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${headerBg} ${headerBorder}`}
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* ── Left — Logo / Back button ── */}
+
+            {/* ── Left — Logo / Back ─────────────────────────────────────── */}
             <div className="flex items-center gap-3">
               {showBackButton ? (
                 <button
                   onClick={() => navigate(-1)}
-                  className={`flex items-center gap-2 transition-colors ${
-                    isTransparentUnscrolled
-                      ? "text-white hover:text-gray-200"
-                      : isDefaultUnscrolled
-                        ? "text-white hover:text-purple-100"
-                        : "text-gray-600 hover:text-gray-900"
-                  }`}
+                  className={`flex items-center gap-2 transition-colors ${iconColor} ${iconHoverBg} rounded-lg px-2 py-1`}
                 >
                   <ArrowLeft className="h-5 w-5" />
-                  <span className="hidden sm:inline text-sm font-medium">
-                    Back
-                  </span>
+                  <span className="hidden sm:inline text-sm font-medium">Back</span>
                 </button>
               ) : (
                 <Link to="/" className="flex items-center gap-2.5 group">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-200">
                     <img
-                      src={isScrolled ? whiteLogoImg : blueLogoImg}
+                      src={logoSrc}
                       alt="Aby Gadgets logo"
-                      className="w-full h-full object-cover transition-opacity duration-300"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span
-                      className={`font-bold text-base sm:text-lg leading-tight transition-colors ${getTextColor()} ${
-                        isDefaultUnscrolled
-                          ? "group-hover:text-purple-100"
-                          : "group-hover:text-blue-600"
-                      }`}
-                    >
+                    <span className={`font-bold text-base sm:text-lg leading-tight transition-colors ${textColor}`}>
                       Aby Gadgets
                     </span>
-                    <span
-                      className={`text-[10px] sm:text-xs hidden sm:block ${
-                        isDefaultUnscrolled ? "text-purple-200" : "text-gray-500"
-                      }`}
-                    >
+                    <span className={`text-[10px] sm:text-xs hidden sm:block ${subtextColor}`}>
                       Premium Tech Store
                     </span>
                   </div>
@@ -218,20 +173,14 @@ const Header = ({
 
               {title && (
                 <div className="hidden md:flex items-center ml-2">
-                  <span
-                    className={`text-lg font-bold ${getTextColor()} border-l ${
-                      isDefaultUnscrolled
-                        ? "border-purple-300/50"
-                        : "border-gray-300"
-                    } pl-4`}
-                  >
+                  <span className={`text-lg font-bold ${textColor} border-l border-current/30 pl-4`}>
                     {title}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* ── Center — Desktop Nav ── */}
+            {/* ── Center — Desktop Nav ───────────────────────────────────── */}
             <nav className="hidden lg:flex items-center justify-center flex-1">
               <div className="flex items-center gap-0.5">
                 {navLinks.map((link) => {
@@ -242,27 +191,19 @@ const Header = ({
                       to={link.path}
                       className={`text-sm font-medium px-3.5 py-2 rounded-lg transition-all duration-200 relative group ${
                         isActive
-                          ? isTransparentUnscrolled
+                          ? isAtTop
                             ? "bg-white/20 text-white"
-                            : isDefaultUnscrolled
-                              ? "bg-white/20 text-white shadow-sm"
-                              : "bg-gradient-to-r from-blue-50 to-blue-100 text-blue-600 shadow-sm"
-                          : isTransparentUnscrolled
-                            ? "text-white/80 hover:text-white hover:bg-white/10"
-                            : isDefaultUnscrolled
-                              ? "text-white/90 hover:text-white hover:bg-white/10"
-                              : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                            : "bg-[#6426E1]/10 text-[#6426E1]"
+                          : isAtTop
+                            ? "text-white/85 hover:text-white hover:bg-white/15"
+                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                       }`}
                     >
                       {link.name}
                       {!isActive && (
                         <span
-                          className={`absolute bottom-0 left-1/2 -translate-x-1/2 w-0 h-0.5 transition-all duration-300 group-hover:w-3/4 ${
-                            isDefaultUnscrolled
-                              ? "bg-white"
-                              : isTransparentUnscrolled
-                                ? "group-hover:bg-white bg-white"
-                                : "bg-gradient-to-r from-blue-500 to-purple-500"
+                          className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-0.5 rounded-full transition-all duration-300 group-hover:w-3/4 ${
+                            isAtTop ? "bg-white" : "bg-[#6426E1]"
                           }`}
                         />
                       )}
@@ -272,65 +213,48 @@ const Header = ({
               </div>
             </nav>
 
-            {/* ── Right — Icons ── */}
-            <div className="flex items-center gap-1 sm:gap-2">
-              {/* Desktop search */}
+            {/* ── Right — Icons ─────────────────────────────────────────── */}
+            <div className="flex items-center gap-1 sm:gap-1.5">
+
+              {/* Desktop search bar */}
               <div
                 className="hidden md:flex items-center relative group cursor-pointer"
                 onClick={() => navigate("/search")}
               >
                 <Search
                   className={`absolute left-3.5 h-4 w-4 pointer-events-none transition-colors ${
-                    isTransparentUnscrolled
-                      ? "text-gray-300 group-hover:text-white"
-                      : isDefaultUnscrolled
-                        ? "text-purple-200 group-hover:text-white"
-                        : "text-gray-400 group-hover:text-blue-500"
+                    isAtTop ? "text-white/60 group-hover:text-white" : "text-gray-400 group-hover:text-[#6426E1]"
                   }`}
                 />
                 <div
-                  className={`pl-10 pr-4 py-2.5 text-sm rounded-xl w-44 cursor-pointer select-none border transition-all duration-300 ${
-                    isTransparentUnscrolled
-                      ? "bg-white/15 text-white border-white/30 hover:bg-white/20"
-                      : isDefaultUnscrolled
-                        ? "bg-white/20 text-white border-white/30 hover:bg-white/30"
-                        : "bg-gray-50 text-gray-900 border-gray-200 hover:bg-gray-100"
+                  className={`pl-10 pr-4 py-2 text-sm rounded-xl w-40 cursor-pointer select-none border transition-all duration-300 ${
+                    isAtTop
+                      ? "bg-white/15 text-white border-white/25 hover:bg-white/20"
+                      : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
                   }`}
                 >
-                  <span className={`${getSearchPlaceholderColor()} text-sm`}>
-                    Search...
-                  </span>
+                  <span className="text-sm">Search...</span>
                 </div>
               </div>
 
               {/* Mobile search icon */}
               <button
-                className={`md:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${
-                  isLight
-                    ? "text-white hover:bg-white/10"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`md:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
                 onClick={() => navigate("/search")}
               >
                 <Search className="h-5 w-5" />
               </button>
 
-              {/* Cart — visible on all screens */}
+              {/* Cart */}
               <button
-                className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${
-                  isLight
-                    ? "text-white hover:bg-white/10"
-                    : "text-gray-600 hover:bg-blue-50 hover:text-blue-600"
-                }`}
+                className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
                 onClick={() => navigate("/cart")}
               >
                 <ShoppingCart className="h-5 w-5" />
                 {totalItems > 0 && (
                   <span
                     className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${
-                      isDefaultUnscrolled
-                        ? "bg-yellow-400 text-[#6426E1]"
-                        : "bg-blue-600 text-white"
+                      isAtTop ? "bg-yellow-400 text-gray-900" : "bg-[#6426E1] text-white"
                     }`}
                   >
                     {totalItems}
@@ -338,145 +262,99 @@ const Header = ({
                 )}
               </button>
 
-              {/* Notification Bell (authenticated only, desktop) */}
+              {/* Notification Bell — desktop only */}
               <div className="hidden md:flex">
-                <NotificationBell isLight={isLight} />
+                <NotificationBell isLight={isAtTop} />
               </div>
 
-              {/* User dropdown — Desktop only */}
+              {/* User dropdown — desktop only */}
               <div className="hidden md:block relative" ref={userDropdownRef}>
                 {isAuthenticated ? (
                   <>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className={`relative rounded-xl group ${
-                        isLight
-                          ? "text-white hover:text-white hover:bg-white/10"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                      }`}
+                    <button
+                      className={`relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors ${iconHoverBg}`}
                       onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                     >
+                      {/* Avatar circle */}
                       <div
-                        className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center font-semibold text-sm group-hover:scale-105 transition-transform duration-200 ${
-                          isDefaultUnscrolled
-                            ? "bg-white text-[#6426E1]"
-                            : "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
+                          isAtTop
+                            ? "bg-white/25 text-white border border-white/40"
+                            : "bg-[#6426E1] text-white"
                         }`}
                       >
                         {getUserInitials()}
                       </div>
+                      {/* Chevron badge */}
                       <ChevronDown
-                        className={`absolute -bottom-1 -right-1 h-3 w-3 bg-white rounded-full border transition-transform duration-200 ${
+                        className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-white rounded-full border border-gray-200 text-gray-600 transition-transform duration-200 ${
                           userDropdownOpen ? "rotate-180" : ""
-                        } ${
-                          isTransparentUnscrolled
-                            ? "border-white/30"
-                            : isDefaultUnscrolled
-                              ? "border-white"
-                              : "border-gray-300"
-                        } ${isDefaultUnscrolled ? "text-[#6426E1]" : "text-gray-600"}`}
-                      />
-                    </Button>
-
-                    {userDropdownOpen && (
-                      <div
-                        className={`absolute right-0 mt-2 w-64 rounded-2xl shadow-xl border ${
-                          isTransparentUnscrolled
-                            ? "bg-gray-900/95 backdrop-blur-md border-white/20"
-                            : "bg-white border-gray-200"
                         }`}
-                      >
+                      />
+                    </button>
+
+                    {/* Dropdown */}
+                    {userDropdownOpen && (
+                      <div className="absolute right-0 mt-2 w-72 rounded-2xl shadow-xl border border-gray-100 bg-white overflow-hidden">
+
                         {/* User info */}
-                        <div className="p-4 border-b border-gray-100">
+                        <div className="px-4 pt-4 pb-3 border-b border-gray-100">
                           <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#6426E1] to-purple-400 flex items-center justify-center text-white font-semibold text-sm shadow-md flex-shrink-0">
+                            <div className="w-11 h-11 rounded-full bg-[#6426E1] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                               {getUserInitials()}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3
-                                className={`font-bold truncate text-sm ${
-                                  isTransparentUnscrolled
-                                    ? "text-white"
-                                    : "text-gray-900"
-                                }`}
-                              >
-                                {user?.username}
-                              </h3>
-                              <p
-                                className={`text-xs truncate ${
-                                  isTransparentUnscrolled
-                                    ? "text-gray-400"
-                                    : "text-gray-500"
-                                }`}
-                              >
-                                {user?.email}
-                              </p>
+                              <h3 className="font-bold text-gray-900 text-sm truncate">{user?.username}</h3>
+                              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                             </div>
                           </div>
 
+                          {/* Orders pill */}
                           <button
-                            onClick={() => {
-                              navigate("/orders");
-                              setUserDropdownOpen(false);
-                            }}
-                            className="mt-3 w-full flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-[#6426E1]/15 transition-colors group"
-                            style={{ backgroundColor: "rgba(100, 38, 225, 0.06)" }}
+                            onClick={() => { navigate("/orders"); setUserDropdownOpen(false); }}
+                            className="mt-3 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group"
                           >
-                            <div className="flex items-center gap-2.5">
-                              <div
-                                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                                style={{ backgroundColor: "rgba(100, 38, 225, 0.12)" }}
-                              >
-                                <Package className="h-4 w-4" style={{ color: "#6426E1" }} />
-                              </div>
-                              <div className="text-left">
-                                <p className={`text-xs ${isTransparentUnscrolled ? "text-gray-400" : "text-gray-500"}`}>
-                                  Total Orders
-                                </p>
-                                <p className={`font-bold text-sm ${isTransparentUnscrolled ? "text-white" : "text-gray-900"}`}>
-                                  {orderCount}
-                                </p>
-                              </div>
+                            <div className="flex items-center gap-2">
+                              <Package className="h-4 w-4 text-[#6426E1]" />
+                              <span className="text-xs text-gray-500">Total Orders</span>
                             </div>
-                            <ChevronRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-bold text-gray-900 text-sm">{orderCount}</span>
+                              <ChevronRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
+                            </div>
                           </button>
                         </div>
 
+                        {/* Menu rows */}
                         <div className="p-2">
                           {[
-                            { icon: Package, label: "My Orders", path: "/orders" },
-                            { icon: Truck, label: "Notifications", path: "/notifications" },
-                            { icon: Settings, label: "Settings", path: "/settings" },
-                            { icon: HelpCircle, label: "Help Centre", path: "/help" },
+                            { icon: Package,    label: "My Orders",    path: "/orders" },
+                            { icon: Heart,      label: "Wishlist",     path: "/wishlist", count: wishlistCount },
+                            { icon: Bell,       label: "Notifications",path: "/notifications" },
+                            { icon: Settings,   label: "Settings",     path: "/settings" },
+                            { icon: HelpCircle, label: "Help Centre",  path: "/help" },
                           ].map((item) => (
                             <button
                               key={item.label}
-                              onClick={() => {
-                                navigate(item.path);
-                                setUserDropdownOpen(false);
-                              }}
-                              className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                                isTransparentUnscrolled
-                                  ? "text-gray-300 hover:bg-white/10 hover:text-white"
-                                  : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
-                              }`}
+                              onClick={() => { navigate(item.path); setUserDropdownOpen(false); }}
+                              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl text-gray-700 hover:bg-[#6426E1]/8 hover:text-[#6426E1] transition-all duration-150 group"
                             >
-                              <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                              <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
                               <span className="flex-1 text-left">{item.label}</span>
-                              <ChevronRight className="h-3.5 w-3.5 text-gray-300 flex-shrink-0" />
+                              {"count" in item && item.count > 0 && (
+                                <span className="bg-[#6426E1] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                                  {item.count}
+                                </span>
+                              )}
+                              <ChevronRight className="h-3.5 w-3.5 text-gray-300 group-hover:text-[#6426E1] transition-colors" />
                             </button>
                           ))}
 
-                          <div className={`h-px my-1.5 mx-2 ${isTransparentUnscrolled ? "bg-white/20" : "bg-gray-100"}`} />
+                          <div className="h-px bg-gray-100 my-1.5 mx-1" />
 
                           <button
                             onClick={handleLogout}
-                            className={`flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl transition-all duration-200 ${
-                              isTransparentUnscrolled
-                                ? "text-rose-400 hover:bg-white/10"
-                                : "text-rose-500 hover:bg-rose-50"
-                            }`}
+                            className="flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl text-rose-500 hover:bg-rose-50 transition-all duration-150"
                           >
                             <LogOut className="h-4 w-4" />
                             <span className="flex-1 text-left">Logout</span>
@@ -489,41 +367,34 @@ const Header = ({
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
-                      className={`rounded-xl px-3.5 ${
-                        isLight
-                          ? "text-white hover:text-white hover:bg-white/10"
-                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      className={`rounded-xl px-3.5 text-sm font-medium transition-all ${
+                        isAtTop
+                          ? "text-white hover:text-white hover:bg-white/15"
+                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                       }`}
                       onClick={handleLogin}
                     >
                       <LogIn className="h-4 w-4 mr-1.5" />
-                      <span className="hidden sm:inline">Login</span>
+                      Login
                     </Button>
                     <Button
-                      className={`rounded-xl px-3.5 ${
-                        isTransparentUnscrolled
-                          ? "bg-white text-gray-900 hover:bg-gray-100"
-                          : isDefaultUnscrolled
-                            ? "bg-white text-[#6426E1] hover:bg-gray-100"
-                            : "bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800"
+                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
+                        isAtTop
+                          ? "bg-white text-[#6426E1] hover:bg-white/90"
+                          : "bg-[#6426E1] text-white hover:bg-[#5220c4]"
                       }`}
                       onClick={handleSignup}
                     >
                       <UserPlus className="h-4 w-4 mr-1.5" />
-                      <span className="hidden sm:inline">Sign Up</span>
-                      <span className="sm:hidden">Signup</span>
+                      Sign Up
                     </Button>
                   </div>
                 )}
               </div>
 
-              {/* Mobile Hamburger */}
+              {/* Mobile hamburger */}
               <button
-                className={`lg:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${
-                  isLight
-                    ? "text-white hover:bg-white/10"
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
+                className={`lg:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
                 onClick={() => setMobileMenuOpen(true)}
               >
                 <Menu className="h-5 w-5" />
@@ -533,20 +404,19 @@ const Header = ({
         </div>
       </header>
 
-      {/* ── Mobile Menu — Full-screen slide-in drawer ── */}
-      {/* Backdrop */}
+      {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
       <div
         className={`fixed inset-0 z-[60] lg:hidden transition-all duration-300 ${
           mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        {/* Dimmed overlay */}
+        {/* Backdrop */}
         <div
           className="absolute inset-0 bg-black/50 backdrop-blur-sm"
           onClick={() => setMobileMenuOpen(false)}
         />
 
-        {/* Drawer panel — slides in from the right */}
+        {/* Panel */}
         <div
           className={`absolute top-0 right-0 h-full w-[82vw] max-w-[340px] bg-white flex flex-col shadow-2xl transition-transform duration-300 ease-out ${
             mobileMenuOpen ? "translate-x-0" : "translate-x-full"
@@ -568,11 +438,11 @@ const Header = ({
             </button>
           </div>
 
-          {/* User info strip (if authenticated) */}
+          {/* Authenticated user strip */}
           {isAuthenticated && (
-            <div className="mx-4 mt-4 p-3.5 bg-gradient-to-r from-[#6426E1]/8 to-purple-50 rounded-2xl border border-purple-100">
+            <div className="mx-4 mt-4 p-3.5 bg-[#6426E1]/5 rounded-2xl border border-[#6426E1]/10">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#6426E1] to-purple-400 flex items-center justify-center text-white font-bold text-sm flex-shrink-0 shadow">
+                <div className="w-10 h-10 rounded-full bg-[#6426E1] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {getUserInitials()}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -587,9 +457,9 @@ const Header = ({
             </div>
           )}
 
-          {/* Scrollable content */}
+          {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto py-4 px-4 space-y-1">
-            {/* Search bar */}
+            {/* Search */}
             <div className="relative mb-4">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
@@ -597,20 +467,15 @@ const Header = ({
                 placeholder="Search products..."
                 className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6426E1]/30 focus:border-[#6426E1]/40 transition-all"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    navigate("/search");
-                    setMobileMenuOpen(false);
-                  }
+                  if (e.key === "Enter") { navigate("/search"); setMobileMenuOpen(false); }
                 }}
               />
             </div>
 
-            {/* Nav section label */}
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">
               Navigation
             </p>
 
-            {/* Nav links */}
             {navLinks.map((link) => {
               const isActive = location.pathname === link.path;
               return (
@@ -620,7 +485,7 @@ const Header = ({
                   onClick={() => setMobileMenuOpen(false)}
                   className={`flex items-center gap-3 px-3.5 py-3 rounded-xl text-sm font-medium transition-all ${
                     isActive
-                      ? "bg-[#6426E1] text-white shadow-sm shadow-purple-200"
+                      ? "bg-[#6426E1] text-white shadow-sm"
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
@@ -630,15 +495,12 @@ const Header = ({
               );
             })}
 
-            {/* Divider */}
             <div className="h-px bg-gray-100 my-3" />
 
-            {/* Quick actions label */}
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1 mb-2">
               Quick Actions
             </p>
 
-            {/* Wishlist */}
             <button
               onClick={() => { navigate("/wishlist"); setMobileMenuOpen(false); }}
               className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
@@ -652,7 +514,6 @@ const Header = ({
               )}
             </button>
 
-            {/* Cart */}
             <button
               onClick={() => { navigate("/cart"); setMobileMenuOpen(false); }}
               className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
@@ -666,14 +527,13 @@ const Header = ({
               )}
             </button>
 
-            {/* Authenticated-only items */}
-            {isAuthenticated ? (
+            {isAuthenticated && (
               <>
                 <button
                   onClick={() => { navigate("/orders"); setMobileMenuOpen(false); }}
                   className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
                 >
-                  <Package className="h-4 w-4 text-purple-500 flex-shrink-0" />
+                  <Package className="h-4 w-4 text-[#6426E1] flex-shrink-0" />
                   My Orders
                   {orderCount > 0 && (
                     <span className="ml-auto bg-[#6426E1] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
@@ -698,7 +558,7 @@ const Header = ({
                   Settings
                 </button>
               </>
-            ) : null}
+            )}
 
             <button
               onClick={() => { navigate("/help"); setMobileMenuOpen(false); }}
@@ -709,7 +569,7 @@ const Header = ({
             </button>
           </div>
 
-          {/* Drawer footer — auth buttons or logout */}
+          {/* Drawer footer */}
           <div className="px-4 pb-6 pt-3 border-t border-gray-100">
             {isAuthenticated ? (
               <button

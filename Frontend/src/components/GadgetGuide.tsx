@@ -1,50 +1,63 @@
-import guidePhones     from "@/assets/guide-phones.jpg";
+import guidePhones from "@/assets/guide-phones.jpg";
 import guideInspection from "@/assets/guide-inspection.jpg";
- 
+
+const guides = [
+  {
+    image: guidePhones,
+    tag: "Battery tips",
+    title: "Tiny habits that matter",
+    body: "Avoid letting your phone hit 0% daily — modern batteries prefer partial cycles. Sustained max volume also stresses speakers and earphones over time.",
+  },
+  {
+    image: guideInspection,
+    tag: "Before you buy",
+    title: "Physical inspection checklist",
+    body: "Check for body gaps near cameras and ports. Test touch responsiveness across the full display and look for dead pixels or light bleed at the edges.",
+  },
+];
+
 const GadgetGuide = () => {
   return (
     <section className="py-10 sm:py-16 md:py-20 bg-[#F5F5F5]">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="text-center mb-8 sm:mb-10">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">The Aby Gadgets Guide</h2>
-          <p className="text-muted-foreground text-sm mt-1.5 max-w-md mx-auto">
-            Tips to help you get the most from your device.
-          </p>
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6 sm:mb-8">
+          <div className="w-10 h-10 rounded-2xl bg-[#f0ebff] flex items-center justify-center flex-shrink-0">
+            <span className="text-[#6426E1] text-base">📖</span>
+          </div>
+          <div>
+            <h2 className="text-lg sm:text-2xl md:text-3xl font-bold text-foreground">
+              The Aby Gadgets Guide
+            </h2>
+            <p className="text-muted-foreground text-xs sm:text-sm mt-0.5">
+              Tips to get the most from your device
+            </p>
+          </div>
         </div>
- 
-        <div className="space-y-4 sm:space-y-6 max-w-5xl mx-auto">
-          {[
-            {
-              image: guidePhones,
-              alt: "Phone charging",
-              title: "Tiny habits that matter",
-              body: "Letting your phone battery go entirely flat: occasional full discharge is okay, but habitually letting batteries hit 0% regularly shortens their lifespan. Modern batteries are optimized for partial charge cycles.\n\nUsing the highest volume damages speakers: playing at extreme volumes consistently can damage small phone speakers or earphones (and definitely damages hearing). Sudden loud bursts or sustained clipping can mechanically or thermally stress speaker drivers.",
-            },
-            {
-              image: guideInspection,
-              alt: "Phone inspection",
-              title: "Physical inspection checklist",
-              body: "Body gaps / misaligned seams: uneven gaps near cameras, screen edges, or charging ports can indicate a refurbished or tampered device.\n\nScreen quality: Look for dead pixels, discoloration, or screen burn-in. Test touch responsiveness across the entire display. Check for light bleed around edges when viewing dark content.",
-            },
-          ].map((item) => (
-            <div key={item.title} className="bg-background rounded-2xl overflow-hidden shadow-sm border border-border">
-              <div className="flex flex-col sm:flex-row gap-0 sm:gap-5 items-stretch">
-                {/* Image */}
-                <div className="w-full sm:w-44 md:w-56 h-48 sm:h-auto flex-shrink-0 overflow-hidden">
+
+        <div className="space-y-4 sm:space-y-5 max-w-3xl mx-auto">
+          {guides.map((item) => (
+            <div
+              key={item.title}
+              className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden"
+            >
+              {/* Mobile: stacked. sm+: side by side */}
+              <div className="flex flex-col sm:flex-row">
+                <div className="w-full sm:w-40 md:w-52 h-44 sm:h-auto flex-shrink-0">
                   <img
                     src={item.image}
-                    alt={item.alt}
+                    alt={item.title}
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {/* Content */}
                 <div className="flex-1 p-4 sm:p-5 md:p-6">
-                  <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground mb-2.5">{item.title}</h3>
-                  {item.body.split("\n\n").map((para, i) => (
-                    <p key={i} className={`text-muted-foreground text-sm leading-relaxed ${i > 0 ? "mt-3" : ""}`}>
-                      {para}
-                    </p>
-                  ))}
+                  <span className="inline-block bg-[#f0ebff] text-[#6426E1] text-[11px] font-semibold px-2.5 py-1 rounded-lg mb-2">
+                    {item.tag}
+                  </span>
+                  <h3 className="text-base sm:text-lg font-bold text-foreground mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed">{item.body}</p>
                 </div>
               </div>
             </div>
@@ -54,5 +67,5 @@ const GadgetGuide = () => {
     </section>
   );
 };
- 
-export default GadgetGuide ;
+
+export default GadgetGuide;

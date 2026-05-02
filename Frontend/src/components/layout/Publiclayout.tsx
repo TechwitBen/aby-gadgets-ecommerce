@@ -20,17 +20,13 @@ import TrustBadges from "@/components/TrustBadges";
 const PublicLayout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Sticky top header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <Header />
-      </div>
+      {/* Header manages its own sticky positioning and bg */}
+      <Header />
 
-      {/* Page content */}
       <main className="flex-1">
         <Outlet />
       </main>
 
-      {/* Shared bottom sections */}
       <TrustBadges />
       <Footer />
     </div>
@@ -38,3 +34,4 @@ const PublicLayout = () => {
 };
 
 export default PublicLayout;
+

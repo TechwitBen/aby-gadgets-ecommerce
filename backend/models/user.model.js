@@ -30,14 +30,22 @@ const StaffPermissionsSchema = new Schema(
   { _id: false },
 );
 
-// ── Address sub-schema (NEW) ───────────────────────────────────────────────────
-// Defined as a named sub-schema so Mongoose exposes the .id() helper
-// on the parent array — required by updateAddress & setDefaultAddress.
+/**
+ * Address sub-schema.
+ *
+ * full_name and phone have been REMOVED.
+ * The delivery name & phone are now always sourced from the parent user's
+ * `name` and `phone` profile fields, eliminating the redundancy of asking
+ * users to re-enter their own details for every address.
+ *
+ * When generating a shipping label or displaying delivery info, read:
+ *   user.name   — recipient name
+ *   user.phone  — recipient phone
+ *   address.*   — delivery location
+ */
 const AddressSchema = new Schema(
   {
-    label:       { type: String, default: "Home" },   // Home | Work | School | Other
-    full_name:   { type: String, default: "" },
-    phone:       { type: String, default: "" },
+    label:       { type: String, default: "Home" },  // Home | Work | School | Other
     street:      { type: String, default: "" },
     city:        { type: String, default: "" },
     state:       { type: String, default: "" },
@@ -46,10 +54,9 @@ const AddressSchema = new Schema(
     isDefault:   { type: Boolean, default: false },
   },
   { timestamps: true },
-  // _id is included by default — needed for .id() lookup
 );
 
-// ── Notification preferences sub-schema (NEW) ─────────────────────────────────
+// ── Notification preferences sub-schema ──────────────────────────────────────
 const NotificationPreferencesSchema = new Schema(
   {
     orderUpdates:       { type: Boolean, default: true },
@@ -79,10 +86,9 @@ const UserSchema = new Schema(
     facebook_id: { type: String, unique: true, sparse: true },
 
     // ── Profile fields ────────────────────────────────────────────────────────
+    // These are the canonical name & phone used on ALL delivery addresses.
     name:         { type: String, default: "" },
     phone:        { type: String, default: "" },
-
-    // NEW — profile photo URL (can be a Cloudinary / S3 URL, or data URL for now)
     profilePhoto: { type: String, default: "" },
 
     // ── Role / staff ──────────────────────────────────────────────────────────
@@ -102,11 +108,10 @@ const UserSchema = new Schema(
       default: undefined,
     },
 
-    // ── NEW — Address book ────────────────────────────────────────────────────
-    // Stored as a proper sub-document array so we can use .id() in controllers.
+    // ── Address book ──────────────────────────────────────────────────────────
     addresses: { type: [AddressSchema], default: [] },
 
-    // ── NEW — Notification preferences ───────────────────────────────────────
+    // ── Notification preferences ──────────────────────────────────────────────
     notificationPreferences: {
       type:    NotificationPreferencesSchema,
       default: () => ({
@@ -133,7 +138,6 @@ UserSchema.pre("save", function () {
   if (this.provider === "google" && !this.google_id) {
     throw new Error("Google users must have google_id");
   }
-  // Auto-seed default permissions when role is set to staff
   if (this.role === "staff" && !this.staffPermissions) {
     this.staffPermissions = {
       order:    {},

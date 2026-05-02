@@ -7,7 +7,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { wishlistService } from "@/services/Wishlist.service";
+import { wishlistService } from "@/services/wishlist.service";
 import type { Product } from "@/services/products.service";
 import { useAuth } from "@/contexts/AuthContext";
 

@@ -7,11 +7,14 @@ const api = axios.create({
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/**
+ * Address no longer carries full_name / phone.
+ * Those fields are pulled from the user's profile at checkout/delivery time,
+ * so there's no need to repeat them on every address entry.
+ */
 export interface UserAddress {
   _id:         string;
-  label:       string;
-  full_name:   string;
-  phone:       string;
+  label:       string;   // Home | Work | School | Other
   street:      string;
   city:        string;
   state:       string;
@@ -64,7 +67,11 @@ export const userService = {
   getAddresses: () =>
     api.get<UserAddress[]>("/addresses").then((r) => r.data),
 
-  /** POST /user/addresses */
+  /**
+   * POST /user/addresses
+   * Payload no longer includes full_name / phone — backend reads those
+   * from the authenticated user's profile when needed (e.g. shipping label).
+   */
   addAddress: (payload: Omit<UserAddress, "_id">) =>
     api.post<UserAddress[]>("/addresses", payload).then((r) => r.data),
 

@@ -11,9 +11,6 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
-  ShoppingBag,
-  Truck,
-  MapPin,
   AlertCircle,
 } from "lucide-react";
 import {
@@ -21,7 +18,7 @@ import {
   type NotificationDoc,
   type NotificationType,
 } from "@/services/notification.service";
-import { useNotifications } from "@/contexts/NotificationContext";
+import { useNotifications } from "@/contexts/Notificationcontext";
 import { useToast } from "@/hooks/use-toast";
 
 // ── Time helpers ──────────────────────────────────────────────────────────────
@@ -34,56 +31,41 @@ const timeAgo = (dateStr: string): string => {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-  });
+  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 };
 
-// ── Type config ───────────────────────────────────────────────────────────────
 type FilterType = "all" | NotificationType;
 
 const TYPE_CONFIG: Record<
   NotificationType,
-  {
-    label: string;
-    color: string;
-    bg: string;
-    border: string;
-    iconColor: string;
-    Icon: React.FC<{ className?: string }>;
-  }
+  { label: string; color: string; bg: string; dot: string; Icon: React.FC<{ className?: string }> }
 > = {
   order: {
     label: "Orders",
-    color: "text-blue-700",
+    color: "text-blue-600",
     bg: "bg-blue-50",
-    border: "border-blue-400",
-    iconColor: "text-blue-500",
+    dot: "bg-blue-500",
     Icon: Package,
   },
   payment: {
     label: "Payments",
-    color: "text-emerald-700",
+    color: "text-emerald-600",
     bg: "bg-emerald-50",
-    border: "border-emerald-400",
-    iconColor: "text-emerald-500",
+    dot: "bg-emerald-500",
     Icon: CreditCard,
   },
   account: {
     label: "Account",
-    color: "text-amber-700",
+    color: "text-amber-600",
     bg: "bg-amber-50",
-    border: "border-amber-400",
-    iconColor: "text-amber-500",
+    dot: "bg-amber-500",
     Icon: User,
   },
   admin_message: {
     label: "Messages",
-    color: "text-purple-700",
-    bg: "bg-purple-50",
-    border: "border-purple-400",
-    iconColor: "text-purple-500",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    dot: "bg-violet-500",
     Icon: MessageSquare,
   },
 };
@@ -96,7 +78,6 @@ const FILTERS: { key: FilterType; label: string }[] = [
   { key: "admin_message", label: "Messages" },
 ];
 
-// ── Action button label ───────────────────────────────────────────────────────
 const getActionLabel = (n: NotificationDoc): string | null => {
   if (n.actionType === "track_order") return "Track Order";
   if (n.actionType === "view_order") return "View Details";
@@ -105,33 +86,25 @@ const getActionLabel = (n: NotificationDoc): string | null => {
 };
 
 const getActionPath = (n: NotificationDoc): string => {
-  if (n.actionType === "track_order" && n.actionId)
-    return `/track-order/${n.actionId}`;
-  if (n.actionType === "view_order" && n.actionId)
-    return `/track-order/${n.actionId}`;
+  if (n.actionType === "track_order" && n.actionId) return `/track-order/${n.actionId}`;
+  if (n.actionType === "view_order" && n.actionId) return `/track-order/${n.actionId}`;
   return "/orders";
 };
 
-// ── Empty state ───────────────────────────────────────────────────────────────
+// ── Empty State ───────────────────────────────────────────────────────────────
 const EmptyState = ({ filter }: { filter: FilterType }) => {
   const icons: Record<FilterType, string> = {
-    all: "🔔",
-    order: "📦",
-    payment: "💳",
-    account: "👤",
-    admin_message: "💬",
+    all: "🔔", order: "📦", payment: "💳", account: "👤", admin_message: "💬",
   };
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-      <div className="w-20 h-20 rounded-2xl bg-gray-50 flex items-center justify-center text-4xl mb-5 shadow-inner border border-gray-100">
+      <div className="w-20 h-20 rounded-3xl bg-gray-100 flex items-center justify-center text-4xl mb-5 shadow-inner">
         {icons[filter]}
       </div>
-      <h3 className="text-lg font-bold text-gray-800 mb-1">
-        No notifications yet
-      </h3>
+      <h3 className="text-base font-bold text-gray-800 mb-1.5">No notifications yet</h3>
       <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
         {filter === "all"
-          ? "You're all caught up! Notifications about your orders, payments, and account will appear here."
+          ? "You're all caught up! Updates about your orders, payments, and account will appear here."
           : `No ${filter.replace("_", " ")} notifications yet.`}
       </p>
     </div>
@@ -140,9 +113,7 @@ const EmptyState = ({ filter }: { filter: FilterType }) => {
 
 // ── Notification Card ─────────────────────────────────────────────────────────
 const NotificationCard = ({
-  notification,
-  onRead,
-  onDelete,
+  notification, onRead, onDelete,
 }: {
   notification: NotificationDoc;
   onRead: (id: string) => void;
@@ -153,77 +124,65 @@ const NotificationCard = ({
   const actionLabel = getActionLabel(notification);
   const actionPath = getActionPath(notification);
 
-  const handleClick = () => {
-    if (!notification.isRead) onRead(notification._id);
-  };
-
-  const handleAction = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!notification.isRead) onRead(notification._id);
-    navigate(actionPath);
-  };
-
   return (
     <div
-      onClick={handleClick}
-      className={`
-        relative group flex gap-4 p-4 rounded-2xl border transition-all duration-200 cursor-pointer
-        ${
-          notification.isRead
-            ? "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
-            : `${cfg.bg} border-l-4 ${cfg.border} border-t border-r border-b border-gray-100 shadow-sm`
-        }
-      `}
+      onClick={() => { if (!notification.isRead) onRead(notification._id); }}
+      className={`group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border cursor-pointer transition-all duration-200 ${
+        notification.isRead
+          ? "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
+          : "bg-white border-l-[3px] border-l-blue-500 border-t border-r border-b border-gray-100 shadow-sm"
+      }`}
     >
       {/* Unread dot */}
       {!notification.isRead && (
-        <span className="absolute top-4 right-4 w-2 h-2 rounded-full bg-[#6426E1]" />
+        <span className={`absolute top-4 right-4 w-2 h-2 rounded-full ${cfg.dot}`} />
       )}
 
       {/* Icon */}
-      <div
-        className={`flex-shrink-0 w-11 h-11 rounded-xl flex items-center justify-center text-xl
-        ${notification.isRead ? "bg-gray-50" : cfg.bg}`}
-      >
+      <div className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl ${
+        notification.isRead ? "bg-gray-50" : cfg.bg
+      }`}>
         {notification.icon}
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 pr-6">
         <div className="flex items-start justify-between gap-2">
-          <h4
-            className={`text-sm font-bold leading-tight ${notification.isRead ? "text-gray-700" : "text-gray-900"}`}
-          >
+          <h4 className={`text-sm font-semibold leading-snug ${
+            notification.isRead ? "text-gray-600" : "text-gray-900"
+          }`}>
             {notification.title}
           </h4>
-          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5">
+          <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap">
             {timeAgo(notification.createdAt)}
           </span>
         </div>
 
-        <p
-          className={`text-xs mt-1 leading-relaxed ${notification.isRead ? "text-gray-400" : "text-gray-600"}`}
-        >
+        <p className={`text-xs mt-1 leading-relaxed ${
+          notification.isRead ? "text-gray-400" : "text-gray-600"
+        }`}>
           {notification.message}
         </p>
 
-        {/* Action row */}
         {(actionLabel || notification.orderNumber) && (
-          <div className="flex items-center gap-3 mt-3">
+          <div className="flex items-center gap-2.5 mt-3 flex-wrap">
             {notification.orderNumber && (
-              <span className="text-[10px] font-mono font-semibold px-2 py-1 bg-white border border-gray-200 rounded-lg text-gray-500">
+              <span className="text-[10px] font-mono font-semibold px-2 py-1 bg-gray-100 border border-gray-200 rounded-lg text-gray-500">
                 #{notification.orderNumber}
               </span>
             )}
             {actionLabel && (
               <button
-                onClick={handleAction}
-                className={`flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl transition-all
-                  ${
-                    notification.isRead
-                      ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                      : "bg-[#6426E1] text-white hover:bg-purple-700 shadow-sm"
-                  }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!notification.isRead) onRead(notification._id);
+                  navigate(actionPath);
+                }}
+                className={`flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl transition-all ${
+                  notification.isRead
+                    ? "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    : "bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                }`}
               >
                 {actionLabel}
                 <ChevronRight className="w-3 h-3" />
@@ -235,11 +194,8 @@ const NotificationCard = ({
 
       {/* Delete on hover */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete(notification._id);
-        }}
-        className="absolute top-3 right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400"
+        onClick={(e) => { e.stopPropagation(); onDelete(notification._id); }}
+        className="absolute top-3 right-7 sm:right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400"
       >
         <Trash2 className="w-3.5 h-3.5" />
       </button>
@@ -249,9 +205,9 @@ const NotificationCard = ({
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="flex gap-4 p-4 rounded-2xl border border-gray-100 bg-white animate-pulse">
-    <div className="w-11 h-11 rounded-xl bg-gray-100 flex-shrink-0" />
-    <div className="flex-1 space-y-2">
+  <div className="flex gap-3 p-4 rounded-2xl border border-gray-100 bg-white animate-pulse">
+    <div className="w-10 h-10 rounded-xl bg-gray-100 flex-shrink-0" />
+    <div className="flex-1 space-y-2 pt-1">
       <div className="h-3 bg-gray-100 rounded w-2/3" />
       <div className="h-2.5 bg-gray-100 rounded w-full" />
       <div className="h-2.5 bg-gray-100 rounded w-3/4" />
@@ -287,33 +243,22 @@ const NotificationsPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleMarkRead = async (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
-    );
+    setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: true } : n));
     setUnreadCount((c) => Math.max(0, c - 1));
     refreshCount();
-    try {
-      await notificationService.markAsRead(id);
-    } catch {
-      // revert on failure
-      setNotifications((prev) =>
-        prev.map((n) => (n._id === id ? { ...n, isRead: false } : n)),
-      );
-    }
+    try { await notificationService.markAsRead(id); }
+    catch { setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: false } : n)); }
   };
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
     resetCount();
-    try {
-      await notificationService.markAllAsRead();
-    } catch {
+    try { await notificationService.markAllAsRead(); }
+    catch {
       toast({ variant: "destructive", title: "Failed to mark all as read" });
       load(true);
     }
@@ -322,60 +267,32 @@ const NotificationsPage = () => {
   const handleDelete = async (id: string) => {
     const deleted = notifications.find((n) => n._id === id);
     setNotifications((prev) => prev.filter((n) => n._id !== id));
-    if (deleted && !deleted.isRead) {
-      setUnreadCount((c) => Math.max(0, c - 1));
-      refreshCount();
-    }
-    try {
-      await notificationService.deleteNotification(id);
-    } catch {
+    if (deleted && !deleted.isRead) { setUnreadCount((c) => Math.max(0, c - 1)); refreshCount(); }
+    try { await notificationService.deleteNotification(id); }
+    catch {
       toast({ variant: "destructive", title: "Failed to delete notification" });
       load(true);
     }
   };
 
-  const filtered =
-    filter === "all"
-      ? notifications
-      : notifications.filter((n) => n.type === filter);
-
-  const countByType = (type: NotificationType) =>
-    notifications.filter((n) => n.type === type && !n.isRead).length;
+  const filtered = filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
+  const countByType = (type: NotificationType) => notifications.filter((n) => n.type === type && !n.isRead).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ── Header ── */}
-      <div
-        className="relative overflow-hidden"
-        style={{
-          background:
-            "linear-gradient(135deg, #6426E1 0%, #4f1dbf 60%, #3b14a0 100%)",
-        }}
-      >
-        {/* Decorative blobs */}
-        <div
-          className="absolute -top-8 -right-8 w-48 h-48 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #fff 0%, transparent 70%)",
-          }}
-        />
-        <div
-          className="absolute bottom-0 left-0 w-32 h-32 rounded-full opacity-10"
-          style={{
-            background: "radial-gradient(circle, #fff 0%, transparent 70%)",
-          }}
-        />
-
-        <div className="relative max-w-2xl mx-auto px-4 pt-8 pb-6">
-          <div className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50/60">
+      {/* ── Page Header — white card style, NOT purple ── */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-2xl mx-auto px-4 pt-6 pb-5">
+          {/* Title row */}
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-sm">
-                <Bell className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-sm">
+                <Bell className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-white">Notifications</h1>
-                <p className="text-purple-200 text-xs mt-0.5">
-                  {unreadCount > 0 ? `${unreadCount} unread` : "All caught up!"}
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Notifications</h1>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {unreadCount > 0 ? `${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}` : "You're all caught up"}
                 </p>
               </div>
             </div>
@@ -384,16 +301,14 @@ const NotificationsPage = () => {
               <button
                 onClick={() => load(true)}
                 disabled={isRefreshing}
-                className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center text-white/80 hover:bg-white/25 transition-colors"
+                className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
               >
-                <RefreshCw
-                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
-                />
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
               </button>
               {unreadCount > 0 && (
                 <button
                   onClick={handleMarkAllRead}
-                  className="flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-white/15 text-white hover:bg-white/25 transition-colors"
+                  className="hidden sm:flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition-colors"
                 >
                   <CheckCheck className="w-3.5 h-3.5" />
                   Mark all read
@@ -401,39 +316,43 @@ const NotificationsPage = () => {
               )}
             </div>
           </div>
+
+          {/* Mobile mark-all button */}
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              className="sm:hidden mt-3 flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100 transition-colors"
+            >
+              <CheckCheck className="w-3.5 h-3.5" />
+              Mark all read
+            </button>
+          )}
         </div>
       </div>
 
       {/* ── Filter chips ── */}
-      <div className="bg-white border-b border-gray-100 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-2xl mx-auto px-4 py-3">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-0.5">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {FILTERS.map(({ key, label }) => {
-              const typeCount =
-                key !== "all"
-                  ? countByType(key as NotificationType)
-                  : unreadCount;
+              const count = key !== "all" ? countByType(key as NotificationType) : unreadCount;
               const isActive = filter === key;
               return (
                 <button
                   key={key}
                   onClick={() => setFilter(key)}
-                  className={`flex-shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-semibold transition-all ${
+                  className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold transition-all ${
                     isActive
-                      ? "bg-[#6426E1] text-white shadow-sm"
+                      ? "bg-gray-900 text-white shadow-sm"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {label}
-                  {typeCount > 0 && (
-                    <span
-                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                        isActive
-                          ? "bg-white/25 text-white"
-                          : "bg-[#6426E1] text-white"
-                      }`}
-                    >
-                      {typeCount}
+                  {count > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                      isActive ? "bg-white/20 text-white" : "bg-blue-600 text-white"
+                    }`}>
+                      {count}
                     </span>
                   )}
                 </button>
@@ -447,9 +366,7 @@ const NotificationsPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-5">
         {isLoading ? (
           <div className="space-y-3">
-            {[...Array(5)].map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
+            {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
           </div>
         ) : error ? (
           <div className="flex flex-col items-center py-16 gap-4">
@@ -457,7 +374,7 @@ const NotificationsPage = () => {
             <p className="text-sm text-gray-500">{error}</p>
             <button
               onClick={() => load()}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-purple-400 hover:text-purple-600"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl border border-gray-200 text-sm font-medium hover:border-gray-300"
             >
               <RefreshCw className="w-4 h-4" /> Retry
             </button>
@@ -466,37 +383,26 @@ const NotificationsPage = () => {
           <EmptyState filter={filter} />
         ) : (
           <div className="space-y-2.5">
-            {/* Date grouping */}
             {(() => {
               const today = new Date().toDateString();
               const yesterday = new Date(Date.now() - 86400000).toDateString();
-
               let lastGroup = "";
               return filtered.map((n) => {
                 const date = new Date(n.createdAt).toDateString();
                 const group =
-                  date === today
-                    ? "Today"
-                    : date === yesterday
-                      ? "Yesterday"
-                      : new Date(n.createdAt).toLocaleDateString("en-GB", {
-                          day: "numeric",
-                          month: "long",
-                        });
+                  date === today ? "Today"
+                  : date === yesterday ? "Yesterday"
+                  : new Date(n.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
                 const showHeader = group !== lastGroup;
                 lastGroup = group;
                 return (
                   <div key={n._id}>
                     {showHeader && (
-                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1 pt-3 pb-1">
+                      <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wider px-1 pt-4 pb-1.5">
                         {group}
                       </p>
                     )}
-                    <NotificationCard
-                      notification={n}
-                      onRead={handleMarkRead}
-                      onDelete={handleDelete}
-                    />
+                    <NotificationCard notification={n} onRead={handleMarkRead} onDelete={handleDelete} />
                   </div>
                 );
               });
