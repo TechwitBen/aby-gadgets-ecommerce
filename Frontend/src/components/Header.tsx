@@ -107,7 +107,8 @@ const Header = ({
   // ── Scroll-aware style helpers ─────────────────────────────────────────────
   // When at top: fully transparent regardless of variant
   // When scrolled: crisp white with shadow
-  const isAtTop = !isScrolled;
+  const isHomePage = location.pathname === "/";
+const isAtTop = isHomePage ? !isScrolled : false;
 
   const headerBg = isAtTop
     ? "bg-transparent"

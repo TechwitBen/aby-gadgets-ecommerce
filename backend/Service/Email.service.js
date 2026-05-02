@@ -36,12 +36,16 @@ const logo = `
 
 // ─── 1. ORDER CONFIRMATION ────────────────────────────────────────────────────
 export const sendOrderConfirmationEmail = async ({ to, username, order }) => {
-  const orderNumber = `Order number ${order.order_number ?? '#' + order._id.slice(-8).toUpperCase()}`;
+  const orderNumber = `Order number ${order.order_number ?? "#" + order._id.slice(-8).toUpperCase()}`;
   const trackingUrl = `${process.env.FRONTEND_URL}/track-order/${order._id}`;
 
   const itemRows = order.items
     .map((item) => {
-      const variantInfo = [item.variant?.color, item.variant?.storage, item.variant?.ram]
+      const variantInfo = [
+        item.variant?.color,
+        item.variant?.storage,
+        item.variant?.ram,
+      ]
         .filter(Boolean)
         .join(" / ");
 
@@ -163,7 +167,13 @@ export const sendOrderConfirmationEmail = async ({ to, username, order }) => {
 };
 
 // ─── 2. CONTACT FORM ──────────────────────────────────────────────────────────
-export const sendContactEmail = async ({ name, email, phone, service, message }) => {
+export const sendContactEmail = async ({
+  name,
+  email,
+  phone,
+  service,
+  message,
+}) => {
   const transporter = createTransporter();
 
   // A. Notify the store owner
@@ -179,15 +189,22 @@ export const sendContactEmail = async ({ name, email, phone, service, message })
       </div>
       <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#0f0a1e;">You've got a new message!</h2>
       ${[
-        ["Name",    name],
-        ["Email",   `<a href="mailto:${email}" style="color:#6426E1;">${email}</a>`],
-        ["Phone",   phone || "—"],
+        ["Name", name],
+        [
+          "Email",
+          `<a href="mailto:${email}" style="color:#6426E1;">${email}</a>`,
+        ],
+        ["Phone", phone || "—"],
         ["Service", service || "—"],
-      ].map(([label, val]) => `
+      ]
+        .map(
+          ([label, val]) => `
         <div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid #f0edfb;font-size:13px;">
           <span style="color:#9ca3af;width:70px;flex-shrink:0;">${label}</span>
           <span style="font-weight:600;color:#0f0a1e;">${val}</span>
-        </div>`).join("")}
+        </div>`,
+        )
+        .join("")}
       <div style="margin-top:16px;">
         <p style="font-size:13px;color:#9ca3af;margin:0 0 6px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;">Message</p>
         <div style="background:#faf9ff;border-radius:10px;padding:16px;font-size:14px;color:#374151;line-height:1.7;border:1px solid #ede8fb;">
