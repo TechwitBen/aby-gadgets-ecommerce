@@ -3,7 +3,7 @@ import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { formatPrice } from "@/services/products.service";
+import { formatPrice } from "@/services/Products.service";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();

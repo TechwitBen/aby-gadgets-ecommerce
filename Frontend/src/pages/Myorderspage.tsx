@@ -12,8 +12,8 @@ import {
   type OrderDoc,
   type OrderStatus,
   type FulfillmentType,
-} from "@/services/order.service";
-import { paymentService } from "@/services/payment.service";
+} from "@/services/Order.service";
+import { paymentService } from "@/services/Payment.service";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COMPLETED_STATUSES = new Set([

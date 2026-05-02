@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import type { StaffPermissions } from "@/services/staff.service";
+import type { StaffPermissions } from "@/services/Staff.service";
 
 interface PermissionContextType {
   isAdmin: boolean;

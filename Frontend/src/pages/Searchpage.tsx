@@ -9,7 +9,7 @@ import {
   Clock,
   Star,
 } from "lucide-react";
-import { productService } from "@/services/products.service";
+import { productService } from "@/services/Products.service";
 
 // ─── Debounce hook ────────────────────────────────────────────────────────────
 function useDebounce(value, delay = 350) {

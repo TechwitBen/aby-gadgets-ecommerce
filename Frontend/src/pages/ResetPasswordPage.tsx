@@ -4,7 +4,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
-import { authAPI } from "@/services/api";
+import { authAPI } from "@/services/Api";
 
 // ── ResetPasswordPage ─────────────────────────────────────────────────────────
 
@@ -50,7 +50,8 @@ const ResetPasswordPage = () => {
       setSuccess(true);
     } catch (err: any) {
       setError(
-        err?.response?.data?.message ?? "Something went wrong. Please try again."
+        err?.response?.data?.message ??
+          "Something went wrong. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -98,10 +99,7 @@ const ResetPasswordPage = () => {
               <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-5">
                 <p className="text-red-600 text-sm">
                   This reset link is invalid or missing.{" "}
-                  <Link
-                    to="/forgot-password"
-                    className="font-medium underline"
-                  >
+                  <Link to="/forgot-password" className="font-medium underline">
                     Request a new one
                   </Link>
                   .
@@ -174,9 +172,7 @@ const ResetPasswordPage = () => {
               </div>
 
               {/* Inline error */}
-              {error && (
-                <p className="text-red-500 text-xs -mt-1">{error}</p>
-              )}
+              {error && <p className="text-red-500 text-xs -mt-1">{error}</p>}
 
               <p className="text-sm text-gray-600">
                 Remember your password?{" "}

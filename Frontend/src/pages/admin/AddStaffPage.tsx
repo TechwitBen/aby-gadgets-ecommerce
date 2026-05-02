@@ -4,7 +4,7 @@ import {
   inviteAPI,
   DEFAULT_PERMISSIONS,
   type StaffPermissions,
-} from "@/services/staff.service";
+} from "@/services/Staff.service";
 
 import axios from "axios";
 import { Button } from "@/components/ui/button";

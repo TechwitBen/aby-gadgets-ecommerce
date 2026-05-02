@@ -6,7 +6,7 @@ import {
   settingsService,
   type SiteSettings,
   type DeliveryZone,
-} from "@/services/settings.service";
+} from "@/services/Settings.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Plus, Trash2, Pencil, Check, X } from "lucide-react";

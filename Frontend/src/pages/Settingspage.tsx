@@ -1,20 +1,71 @@
 import { useState, useEffect } from "react";
 import {
-  User, Lock, MapPin, Bell, Eye, EyeOff,
-  Plus, Trash2, Edit2, Check, Star, Loader2, AlertCircle,
-  Home, Briefcase, Save, ChevronRight,
+  User,
+  Lock,
+  MapPin,
+  Bell,
+  Eye,
+  EyeOff,
+  Plus,
+  Trash2,
+  Edit2,
+  Check,
+  Star,
+  Loader2,
+  AlertCircle,
+  Home,
+  Briefcase,
+  Save,
+  ChevronRight,
 } from "lucide-react";
-import { userService, type UserProfile, type UserAddress } from "@/services/user.service";
+import {
+  userService,
+  type UserProfile,
+  type UserAddress,
+} from "@/services/User.service";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 const NIGERIAN_STATES = [
-  "Abia","Adamawa","Akwa Ibom","Anambra","Bauchi","Bayelsa","Benue","Borno",
-  "Cross River","Delta","Ebonyi","Edo","Ekiti","Enugu","FCT","Gombe","Imo",
-  "Jigawa","Kaduna","Kano","Katsina","Kebbi","Kogi","Kwara","Lagos","Nasarawa",
-  "Niger","Ogun","Ondo","Osun","Oyo","Plateau","Rivers","Sokoto","Taraba","Yobe","Zamfara",
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
 ];
 
 const ADDRESS_LABELS = ["Home", "Work", "School", "Other"];
@@ -33,21 +84,37 @@ export type AddressFormData = {
 
 type SettingsTab = "profile" | "security" | "addresses" | "notifications";
 
-const TABS: { key: SettingsTab; label: string; icon: React.FC<{ className?: string }> }[] = [
-  { key: "profile",       label: "Profile",       icon: User  },
-  { key: "security",      label: "Security",       icon: Lock  },
-  { key: "addresses",     label: "Addresses",      icon: MapPin},
-  { key: "notifications", label: "Notifications",  icon: Bell  },
+const TABS: {
+  key: SettingsTab;
+  label: string;
+  icon: React.FC<{ className?: string }>;
+}[] = [
+  { key: "profile", label: "Profile", icon: User },
+  { key: "security", label: "Security", icon: Lock },
+  { key: "addresses", label: "Addresses", icon: MapPin },
+  { key: "notifications", label: "Notifications", icon: Bell },
 ];
 
 // ── Toggle ────────────────────────────────────────────────────────────────────
-const Toggle = ({ checked, onChange, label, description }: {
-  checked: boolean; onChange: (v: boolean) => void; label: string; description?: string;
+const Toggle = ({
+  checked,
+  onChange,
+  label,
+  description,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  description?: string;
 }) => (
   <div className="flex items-start justify-between gap-4 py-4">
     <div className="flex-1 min-w-0">
       <p className="text-sm font-semibold text-gray-800">{label}</p>
-      {description && <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">{description}</p>}
+      {description && (
+        <p className="text-xs text-gray-400 mt-0.5 leading-relaxed">
+          {description}
+        </p>
+      )}
     </div>
     <button
       onClick={() => onChange(!checked)}
@@ -55,23 +122,35 @@ const Toggle = ({ checked, onChange, label, description }: {
         checked ? "bg-emerald-500" : "bg-gray-200"
       }`}
     >
-      <span className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
-        checked ? "translate-x-5" : "translate-x-0"
-      }`} />
+      <span
+        className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform duration-200 ${
+          checked ? "translate-x-5" : "translate-x-0"
+        }`}
+      />
     </button>
   </div>
 );
 
 // ── Address Modal — no name/phone fields ──────────────────────────────────────
-const AddressModal = ({ open, address, onClose, onSave }: {
+const AddressModal = ({
+  open,
+  address,
+  onClose,
+  onSave,
+}: {
   open: boolean;
   address: AddressFormData | null;
   onClose: () => void;
   onSave: (data: AddressFormData) => Promise<void>;
 }) => {
   const [form, setForm] = useState<AddressFormData>({
-    label: "Home", street: "", city: "", state: "Lagos",
-    country: "Nigeria", postal_code: "", isDefault: false,
+    label: "Home",
+    street: "",
+    city: "",
+    state: "Lagos",
+    country: "Nigeria",
+    postal_code: "",
+    isDefault: false,
   });
   const [saving, setSaving] = useState(false);
 
@@ -88,26 +167,41 @@ const AddressModal = ({ open, address, onClose, onSave }: {
         isDefault: address.isDefault ?? false,
       });
     } else {
-      setForm({ label: "Home", street: "", city: "", state: "Lagos", country: "Nigeria", postal_code: "", isDefault: false });
+      setForm({
+        label: "Home",
+        street: "",
+        city: "",
+        state: "Lagos",
+        country: "Nigeria",
+        postal_code: "",
+        isDefault: false,
+      });
     }
   }, [address, open]);
 
   if (!open) return null;
 
-  const set = (key: keyof AddressFormData) =>
+  const set =
+    (key: keyof AddressFormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const handleSave = async () => {
     setSaving(true);
-    try { await onSave(form); onClose(); }
-    finally { setSaving(false); }
+    try {
+      await onSave(form);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
     <div
       className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-white rounded-t-3xl sm:rounded-2xl w-full sm:max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Handle bar (mobile) */}
@@ -127,7 +221,9 @@ const AddressModal = ({ open, address, onClose, onSave }: {
         <div className="px-5 py-5 space-y-4">
           {/* Label chips */}
           <div>
-            <Label className="text-xs font-semibold text-gray-600 mb-2 block">Address Label</Label>
+            <Label className="text-xs font-semibold text-gray-600 mb-2 block">
+              Address Label
+            </Label>
             <div className="flex gap-2 flex-wrap">
               {ADDRESS_LABELS.map((l) => (
                 <button
@@ -139,7 +235,11 @@ const AddressModal = ({ open, address, onClose, onSave }: {
                       : "bg-gray-50 text-gray-600 border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  {l === "Work" ? <Briefcase className="w-3 h-3" /> : <Home className="w-3 h-3" />}
+                  {l === "Work" ? (
+                    <Briefcase className="w-3 h-3" />
+                  ) : (
+                    <Home className="w-3 h-3" />
+                  )}
                   {l}
                 </button>
               ))}
@@ -148,7 +248,9 @@ const AddressModal = ({ open, address, onClose, onSave }: {
 
           {/* Street */}
           <div>
-            <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">Street Address *</Label>
+            <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+              Street Address *
+            </Label>
             <Input
               value={form.street}
               onChange={set("street")}
@@ -159,7 +261,9 @@ const AddressModal = ({ open, address, onClose, onSave }: {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">City *</Label>
+              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                City *
+              </Label>
               <Input
                 value={form.city}
                 onChange={set("city")}
@@ -168,20 +272,25 @@ const AddressModal = ({ open, address, onClose, onSave }: {
               />
             </div>
             <div>
-              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">State *</Label>
+              <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
+                State *
+              </Label>
               <select
                 value={form.state}
                 onChange={set("state")}
                 className="w-full h-11 text-sm border border-gray-200 rounded-xl px-3 focus:outline-none focus:ring-2 focus:ring-gray-900/20 bg-white"
               >
-                {NIGERIAN_STATES.map((s) => <option key={s}>{s}</option>)}
+                {NIGERIAN_STATES.map((s) => (
+                  <option key={s}>{s}</option>
+                ))}
               </select>
             </div>
           </div>
 
           <div>
             <Label className="text-xs font-semibold text-gray-600 mb-1.5 block">
-              Postal Code <span className="text-gray-300 font-normal">(optional)</span>
+              Postal Code{" "}
+              <span className="text-gray-300 font-normal">(optional)</span>
             </Label>
             <Input
               value={form.postal_code}
@@ -195,24 +304,36 @@ const AddressModal = ({ open, address, onClose, onSave }: {
           <label className="flex items-center gap-3 cursor-pointer py-2 px-3 rounded-xl bg-gray-50 border border-gray-100">
             <button
               type="button"
-              onClick={() => setForm((f) => ({ ...f, isDefault: !f.isDefault }))}
+              onClick={() =>
+                setForm((f) => ({ ...f, isDefault: !f.isDefault }))
+              }
               className={`w-11 h-6 rounded-full transition-colors flex-shrink-0 ${
                 form.isDefault ? "bg-emerald-500" : "bg-gray-200"
               }`}
             >
-              <span className={`block mt-0.5 ml-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-                form.isDefault ? "translate-x-5" : ""
-              }`} />
+              <span
+                className={`block mt-0.5 ml-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                  form.isDefault ? "translate-x-5" : ""
+                }`}
+              />
             </button>
             <div>
-              <p className="text-sm font-semibold text-gray-700">Set as default</p>
-              <p className="text-xs text-gray-400">Used automatically at checkout</p>
+              <p className="text-sm font-semibold text-gray-700">
+                Set as default
+              </p>
+              <p className="text-xs text-gray-400">
+                Used automatically at checkout
+              </p>
             </div>
           </label>
         </div>
 
         <div className="px-5 pb-6 flex gap-3 border-t border-gray-100 pt-4">
-          <Button variant="outline" onClick={onClose} className="flex-1 rounded-xl h-11">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="flex-1 rounded-xl h-11"
+          >
             Cancel
           </Button>
           <Button
@@ -220,10 +341,13 @@ const AddressModal = ({ open, address, onClose, onSave }: {
             disabled={saving || !form.street || !form.city}
             className="flex-1 rounded-xl h-11 bg-gray-900 hover:bg-gray-800 text-white"
           >
-            {saving
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <><Save className="w-4 h-4 mr-1.5" /> Save Address</>
-            }
+            {saving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-1.5" /> Save Address
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -255,35 +379,52 @@ const UserSettingsPage = () => {
 
   // Addresses
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
-  const [addrModal, setAddrModal] = useState<{ open: boolean; address: AddressFormData | null }>({
-    open: false, address: null,
+  const [addrModal, setAddrModal] = useState<{
+    open: boolean;
+    address: AddressFormData | null;
+  }>({
+    open: false,
+    address: null,
   });
 
   // Notification prefs
-  const [prefs, setPrefs] = useState({ orderUpdates: true, emailNotifications: true, paymentAlerts: true });
+  const [prefs, setPrefs] = useState({
+    orderUpdates: true,
+    emailNotifications: true,
+    paymentAlerts: true,
+  });
   const [prefSaving, setPrefSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
       userService.getProfile(),
       userService.getNotificationPreferences(),
-    ]).then(([prof, p]) => {
-      setProfile(prof);
-      setName(prof.name ?? prof.username ?? "");
-      setPhone(prof.phone ?? "");
-      setAddresses(prof.addresses ?? []);
-      setPrefs(p);
-    }).catch(() => {
-      toast({ variant: "destructive", title: "Failed to load settings" });
-    }).finally(() => setLoading(false));
+    ])
+      .then(([prof, p]) => {
+        setProfile(prof);
+        setName(prof.name ?? prof.username ?? "");
+        setPhone(prof.phone ?? "");
+        setAddresses(prof.addresses ?? []);
+        setPrefs(p);
+      })
+      .catch(() => {
+        toast({ variant: "destructive", title: "Failed to load settings" });
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const handleProfileSave = async () => {
     setSaving(true);
     try {
-      const updated = await userService.updateProfile({ name: name.trim(), phone: phone.trim() });
+      const updated = await userService.updateProfile({
+        name: name.trim(),
+        phone: phone.trim(),
+      });
       setProfile(updated);
-      toast({ title: "Profile updated", description: "Your changes have been saved." });
+      toast({
+        title: "Profile updated",
+        description: "Your changes have been saved.",
+      });
     } catch {
       toast({ variant: "destructive", title: "Failed to update profile" });
     } finally {
@@ -293,13 +434,27 @@ const UserSettingsPage = () => {
 
   const handlePasswordSave = async () => {
     setPwError(null);
-    if (newPw !== confirmPw) { setPwError("Passwords do not match"); return; }
-    if (newPw.length < 8) { setPwError("Password must be at least 8 characters"); return; }
+    if (newPw !== confirmPw) {
+      setPwError("Passwords do not match");
+      return;
+    }
+    if (newPw.length < 8) {
+      setPwError("Password must be at least 8 characters");
+      return;
+    }
     setPwSaving(true);
     try {
-      await userService.changePassword({ currentPassword: currentPw, newPassword: newPw });
-      setCurrentPw(""); setNewPw(""); setConfirmPw("");
-      toast({ title: "Password changed", description: "Your password has been updated securely." });
+      await userService.changePassword({
+        currentPassword: currentPw,
+        newPassword: newPw,
+      });
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
+      toast({
+        title: "Password changed",
+        description: "Your password has been updated securely.",
+      });
     } catch (err: any) {
       setPwError(err?.response?.data?.message ?? "Failed to change password");
     } finally {
@@ -356,8 +511,9 @@ const UserSettingsPage = () => {
     const next = { ...prefs, [key]: val };
     setPrefs(next);
     setPrefSaving(true);
-    try { await userService.updateNotificationPreferences(next); }
-    catch {
+    try {
+      await userService.updateNotificationPreferences(next);
+    } catch {
       setPrefs(prefs);
       toast({ variant: "destructive", title: "Failed to update preferences" });
     } finally {
@@ -365,19 +521,42 @@ const UserSettingsPage = () => {
     }
   };
 
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <Loader2 className="w-7 h-7 animate-spin text-gray-400" />
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <Loader2 className="w-7 h-7 animate-spin text-gray-400" />
+      </div>
+    );
 
   const initials = profile?.name
-    ? profile.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase()
+    ? profile.name
+        .split(" ")
+        .map((w) => w[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
     : (profile?.username ?? "U").substring(0, 2).toUpperCase();
 
-  const pwStrength = newPw.length === 0 ? 0 : newPw.length < 6 ? 1 : newPw.length < 8 ? 2 : newPw.length < 12 ? 3 : 4;
-  const pwStrengthLabel = ["", "Too weak", "Weak", "Good", "Strong"][pwStrength];
-  const pwStrengthColor = ["", "bg-red-400", "bg-amber-400", "bg-blue-400", "bg-emerald-400"][pwStrength];
+  const pwStrength =
+    newPw.length === 0
+      ? 0
+      : newPw.length < 6
+        ? 1
+        : newPw.length < 8
+          ? 2
+          : newPw.length < 12
+            ? 3
+            : 4;
+  const pwStrengthLabel = ["", "Too weak", "Weak", "Good", "Strong"][
+    pwStrength
+  ];
+  const pwStrengthColor = [
+    "",
+    "bg-red-400",
+    "bg-amber-400",
+    "bg-blue-400",
+    "bg-emerald-400",
+  ][pwStrength];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -387,9 +566,15 @@ const UserSettingsPage = () => {
           {/* User identity row */}
           <div className="flex items-center gap-4 pb-5">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl flex-shrink-0 shadow-md overflow-hidden">
-              {profile?.profilePhoto
-                ? <img src={profile.profilePhoto} alt="" className="w-full h-full object-cover" />
-                : initials}
+              {profile?.profilePhoto ? (
+                <img
+                  src={profile.profilePhoto}
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">
@@ -424,12 +609,13 @@ const UserSettingsPage = () => {
 
       {/* ── Content ── */}
       <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-
         {/* ── PROFILE TAB ── */}
         {tab === "profile" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 sm:px-6 py-5 border-b border-gray-50">
-              <h2 className="text-sm font-bold text-gray-900">Personal Information</h2>
+              <h2 className="text-sm font-bold text-gray-900">
+                Personal Information
+              </h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Your name and phone are used on all delivery orders
               </p>
@@ -438,7 +624,9 @@ const UserSettingsPage = () => {
             <div className="px-5 sm:px-6 py-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Full Name</Label>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                    Full Name
+                  </Label>
                   <Input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -448,7 +636,10 @@ const UserSettingsPage = () => {
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                    Username <span className="text-gray-300 font-normal">(read only)</span>
+                    Username{" "}
+                    <span className="text-gray-300 font-normal">
+                      (read only)
+                    </span>
                   </Label>
                   <Input
                     value={profile?.username ?? ""}
@@ -457,7 +648,9 @@ const UserSettingsPage = () => {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Phone Number</Label>
+                  <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                    Phone Number
+                  </Label>
                   <Input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -468,7 +661,10 @@ const UserSettingsPage = () => {
                 </div>
                 <div>
                   <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                    Email Address <span className="text-gray-300 font-normal">(read only)</span>
+                    Email Address{" "}
+                    <span className="text-gray-300 font-normal">
+                      (read only)
+                    </span>
                   </Label>
                   <Input
                     value={profile?.email ?? ""}
@@ -488,7 +684,11 @@ const UserSettingsPage = () => {
                   disabled={saving}
                   className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6 h-10 text-sm font-semibold flex-shrink-0"
                 >
-                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  {saving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4 mr-2" />
+                  )}
                   {saving ? "Saving…" : "Save Changes"}
                 </Button>
               </div>
@@ -500,8 +700,12 @@ const UserSettingsPage = () => {
         {tab === "security" && (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 sm:px-6 py-5 border-b border-gray-50">
-              <h2 className="text-sm font-bold text-gray-900">Change Password</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Use a strong password with at least 8 characters</p>
+              <h2 className="text-sm font-bold text-gray-900">
+                Change Password
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Use a strong password with at least 8 characters
+              </p>
             </div>
 
             <div className="px-5 sm:px-6 py-5 space-y-4">
@@ -514,7 +718,9 @@ const UserSettingsPage = () => {
 
               {/* Current */}
               <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Current Password</Label>
+                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  Current Password
+                </Label>
                 <div className="relative">
                   <Input
                     type={showCurr ? "text" : "password"}
@@ -523,16 +729,25 @@ const UserSettingsPage = () => {
                     placeholder="••••••••"
                     className="h-11 rounded-xl border-gray-200 text-sm pr-10"
                   />
-                  <button type="button" onClick={() => setShowCurr(!showCurr)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showCurr ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <button
+                    type="button"
+                    onClick={() => setShowCurr(!showCurr)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showCurr ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
               </div>
 
               {/* New */}
               <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">New Password</Label>
+                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  New Password
+                </Label>
                 <div className="relative">
                   <Input
                     type={showNew ? "text" : "password"}
@@ -541,28 +756,42 @@ const UserSettingsPage = () => {
                     placeholder="At least 8 characters"
                     className="h-11 rounded-xl border-gray-200 text-sm pr-10"
                   />
-                  <button type="button" onClick={() => setShowNew(!showNew)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                    {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  <button
+                    type="button"
+                    onClick={() => setShowNew(!showNew)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showNew ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
                   </button>
                 </div>
                 {newPw && (
                   <div className="mt-2.5 space-y-1.5">
                     <div className="flex gap-1">
                       {[...Array(4)].map((_, i) => (
-                        <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          i < pwStrength ? pwStrengthColor : "bg-gray-100"
-                        }`} />
+                        <div
+                          key={i}
+                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                            i < pwStrength ? pwStrengthColor : "bg-gray-100"
+                          }`}
+                        />
                       ))}
                     </div>
-                    <p className="text-[11px] text-gray-400">{pwStrengthLabel} password</p>
+                    <p className="text-[11px] text-gray-400">
+                      {pwStrengthLabel} password
+                    </p>
                   </div>
                 )}
               </div>
 
               {/* Confirm */}
               <div>
-                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">Confirm New Password</Label>
+                <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  Confirm New Password
+                </Label>
                 <div className="relative">
                   <Input
                     type="password"
@@ -570,7 +799,9 @@ const UserSettingsPage = () => {
                     onChange={(e) => setConfirmPw(e.target.value)}
                     placeholder="Re-enter new password"
                     className={`h-11 rounded-xl text-sm pr-10 ${
-                      confirmPw && confirmPw !== newPw ? "border-red-300" : "border-gray-200"
+                      confirmPw && confirmPw !== newPw
+                        ? "border-red-300"
+                        : "border-gray-200"
                     }`}
                   />
                   {confirmPw && confirmPw === newPw && (
@@ -585,10 +816,17 @@ const UserSettingsPage = () => {
                   disabled={pwSaving || !currentPw || !newPw || !confirmPw}
                   className="rounded-xl bg-gray-900 hover:bg-gray-800 text-white px-6 h-10 text-sm font-semibold"
                 >
-                  {pwSaving
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Changing…</>
-                    : <><Lock className="w-4 h-4 mr-2" />Change Password</>
-                  }
+                  {pwSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Changing…
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4 mr-2" />
+                      Change Password
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -602,21 +840,34 @@ const UserSettingsPage = () => {
             <div className="flex items-start gap-3 px-4 py-3.5 bg-blue-50 border border-blue-100 rounded-2xl">
               <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-semibold text-blue-800">Delivery name & phone</p>
+                <p className="text-xs font-semibold text-blue-800">
+                  Delivery name & phone
+                </p>
                 <p className="text-xs text-blue-600 mt-0.5 leading-relaxed">
-                  Orders are delivered to <strong>{profile?.name || profile?.username}</strong>
-                  {profile?.phone ? ` · ${profile.phone}` : ""}. To change these, update your{" "}
-                  <button onClick={() => setTab("profile")} className="underline font-semibold">
+                  Orders are delivered to{" "}
+                  <strong>{profile?.name || profile?.username}</strong>
+                  {profile?.phone ? ` · ${profile.phone}` : ""}. To change
+                  these, update your{" "}
+                  <button
+                    onClick={() => setTab("profile")}
+                    className="underline font-semibold"
+                  >
                     Profile
-                  </button>.
+                  </button>
+                  .
                 </p>
               </div>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-bold text-gray-900">Address Book</h2>
-                <p className="text-xs text-gray-400 mt-0.5">{addresses.length} saved address{addresses.length !== 1 ? "es" : ""}</p>
+                <h2 className="text-sm font-bold text-gray-900">
+                  Address Book
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  {addresses.length} saved address
+                  {addresses.length !== 1 ? "es" : ""}
+                </p>
               </div>
               <Button
                 onClick={() => setAddrModal({ open: true, address: null })}
@@ -632,9 +883,12 @@ const UserSettingsPage = () => {
                 <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
                   <MapPin className="w-7 h-7 text-gray-400" />
                 </div>
-                <h3 className="font-bold text-gray-800 text-sm mb-1">No addresses saved</h3>
+                <h3 className="font-bold text-gray-800 text-sm mb-1">
+                  No addresses saved
+                </h3>
                 <p className="text-xs text-gray-400 mb-5 max-w-xs mx-auto leading-relaxed">
-                  Add delivery addresses for faster checkout. Your name & phone from your profile will be used automatically.
+                  Add delivery addresses for faster checkout. Your name & phone
+                  from your profile will be used automatically.
                 </p>
                 <Button
                   onClick={() => setAddrModal({ open: true, address: null })}
@@ -657,16 +911,26 @@ const UserSettingsPage = () => {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-start gap-3 min-w-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                          addr.isDefault ? "bg-gray-900" : "bg-gray-100"
-                        }`}>
-                          {addr.label === "Work"
-                            ? <Briefcase className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`} />
-                            : <Home className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`} />}
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                            addr.isDefault ? "bg-gray-900" : "bg-gray-100"
+                          }`}
+                        >
+                          {addr.label === "Work" ? (
+                            <Briefcase
+                              className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`}
+                            />
+                          ) : (
+                            <Home
+                              className={`w-4 h-4 ${addr.isDefault ? "text-white" : "text-gray-500"}`}
+                            />
+                          )}
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                            <span className="text-sm font-bold text-gray-800">{addr.label}</span>
+                            <span className="text-sm font-bold text-gray-800">
+                              {addr.label}
+                            </span>
                             {addr.isDefault && (
                               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-900 text-white">
                                 Default
@@ -674,10 +938,14 @@ const UserSettingsPage = () => {
                             )}
                           </div>
                           <p className="text-xs text-gray-700 font-medium">
-                            {[addr.street, addr.city, addr.state].filter(Boolean).join(", ")}
+                            {[addr.street, addr.city, addr.state]
+                              .filter(Boolean)
+                              .join(", ")}
                           </p>
                           {addr.postal_code && (
-                            <p className="text-xs text-gray-400 mt-0.5">{addr.postal_code}</p>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                              {addr.postal_code}
+                            </p>
                           )}
                           {/* Show whose name/phone will be used */}
                           <p className="text-[11px] text-gray-400 mt-1.5 flex items-center gap-1">
@@ -699,19 +967,21 @@ const UserSettingsPage = () => {
                           </button>
                         )}
                         <button
-                          onClick={() => setAddrModal({
-                            open: true,
-                            address: {
-                              _id: addr._id,
-                              label: addr.label,
-                              street: addr.street,
-                              city: addr.city,
-                              state: addr.state,
-                              country: addr.country,
-                              postal_code: addr.postal_code,
-                              isDefault: addr.isDefault,
-                            },
-                          })}
+                          onClick={() =>
+                            setAddrModal({
+                              open: true,
+                              address: {
+                                _id: addr._id,
+                                label: addr.label,
+                                street: addr.street,
+                                city: addr.city,
+                                state: addr.state,
+                                country: addr.country,
+                                postal_code: addr.postal_code,
+                                isDefault: addr.isDefault,
+                              },
+                            })
+                          }
                           className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 transition-colors"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -736,8 +1006,12 @@ const UserSettingsPage = () => {
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
             <div className="px-5 sm:px-6 py-5 border-b border-gray-50 flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-bold text-gray-900">Notification Preferences</h2>
-                <p className="text-xs text-gray-400 mt-0.5">Control which notifications you receive</p>
+                <h2 className="text-sm font-bold text-gray-900">
+                  Notification Preferences
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Control which notifications you receive
+                </p>
               </div>
               {prefSaving && (
                 <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -771,7 +1045,8 @@ const UserSettingsPage = () => {
               <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-100 rounded-xl">
                 <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                 <p className="text-xs text-amber-700 leading-relaxed">
-                  <strong>Security alerts</strong> (password changes, new logins) are always enabled and cannot be turned off.
+                  <strong>Security alerts</strong> (password changes, new
+                  logins) are always enabled and cannot be turned off.
                 </p>
               </div>
             </div>

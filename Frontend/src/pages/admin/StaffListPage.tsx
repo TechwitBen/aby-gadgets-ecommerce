@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { staffService, type StaffMember } from "@/services/staff.service";
+import { staffService, type StaffMember } from "@/services/Staff.service";
 import { Button } from "@/components/ui/button";
 import { UserPlus, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";

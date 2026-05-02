@@ -4,7 +4,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
-import { authAPI } from "@/services/api";
+import { authAPI } from "@/services/Api";
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 
@@ -40,7 +40,8 @@ const ForgotPasswordPage = () => {
       setSubmitted(true);
     } catch (err: any) {
       setError(
-        err?.response?.data?.message ?? "Something went wrong. Please try again."
+        err?.response?.data?.message ??
+          "Something went wrong. Please try again.",
       );
     } finally {
       setIsLoading(false);
@@ -70,8 +71,7 @@ const ForgotPasswordPage = () => {
               Check your inbox
             </h1>
             <p className="text-gray-600 text-sm mb-5 leading-relaxed">
-              If{" "}
-              <span className="font-medium text-gray-900">{email}</span> is
+              If <span className="font-medium text-gray-900">{email}</span> is
               linked to an account, you'll receive a reset link shortly.
             </p>
             <p className="text-xs text-gray-500 mb-7">

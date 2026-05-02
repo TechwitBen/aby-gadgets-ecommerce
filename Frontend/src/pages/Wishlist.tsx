@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/services/products.service";
+import { formatPrice } from "@/services/Products.service";
 
 const Wishlist = () => {
   const { wishlistProducts, removeFromWishlist } = useWishlist();

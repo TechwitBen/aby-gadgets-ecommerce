@@ -12,12 +12,18 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authAPI, usersAPI, type BackendUser } from "@/services/api";
+import { authAPI, usersAPI, type BackendUser } from "@/services/Api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Admin Card ────────────────────────────────────────────────────────────────
-const AdminCard = ({ admin, isSelf }: { admin: BackendUser; isSelf: boolean }) => {
+const AdminCard = ({
+  admin,
+  isSelf,
+}: {
+  admin: BackendUser;
+  isSelf: boolean;
+}) => {
   const initials = (admin.name ?? admin.username ?? admin.email)
     .split(" ")
     .map((n) => n[0])
@@ -26,9 +32,9 @@ const AdminCard = ({ admin, isSelf }: { admin: BackendUser; isSelf: boolean }) =
     .slice(0, 2);
 
   const joined = new Date(admin.createdAt).toLocaleDateString("en-GB", {
-    day:   "numeric",
+    day: "numeric",
     month: "short",
-    year:  "numeric",
+    year: "numeric",
   });
 
   return (
@@ -51,7 +57,9 @@ const AdminCard = ({ admin, isSelf }: { admin: BackendUser; isSelf: boolean }) =
           )}
         </div>
         <p className="text-xs text-muted-foreground truncate">{admin.email}</p>
-        <p className="text-[11px] text-muted-foreground/60 mt-0.5">Joined {joined}</p>
+        <p className="text-[11px] text-muted-foreground/60 mt-0.5">
+          Joined {joined}
+        </p>
       </div>
 
       {/* Badge */}
@@ -65,10 +73,10 @@ const AdminCard = ({ admin, isSelf }: { admin: BackendUser; isSelf: boolean }) =
 
 // ── Promote Form ──────────────────────────────────────────────────────────────
 const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
-  const [email,     setEmail]     = useState("");
+  const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
-  const [success,   setSuccess]   = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,7 +125,9 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
           <UserPlus size={16} className="text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-foreground">Promote a user to admin</p>
+          <p className="text-sm font-semibold text-foreground">
+            Promote a user to admin
+          </p>
           <p className="text-xs text-muted-foreground">
             The user must already have a registered account.
           </p>
@@ -135,18 +145,28 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
               type="email"
               placeholder="e.g. john@example.com"
               value={email}
-              onChange={(e) => { setEmail(e.target.value); setError(null); setSuccess(null); }}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError(null);
+                setSuccess(null);
+              }}
               className="pr-10 bg-background border-border text-foreground placeholder:text-muted-foreground/50"
               disabled={isLoading}
             />
-            <Mail className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <Mail
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+              size={16}
+            />
           </div>
         </div>
 
         {/* Error */}
         {error && (
           <div className="flex items-start gap-2 p-3 bg-destructive/5 border border-destructive/20 rounded-lg">
-            <AlertCircle size={15} className="text-destructive mt-0.5 shrink-0" />
+            <AlertCircle
+              size={15}
+              className="text-destructive mt-0.5 shrink-0"
+            />
             <p className="text-xs text-destructive">{error}</p>
           </div>
         )}
@@ -154,7 +174,10 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
         {/* Success */}
         {success && (
           <div className="flex items-start gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
-            <CheckCircle2 size={15} className="text-emerald-500 mt-0.5 shrink-0" />
+            <CheckCircle2
+              size={15}
+              className="text-emerald-500 mt-0.5 shrink-0"
+            />
             <p className="text-xs text-emerald-600">{success}</p>
           </div>
         )}
@@ -163,7 +186,8 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
         <div className="flex items-start gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
           <ShieldOff size={14} className="text-amber-500 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-600">
-            Admins can manage all orders, products, and customers. Only promote users you fully trust.
+            Admins can manage all orders, products, and customers. Only promote
+            users you fully trust.
           </p>
         </div>
 
@@ -193,7 +217,7 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
 const AdminManagePage = () => {
   const { user: currentUser } = useAuth();
 
-  const [admins,    setAdmins]    = useState<BackendUser[]>([]);
+  const [admins, setAdmins] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
@@ -220,11 +244,12 @@ const AdminManagePage = () => {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-
       {/* Page title */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-foreground">Admin Management</h1>
+          <h1 className="text-xl font-semibold text-foreground">
+            Admin Management
+          </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             View all admins and promote registered users.
           </p>
@@ -248,9 +273,13 @@ const AdminManagePage = () => {
       <div className="bg-card border border-border rounded-xl overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div>
-            <p className="text-sm font-semibold text-foreground">Current admins</p>
+            <p className="text-sm font-semibold text-foreground">
+              Current admins
+            </p>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {isLoading ? "Loading…" : `${admins.length} admin${admins.length !== 1 ? "s" : ""} total`}
+              {isLoading
+                ? "Loading…"
+                : `${admins.length} admin${admins.length !== 1 ? "s" : ""} total`}
             </p>
           </div>
           <ShieldCheck size={16} className="text-primary" />
@@ -268,7 +297,12 @@ const AdminManagePage = () => {
                 <X size={16} />
                 <p className="text-sm">{fetchError}</p>
               </div>
-              <Button variant="outline" size="sm" onClick={fetchAdmins} className="gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchAdmins}
+                className="gap-1.5"
+              >
                 <RefreshCw size={13} /> Retry
               </Button>
             </div>

@@ -12,7 +12,7 @@ import {
   type OrderDoc,
   type OrderStatus,
   type FulfillmentType,
-} from "@/services/order.service";
+} from "@/services/Order.service";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";

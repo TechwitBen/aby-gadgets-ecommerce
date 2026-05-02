@@ -1,70 +1,118 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
-  ArrowLeft, ShieldCheck, Loader2, ChevronDown,
-  MapPin, Store, UserCircle,
+  ArrowLeft,
+  ShieldCheck,
+  Loader2,
+  ChevronDown,
+  MapPin,
+  Store,
+  UserCircle,
 } from "lucide-react";
-import { Button }   from "@/components/ui/button";
-import { Input }    from "@/components/ui/input";
-import { Label }    from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
-import { useCart }        from "@/contexts/CartContext";
-import { useAuth }        from "@/contexts/AuthContext";
-import { formatPrice }    from "@/services/products.service";
-import { orderService }   from "@/services/order.service";
-import { paymentService } from "@/services/payment.service";
-import { userService }    from "@/services/user.service";
+import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { formatPrice } from "@/services/Products.service";
+import { orderService } from "@/services/Order.service";
+import { paymentService } from "@/services/Payment.service";
+import { userService } from "@/services/User.service";
 import {
   settingsService,
   type SiteSettings,
   type DeliveryConfig,
   type DeliveryZone,
-} from "@/services/settings.service";
+} from "@/services/Settings.service";
 import OrderSuccessModal from "@/components/modals/Ordersuccessmodal";
 
-type PaymentMethod   = "online" | "pod";
+type PaymentMethod = "online" | "pod";
 type FulfillmentType = "delivery" | "pickup";
 
 interface OrderItem {
-  id: string; variantId: string; name: string;
-  price: number; image: string; quantity: number;
-  storage?: string; color?: string;
+  id: string;
+  variantId: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  storage?: string;
+  color?: string;
 }
 
 const nigerianStates = [
-  "Lagos","Abuja","Oyo","Port Harcourt","Ibadan","Kano","Enugu",
-  "Rivers","Delta","Edo","Cross River","Bayelsa","Akwa Ibom","Calabar",
-  "Anambra","Imo","Abia","Ebonyi","Osun","Ondo","Ekiti","Kwara","Niger",
-  "Nasarawa","Plateau","Kaduna","Kebbi","Zamfara","Katsina","Jigawa","Yobe",
-  "Borno","Gombe","Adamawa","Taraba","Sokoto",
+  "Lagos",
+  "Abuja",
+  "Oyo",
+  "Port Harcourt",
+  "Ibadan",
+  "Kano",
+  "Enugu",
+  "Rivers",
+  "Delta",
+  "Edo",
+  "Cross River",
+  "Bayelsa",
+  "Akwa Ibom",
+  "Calabar",
+  "Anambra",
+  "Imo",
+  "Abia",
+  "Ebonyi",
+  "Osun",
+  "Ondo",
+  "Ekiti",
+  "Kwara",
+  "Niger",
+  "Nasarawa",
+  "Plateau",
+  "Kaduna",
+  "Kebbi",
+  "Zamfara",
+  "Katsina",
+  "Jigawa",
+  "Yobe",
+  "Borno",
+  "Gombe",
+  "Adamawa",
+  "Taraba",
+  "Sokoto",
 ];
 
 const Checkout = () => {
   const { subtotal, items, clearCart } = useCart();
-  const { user }    = useAuth();
-  const navigate    = useNavigate();
-  const location    = useLocation();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const paystackRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const paystackRedirectTimer = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const buyNowItem: OrderItem | undefined = location.state?.buyNowItem;
-  const isBuyNow      = !!buyNowItem;
-  const orderItems    = isBuyNow ? [buyNowItem] : items;
-  const orderSubtotal = isBuyNow ? buyNowItem.price * buyNowItem.quantity : subtotal;
+  const isBuyNow = !!buyNowItem;
+  const orderItems = isBuyNow ? [buyNowItem] : items;
+  const orderSubtotal = isBuyNow
+    ? buyNowItem.price * buyNowItem.quantity
+    : subtotal;
 
   // ── Form state ─────────────────────────────────────────────────────────────
-  const [firstName,        setFirstName]        = useState("");
-  const [lastName,         setLastName]         = useState("");
-  const [phone,            setPhone]            = useState("");
-  const [email,            setEmail]            = useState(user?.email ?? "");
-  const [address,          setAddress]          = useState("");
-  const [state,            setState]            = useState("");
-  const [termsAccepted,    setTermsAccepted]    = useState(false);
-  const [infoConfirmed,    setInfoConfirmed]    = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState(user?.email ?? "");
+  const [address, setAddress] = useState("");
+  const [state, setState] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [infoConfirmed, setInfoConfirmed] = useState(false);
   const [showOrderSummary, setShowOrderSummary] = useState(false);
 
   // ── Profile pre-fill ───────────────────────────────────────────────────────
@@ -72,30 +120,33 @@ const Checkout = () => {
   const [hasProfileData, setHasProfileData] = useState(false);
 
   // ── Fulfillment state ──────────────────────────────────────────────────────
-  const [fulfillment,  setFulfillment]  = useState<FulfillmentType>("delivery");
+  const [fulfillment, setFulfillment] = useState<FulfillmentType>("delivery");
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
-  const [deliveryFee,  setDeliveryFee]  = useState(0);
+  const [deliveryFee, setDeliveryFee] = useState(0);
 
   // ── Payment state ──────────────────────────────────────────────────────────
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
 
   // ── Submit state ───────────────────────────────────────────────────────────
-  const [isSubmitting,       setIsSubmitting]       = useState(false);
-  const [submitError,        setSubmitError]        = useState<string | null>(null);
-  const [showSuccess,        setShowSuccess]        = useState(false);
-  const [createdOrderId,     setCreatedOrderId]     = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState("");
   const [createdOrderNumber, setCreatedOrderNumber] = useState("");
-  const [paymentInitFailed,  setPaymentInitFailed]  = useState(false);
+  const [paymentInitFailed, setPaymentInitFailed] = useState(false);
 
   // ── Settings ───────────────────────────────────────────────────────────────
-  const [siteSettings,    setSiteSettings]    = useState<SiteSettings | null>(null);
-  const [deliveryConfig,  setDeliveryConfig]  = useState<DeliveryConfig | null>(null);
+  const [siteSettings, setSiteSettings] = useState<SiteSettings | null>(null);
+  const [deliveryConfig, setDeliveryConfig] = useState<DeliveryConfig | null>(
+    null,
+  );
   const [settingsLoading, setSettingsLoading] = useState(true);
 
   // ── Cleanup on unmount ─────────────────────────────────────────────────────
   useEffect(() => {
     return () => {
-      if (paystackRedirectTimer.current) clearTimeout(paystackRedirectTimer.current);
+      if (paystackRedirectTimer.current)
+        clearTimeout(paystackRedirectTimer.current);
     };
   }, []);
 
@@ -104,16 +155,18 @@ const Checkout = () => {
     Promise.all([
       settingsService.get().catch(() => null),
       settingsService.getDeliveryConfig().catch(() => null),
-    ]).then(([site, delivery]) => {
-      setSiteSettings(site);
-      setDeliveryConfig(delivery);
-      if (delivery) {
-        if (delivery.enableDelivery)    setFulfillment("delivery");
-        else if (delivery.enablePickup) setFulfillment("pickup");
-      }
-      if (site?.onlinePayment)      setPaymentMethod("online");
-      else if (site?.payOnDelivery) setPaymentMethod("pod");
-    }).finally(() => setSettingsLoading(false));
+    ])
+      .then(([site, delivery]) => {
+        setSiteSettings(site);
+        setDeliveryConfig(delivery);
+        if (delivery) {
+          if (delivery.enableDelivery) setFulfillment("delivery");
+          else if (delivery.enablePickup) setFulfillment("pickup");
+        }
+        if (site?.onlinePayment) setPaymentMethod("online");
+        else if (site?.payOnDelivery) setPaymentMethod("pod");
+      })
+      .finally(() => setSettingsLoading(false));
   }, []);
 
   // ── Pre-fill form from profile ─────────────────────────────────────────────
@@ -129,9 +182,13 @@ const Checkout = () => {
   // from the address schema. We never read phone from the address anymore.
   // ──────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!user) { setProfileLoading(false); return; }
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
 
-    userService.getProfile()
+    userService
+      .getProfile()
       .then((profile) => {
         let filled = false;
 
@@ -160,8 +217,7 @@ const Checkout = () => {
         // ── Address — street + state from default (or first) address ──────
         // Only location fields; name/phone are gone from the address object.
         const defaultAddr =
-          profile.addresses?.find((a) => a.isDefault) ??
-          profile.addresses?.[0];
+          profile.addresses?.find((a) => a.isDefault) ?? profile.addresses?.[0];
 
         if (defaultAddr) {
           if (defaultAddr.street?.trim()) {
@@ -183,17 +239,35 @@ const Checkout = () => {
   }, [user]);
 
   // ── Derived values ─────────────────────────────────────────────────────────
-  const onlineEnabled   = siteSettings  === null ? true : siteSettings.onlinePayment;
-  const podEnabled      = siteSettings  === null ? true : siteSettings.payOnDelivery;
-  const pickupEnabled   = deliveryConfig === null ? true : deliveryConfig.enablePickup;
-  const deliveryEnabled = deliveryConfig === null ? true : deliveryConfig.enableDelivery;
+  const onlineEnabled =
+    siteSettings === null ? true : siteSettings.onlinePayment;
+  const podEnabled = siteSettings === null ? true : siteSettings.payOnDelivery;
+  const pickupEnabled =
+    deliveryConfig === null ? true : deliveryConfig.enablePickup;
+  const deliveryEnabled =
+    deliveryConfig === null ? true : deliveryConfig.enableDelivery;
 
   const zones: DeliveryZone[] = deliveryConfig?.zones ?? [];
 
   const paymentOptions = [
-    onlineEnabled && { value: "online" as PaymentMethod, label: "Card / Transfer / USSD", icon: "💳", subtitle: "Pay now" },
-    podEnabled    && { value: "pod"    as PaymentMethod, label: "Pay On Delivery",         icon: "💵", subtitle: "Pay on arrival" },
-  ].filter(Boolean) as { value: PaymentMethod; label: string; icon: string; subtitle: string }[];
+    onlineEnabled && {
+      value: "online" as PaymentMethod,
+      label: "Card / Transfer / USSD",
+      icon: "💳",
+      subtitle: "Pay now",
+    },
+    podEnabled && {
+      value: "pod" as PaymentMethod,
+      label: "Pay On Delivery",
+      icon: "💵",
+      subtitle: "Pay on arrival",
+    },
+  ].filter(Boolean) as {
+    value: PaymentMethod;
+    label: string;
+    icon: string;
+    subtitle: string;
+  }[];
 
   const handleZoneSelect = (cityName: string) => {
     const zone = zones.find((z) => z.city === cityName) ?? null;
@@ -202,7 +276,10 @@ const Checkout = () => {
   };
 
   useEffect(() => {
-    if (fulfillment === "pickup") { setDeliveryFee(0); setSelectedZone(null); }
+    if (fulfillment === "pickup") {
+      setDeliveryFee(0);
+      setSelectedZone(null);
+    }
   }, [fulfillment]);
 
   const grandTotal = orderSubtotal + deliveryFee;
@@ -212,7 +289,9 @@ const Checkout = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
         <p className="text-muted-foreground text-center">Your cart is empty</p>
-        <Link to="/products"><Button>Continue Shopping</Button></Link>
+        <Link to="/products">
+          <Button>Continue Shopping</Button>
+        </Link>
       </div>
     );
   }
@@ -230,23 +309,39 @@ const Checkout = () => {
     }
     if (fulfillment === "delivery") {
       if (!address.trim() || !state) {
-        setSubmitError("Please enter your delivery address and select a state.");
+        setSubmitError(
+          "Please enter your delivery address and select a state.",
+        );
         return;
       }
       if (!selectedZone) {
-        setSubmitError("Please select your delivery zone so we can calculate the fee.");
+        setSubmitError(
+          "Please select your delivery zone so we can calculate the fee.",
+        );
         return;
       }
     }
-    if (orderItems.length === 0) { setSubmitError("No items in order."); return; }
-    const invalidItems = orderItems.filter((i) => !i.variantId || i.quantity < 1);
-    if (invalidItems.length > 0) { setSubmitError("Some items are missing required information."); return; }
+    if (orderItems.length === 0) {
+      setSubmitError("No items in order.");
+      return;
+    }
+    const invalidItems = orderItems.filter(
+      (i) => !i.variantId || i.quantity < 1,
+    );
+    if (invalidItems.length > 0) {
+      setSubmitError("Some items are missing required information.");
+      return;
+    }
     if (paymentMethod === "online" && !onlineEnabled) {
-      setSubmitError("Online payment is currently unavailable. Please choose Pay on Delivery.");
+      setSubmitError(
+        "Online payment is currently unavailable. Please choose Pay on Delivery.",
+      );
       return;
     }
     if (paymentMethod === "pod" && !podEnabled) {
-      setSubmitError("Pay on Delivery is currently unavailable. Please choose online payment.");
+      setSubmitError(
+        "Pay on Delivery is currently unavailable. Please choose online payment.",
+      );
       return;
     }
 
@@ -255,18 +350,28 @@ const Checkout = () => {
 
     try {
       const order = await orderService.createOrder({
-        orderItems: orderItems.map((item) => ({ variant: item.variantId, quantity: item.quantity })),
+        orderItems: orderItems.map((item) => ({
+          variant: item.variantId,
+          quantity: item.quantity,
+        })),
         fulfillment_type: fulfillment,
-        shipping_fee:     deliveryFee,
-        delivery_city:    fulfillment === "delivery" ? selectedZone?.city : undefined,
-        pickup_location:  fulfillment === "pickup"   ? (deliveryConfig?.pickupAddress ?? "") : undefined,
+        shipping_fee: deliveryFee,
+        delivery_city:
+          fulfillment === "delivery" ? selectedZone?.city : undefined,
+        pickup_location:
+          fulfillment === "pickup"
+            ? (deliveryConfig?.pickupAddress ?? "")
+            : undefined,
         shipping_address: {
-          full_name:   `${firstName.trim()} ${lastName.trim()}`,
-          phone:       phone.trim(),
-          street:      fulfillment === "delivery" ? address.trim() : "",
-          city:        fulfillment === "delivery" ? (selectedZone?.city ?? state) : "Store Pickup",
-          state:       state || "Lagos",
-          country:     "Nigeria",
+          full_name: `${firstName.trim()} ${lastName.trim()}`,
+          phone: phone.trim(),
+          street: fulfillment === "delivery" ? address.trim() : "",
+          city:
+            fulfillment === "delivery"
+              ? (selectedZone?.city ?? state)
+              : "Store Pickup",
+          state: state || "Lagos",
+          country: "Nigeria",
           postal_code: "",
         },
         paymentMethod: paymentMethod === "online" ? "paystack" : "pod",
@@ -280,7 +385,9 @@ const Checkout = () => {
         if (!isBuyNow) clearCart();
       } else {
         try {
-          const { authorization_url } = await paymentService.initializePayment({ orderId: order._id });
+          const { authorization_url } = await paymentService.initializePayment({
+            orderId: order._id,
+          });
           setShowSuccess(true);
           if (!isBuyNow) clearCart();
           paystackRedirectTimer.current = setTimeout(() => {
@@ -293,7 +400,10 @@ const Checkout = () => {
         }
       }
     } catch (err: any) {
-      setSubmitError(err?.response?.data?.message || "Something went wrong. Please try again.");
+      setSubmitError(
+        err?.response?.data?.message ||
+          "Something went wrong. Please try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -314,7 +424,9 @@ const Checkout = () => {
         <p className="text-gray-600 text-center font-medium">
           Checkout is temporarily unavailable. Please try again later.
         </p>
-        <Link to="/cart"><Button variant="outline">Back to Cart</Button></Link>
+        <Link to="/cart">
+          <Button variant="outline">Back to Cart</Button>
+        </Link>
       </div>
     );
   }
@@ -325,7 +437,9 @@ const Checkout = () => {
         <p className="text-gray-600 text-center font-medium">
           No payment methods are currently available. Please try again later.
         </p>
-        <Link to="/cart"><Button variant="outline">Back to Cart</Button></Link>
+        <Link to="/cart">
+          <Button variant="outline">Back to Cart</Button>
+        </Link>
       </div>
     );
   }
@@ -333,7 +447,6 @@ const Checkout = () => {
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white">
-
       {/* ── Sticky Header ── */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -359,7 +472,6 @@ const Checkout = () => {
       </div>
 
       <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 sm:pb-16">
-
         {/* Error banner */}
         {submitError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">
@@ -374,14 +486,20 @@ const Checkout = () => {
             className="w-full flex items-center justify-between px-4 py-3.5"
           >
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-gray-900">Order Summary</span>
+              <span className="text-sm font-semibold text-gray-900">
+                Order Summary
+              </span>
               <span className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">
                 {orderItems.length} item{orderItems.length > 1 ? "s" : ""}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-gray-900">{formatPrice(grandTotal)}</span>
-              <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showOrderSummary ? "rotate-180" : ""}`} />
+              <span className="text-sm font-bold text-gray-900">
+                {formatPrice(grandTotal)}
+              </span>
+              <ChevronDown
+                className={`w-4 h-4 text-gray-500 transition-transform ${showOrderSummary ? "rotate-180" : ""}`}
+              />
             </div>
           </button>
 
@@ -389,28 +507,49 @@ const Checkout = () => {
             <div className="px-4 pb-4 border-t border-gray-200">
               <div className="mt-3 space-y-3">
                 {orderItems.map((item) => (
-                  <div key={item.variantId ?? item.id} className="flex items-center gap-3">
+                  <div
+                    key={item.variantId ?? item.id}
+                    className="flex items-center gap-3"
+                  >
                     <div className="w-12 h-12 bg-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-contain p-1" />
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-contain p-1"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 truncate">{item.name}</p>
-                      {item.color   && <p className="text-xs text-gray-500">{item.color}</p>}
-                      {item.storage && <p className="text-xs text-gray-500">{item.storage}</p>}
-                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      <p className="text-xs font-semibold text-gray-900 truncate">
+                        {item.name}
+                      </p>
+                      {item.color && (
+                        <p className="text-xs text-gray-500">{item.color}</p>
+                      )}
+                      {item.storage && (
+                        <p className="text-xs text-gray-500">{item.storage}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Qty: {item.quantity}
+                      </p>
                     </div>
-                    <p className="text-xs font-bold text-gray-900">{formatPrice(item.price * item.quantity)}</p>
+                    <p className="text-xs font-bold text-gray-900">
+                      {formatPrice(item.price * item.quantity)}
+                    </p>
                   </div>
                 ))}
 
                 <div className="pt-3 border-t border-gray-200 space-y-1.5">
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Subtotal</span>
-                    <span className="font-semibold text-gray-900">{formatPrice(orderSubtotal)}</span>
+                    <span className="font-semibold text-gray-900">
+                      {formatPrice(orderSubtotal)}
+                    </span>
                   </div>
                   <div className="flex justify-between text-xs text-gray-500">
                     <span>Delivery</span>
-                    <span className={`font-semibold ${deliveryFee === 0 ? "text-green-600" : "text-gray-900"}`}>
+                    <span
+                      className={`font-semibold ${deliveryFee === 0 ? "text-green-600" : "text-gray-900"}`}
+                    >
                       {deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}
                     </span>
                   </div>
@@ -426,14 +565,14 @@ const Checkout = () => {
 
         {/* ── Main grid ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-
           {/* Left column */}
           <div className="lg:col-span-2 space-y-5">
-
             {/* ── Customer Details ── */}
             <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm sm:text-base font-bold text-gray-900">Customer Details</h2>
+                <h2 className="text-sm sm:text-base font-bold text-gray-900">
+                  Customer Details
+                </h2>
                 {hasProfileData && (
                   <Link
                     to="/settings"
@@ -450,15 +589,25 @@ const Checkout = () => {
                 <div className="mb-4 flex items-start gap-2.5 px-3.5 py-3 bg-purple-50 border border-purple-100 rounded-xl">
                   <UserCircle className="w-4 h-4 text-purple-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-purple-700 leading-relaxed">
-                    Details filled from your profile. Edit here for this order only, or update permanently in{" "}
-                    <Link to="/settings" className="font-bold underline underline-offset-2">Settings</Link>.
+                    Details filled from your profile. Edit here for this order
+                    only, or update permanently in{" "}
+                    <Link
+                      to="/settings"
+                      className="font-bold underline underline-offset-2"
+                    >
+                      Settings
+                    </Link>
+                    .
                   </p>
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
-                  <Label htmlFor="firstName" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  <Label
+                    htmlFor="firstName"
+                    className="text-xs font-semibold text-gray-600 block mb-1.5"
+                  >
                     First Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -470,7 +619,10 @@ const Checkout = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="lastName" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  <Label
+                    htmlFor="lastName"
+                    className="text-xs font-semibold text-gray-600 block mb-1.5"
+                  >
                     Last Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -482,7 +634,10 @@ const Checkout = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  <Label
+                    htmlFor="phone"
+                    className="text-xs font-semibold text-gray-600 block mb-1.5"
+                  >
                     Phone Number
                   </Label>
                   <Input
@@ -495,7 +650,10 @@ const Checkout = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="email" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                  <Label
+                    htmlFor="email"
+                    className="text-xs font-semibold text-gray-600 block mb-1.5"
+                  >
                     Email Address
                   </Label>
                   <Input
@@ -508,7 +666,9 @@ const Checkout = () => {
                   />
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-2.5">We'll use this to confirm your delivery</p>
+              <p className="text-xs text-gray-400 mt-2.5">
+                We'll use this to confirm your delivery
+              </p>
             </section>
 
             {/* ── Fulfillment Method ── */}
@@ -517,7 +677,9 @@ const Checkout = () => {
                 How would you like to receive your order?
               </h2>
 
-              <div className={`grid gap-3 mb-5 ${pickupEnabled && deliveryEnabled ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}>
+              <div
+                className={`grid gap-3 mb-5 ${pickupEnabled && deliveryEnabled ? "grid-cols-2" : "grid-cols-1 max-w-xs"}`}
+              >
                 {deliveryEnabled && (
                   <button
                     onClick={() => setFulfillment("delivery")}
@@ -527,11 +689,17 @@ const Checkout = () => {
                         : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                   >
-                    <MapPin className={`w-6 h-6 ${fulfillment === "delivery" ? "text-purple-600" : "text-gray-400"}`} />
-                    <span className={`text-sm font-semibold ${fulfillment === "delivery" ? "text-purple-700" : "text-gray-700"}`}>
+                    <MapPin
+                      className={`w-6 h-6 ${fulfillment === "delivery" ? "text-purple-600" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`text-sm font-semibold ${fulfillment === "delivery" ? "text-purple-700" : "text-gray-700"}`}
+                    >
                       Delivery
                     </span>
-                    <span className="text-xs text-gray-400">To your address</span>
+                    <span className="text-xs text-gray-400">
+                      To your address
+                    </span>
                   </button>
                 )}
                 {pickupEnabled && (
@@ -543,11 +711,17 @@ const Checkout = () => {
                         : "border-gray-200 bg-white hover:border-gray-300"
                     }`}
                   >
-                    <Store className={`w-6 h-6 ${fulfillment === "pickup" ? "text-purple-600" : "text-gray-400"}`} />
-                    <span className={`text-sm font-semibold ${fulfillment === "pickup" ? "text-purple-700" : "text-gray-700"}`}>
+                    <Store
+                      className={`w-6 h-6 ${fulfillment === "pickup" ? "text-purple-600" : "text-gray-400"}`}
+                    />
+                    <span
+                      className={`text-sm font-semibold ${fulfillment === "pickup" ? "text-purple-700" : "text-gray-700"}`}
+                    >
                       Pickup
                     </span>
-                    <span className="text-xs text-gray-400">Collect at store — Free</span>
+                    <span className="text-xs text-gray-400">
+                      Collect at store — Free
+                    </span>
                   </button>
                 )}
               </div>
@@ -557,15 +731,20 @@ const Checkout = () => {
                 <div className="space-y-4">
                   <div>
                     <Label className="text-xs font-semibold text-gray-600 block mb-1.5">
-                      Delivery Zone / Area <span className="text-red-500">*</span>
+                      Delivery Zone / Area{" "}
+                      <span className="text-red-500">*</span>
                     </Label>
                     {zones.length === 0 ? (
                       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
-                        ⚠ No delivery zones are configured yet. Please contact us or choose Pickup.
+                        ⚠ No delivery zones are configured yet. Please contact
+                        us or choose Pickup.
                       </div>
                     ) : (
                       <>
-                        <Select value={selectedZone?.city ?? ""} onValueChange={handleZoneSelect}>
+                        <Select
+                          value={selectedZone?.city ?? ""}
+                          onValueChange={handleZoneSelect}
+                        >
                           <SelectTrigger className="h-10 text-sm border-gray-200 rounded-xl">
                             <SelectValue placeholder="Select your delivery area…" />
                           </SelectTrigger>
@@ -574,7 +753,9 @@ const Checkout = () => {
                               <SelectItem key={z.city} value={z.city}>
                                 {z.city}
                                 {z.fee > 0 && (
-                                  <span className="ml-2 text-xs text-gray-400">— ₦{z.fee.toLocaleString()}</span>
+                                  <span className="ml-2 text-xs text-gray-400">
+                                    — ₦{z.fee.toLocaleString()}
+                                  </span>
                                 )}
                               </SelectItem>
                             ))}
@@ -582,15 +763,23 @@ const Checkout = () => {
                         </Select>
                         {selectedZone && (
                           <p className="text-xs text-gray-500 mt-1.5">
-                            Delivery fee for <strong>{selectedZone.city}</strong>:{" "}
-                            {selectedZone.fee === 0
-                              ? <span className="text-green-600 font-semibold">Free</span>
-                              : <span className="font-semibold text-gray-800">₦{selectedZone.fee.toLocaleString()}</span>}
+                            Delivery fee for{" "}
+                            <strong>{selectedZone.city}</strong>:{" "}
+                            {selectedZone.fee === 0 ? (
+                              <span className="text-green-600 font-semibold">
+                                Free
+                              </span>
+                            ) : (
+                              <span className="font-semibold text-gray-800">
+                                ₦{selectedZone.fee.toLocaleString()}
+                              </span>
+                            )}
                           </p>
                         )}
                         {!selectedZone && (
                           <p className="text-xs text-amber-600 mt-1.5">
-                            ⚠ Can't find your area? You can come to our store for free pickup instead.
+                            ⚠ Can't find your area? You can come to our store
+                            for free pickup instead.
                           </p>
                         )}
                       </>
@@ -599,7 +788,10 @@ const Checkout = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
-                      <Label htmlFor="address" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                      <Label
+                        htmlFor="address"
+                        className="text-xs font-semibold text-gray-600 block mb-1.5"
+                      >
                         Street Address <span className="text-red-500">*</span>
                       </Label>
                       <Input
@@ -611,7 +803,10 @@ const Checkout = () => {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="state" className="text-xs font-semibold text-gray-600 block mb-1.5">
+                      <Label
+                        htmlFor="state"
+                        className="text-xs font-semibold text-gray-600 block mb-1.5"
+                      >
                         State <span className="text-red-500">*</span>
                       </Label>
                       <Select value={state} onValueChange={setState}>
@@ -620,7 +815,9 @@ const Checkout = () => {
                         </SelectTrigger>
                         <SelectContent>
                           {nigerianStates.map((s) => (
-                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -634,31 +831,46 @@ const Checkout = () => {
                 <div className="bg-green-50 border border-green-200 rounded-xl p-4 space-y-3">
                   <div className="flex items-center gap-2">
                     <Store size={15} className="text-green-600" />
-                    <p className="text-sm font-bold text-green-800">Pickup Information</p>
+                    <p className="text-sm font-bold text-green-800">
+                      Pickup Information
+                    </p>
                     <span className="ml-auto text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700">
                       Free
                     </span>
                   </div>
                   {deliveryConfig.pickupAddress && (
                     <div>
-                      <p className="text-xs text-green-600 font-semibold mb-0.5">📍 Location</p>
-                      <p className="text-sm text-green-800">{deliveryConfig.pickupAddress}</p>
+                      <p className="text-xs text-green-600 font-semibold mb-0.5">
+                        📍 Location
+                      </p>
+                      <p className="text-sm text-green-800">
+                        {deliveryConfig.pickupAddress}
+                      </p>
                     </div>
                   )}
                   {deliveryConfig.pickupHours && (
                     <div>
-                      <p className="text-xs text-green-600 font-semibold mb-0.5">🕐 Hours</p>
-                      <p className="text-sm text-green-800">{deliveryConfig.pickupHours}</p>
+                      <p className="text-xs text-green-600 font-semibold mb-0.5">
+                        🕐 Hours
+                      </p>
+                      <p className="text-sm text-green-800">
+                        {deliveryConfig.pickupHours}
+                      </p>
                     </div>
                   )}
                   {deliveryConfig.pickupInstructions && (
                     <div>
-                      <p className="text-xs text-green-600 font-semibold mb-0.5">📋 Instructions</p>
-                      <p className="text-sm text-green-800">{deliveryConfig.pickupInstructions}</p>
+                      <p className="text-xs text-green-600 font-semibold mb-0.5">
+                        📋 Instructions
+                      </p>
+                      <p className="text-sm text-green-800">
+                        {deliveryConfig.pickupInstructions}
+                      </p>
                     </div>
                   )}
                   <p className="text-xs text-green-700 bg-green-100 rounded-lg px-3 py-2">
-                    💡 A pickup code will be generated after you place your order. Bring it when you collect.
+                    💡 A pickup code will be generated after you place your
+                    order. Bring it when you collect.
                   </p>
                 </div>
               )}
@@ -666,9 +878,13 @@ const Checkout = () => {
 
             {/* ── Payment Method ── */}
             <section className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
-              <h2 className="text-sm sm:text-base font-bold text-gray-900 mb-4">Payment Method</h2>
+              <h2 className="text-sm sm:text-base font-bold text-gray-900 mb-4">
+                Payment Method
+              </h2>
 
-              <div className={`grid gap-3 mb-4 ${paymentOptions.length === 1 ? "grid-cols-1 max-w-xs" : "grid-cols-2"}`}>
+              <div
+                className={`grid gap-3 mb-4 ${paymentOptions.length === 1 ? "grid-cols-1 max-w-xs" : "grid-cols-2"}`}
+              >
                 {paymentOptions.map((m) => (
                   <button
                     key={m.value}
@@ -680,14 +896,22 @@ const Checkout = () => {
                     }`}
                   >
                     <span className="text-2xl">{m.icon}</span>
-                    <span className={`text-xs font-semibold text-center leading-tight ${
-                      paymentMethod === m.value ? "text-purple-700" : "text-gray-700"
-                    }`}>
+                    <span
+                      className={`text-xs font-semibold text-center leading-tight ${
+                        paymentMethod === m.value
+                          ? "text-purple-700"
+                          : "text-gray-700"
+                      }`}
+                    >
                       {m.label}
                     </span>
-                    <span className={`text-[10px] font-medium ${
-                      paymentMethod === m.value ? "text-purple-500" : "text-gray-400"
-                    }`}>
+                    <span
+                      className={`text-[10px] font-medium ${
+                        paymentMethod === m.value
+                          ? "text-purple-500"
+                          : "text-gray-400"
+                      }`}
+                    >
                       {m.subtitle}
                     </span>
                   </button>
@@ -699,9 +923,12 @@ const Checkout = () => {
                   <div className="w-10 h-10 rounded-full bg-purple-600 flex items-center justify-center mx-auto mb-2">
                     <ShieldCheck className="w-5 h-5 text-white" />
                   </div>
-                  <p className="text-sm font-bold text-gray-800 mb-1">Secure Payment via Paystack</p>
+                  <p className="text-sm font-bold text-gray-800 mb-1">
+                    Secure Payment via Paystack
+                  </p>
                   <p className="text-xs text-gray-500">
-                    You'll be redirected to pay via Card, Bank Transfer, or USSD.
+                    You'll be redirected to pay via Card, Bank Transfer, or
+                    USSD.
                   </p>
                   <p className="text-xs text-gray-400 mt-2 flex items-center justify-center gap-1">
                     <ShieldCheck className="w-3 h-3 text-green-500" />
@@ -713,7 +940,10 @@ const Checkout = () => {
               {paymentMethod === "pod" && (
                 <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm text-gray-600">
                   Pay with cash when your order is{" "}
-                  {fulfillment === "pickup" ? "collected from our store" : "delivered or after inspection"}.
+                  {fulfillment === "pickup"
+                    ? "collected from our store"
+                    : "delivered or after inspection"}
+                  .
                 </div>
               )}
             </section>
@@ -728,7 +958,10 @@ const Checkout = () => {
                 />
                 <span className="text-sm text-gray-700">
                   I accept Aby Gadgets{" "}
-                  <span className="text-purple-600 underline cursor-pointer">Terms & Conditions</span>.
+                  <span className="text-purple-600 underline cursor-pointer">
+                    Terms & Conditions
+                  </span>
+                  .
                 </span>
               </label>
               <label className="flex items-start gap-3 cursor-pointer">
@@ -747,19 +980,36 @@ const Checkout = () => {
           {/* ── Desktop Order Summary ── */}
           <div className="hidden sm:block lg:col-span-1">
             <div className="bg-gray-50 rounded-2xl border border-gray-200 p-5 sticky top-24">
-              <h2 className="text-base font-bold text-gray-900 mb-5">Order Summary</h2>
+              <h2 className="text-base font-bold text-gray-900 mb-5">
+                Order Summary
+              </h2>
 
               <div className="space-y-3 mb-5">
                 {orderItems.map((item) => (
-                  <div key={item.variantId ?? item.id} className="flex items-center gap-3">
+                  <div
+                    key={item.variantId ?? item.id}
+                    className="flex items-center gap-3"
+                  >
                     <div className="w-12 h-12 bg-white rounded-xl border border-gray-200 overflow-hidden flex-shrink-0">
-                      <img src={item.image} alt={item.name} className="w-full h-full object-contain p-1" />
+                      <img
+                        src={item.image}
+                        alt={item.name}
+                        className="w-full h-full object-contain p-1"
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-900 truncate">{item.name}</p>
-                      {item.color   && <p className="text-xs text-gray-500">{item.color}</p>}
-                      {item.storage && <p className="text-xs text-gray-500">{item.storage}</p>}
-                      <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
+                      <p className="text-xs font-semibold text-gray-900 truncate">
+                        {item.name}
+                      </p>
+                      {item.color && (
+                        <p className="text-xs text-gray-500">{item.color}</p>
+                      )}
+                      {item.storage && (
+                        <p className="text-xs text-gray-500">{item.storage}</p>
+                      )}
+                      <p className="text-xs text-gray-500">
+                        Qty: {item.quantity}
+                      </p>
                     </div>
                     <p className="text-xs font-bold text-gray-900 flex-shrink-0">
                       {formatPrice(item.price * item.quantity)}
@@ -771,7 +1021,9 @@ const Checkout = () => {
               <div className="border-t border-gray-200 pt-4 space-y-2 mb-5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Subtotal</span>
-                  <span className="font-semibold">{formatPrice(orderSubtotal)}</span>
+                  <span className="font-semibold">
+                    {formatPrice(orderSubtotal)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">
@@ -781,16 +1033,22 @@ const Checkout = () => {
                         ? `Delivery (${selectedZone.city})`
                         : "Delivery"}
                   </span>
-                  <span className={`font-semibold ${deliveryFee === 0 ? "text-green-600" : "text-gray-900"}`}>
+                  <span
+                    className={`font-semibold ${deliveryFee === 0 ? "text-green-600" : "text-gray-900"}`}
+                  >
                     {deliveryFee === 0 ? "Free" : formatPrice(deliveryFee)}
                   </span>
                 </div>
                 {fulfillment === "delivery" && !selectedZone && (
-                  <p className="text-xs text-amber-500 italic">Select a zone to see delivery fee</p>
+                  <p className="text-xs text-amber-500 italic">
+                    Select a zone to see delivery fee
+                  </p>
                 )}
                 <div className="border-t border-gray-200 pt-3 flex justify-between items-center">
                   <span className="font-bold text-gray-900">Total</span>
-                  <span className="font-bold text-lg text-gray-900">{formatPrice(grandTotal)}</span>
+                  <span className="font-bold text-lg text-gray-900">
+                    {formatPrice(grandTotal)}
+                  </span>
                 </div>
               </div>
 
@@ -799,7 +1057,9 @@ const Checkout = () => {
                 onClick={handleSubmit}
                 disabled={!termsAccepted || !infoConfirmed || isSubmitting}
               >
-                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
                 {isSubmitting
                   ? "Processing…"
                   : paymentMethod === "online"
@@ -818,10 +1078,13 @@ const Checkout = () => {
         <div className="flex items-center gap-3">
           <div className="flex-1 min-w-0">
             <div className="text-xs text-gray-400">Total</div>
-            <div className="text-base font-bold text-gray-900">{formatPrice(grandTotal)}</div>
+            <div className="text-base font-bold text-gray-900">
+              {formatPrice(grandTotal)}
+            </div>
             {fulfillment === "delivery" && selectedZone && (
               <div className="text-[10px] text-gray-400 truncate">
-                incl. ₦{deliveryFee.toLocaleString()} delivery to {selectedZone.city}
+                incl. ₦{deliveryFee.toLocaleString()} delivery to{" "}
+                {selectedZone.city}
               </div>
             )}
           </div>
@@ -854,7 +1117,8 @@ const Checkout = () => {
         email={email || user?.email || ""}
         paymentInitFailed={paymentInitFailed}
         onClose={() => {
-          if (paystackRedirectTimer.current) clearTimeout(paystackRedirectTimer.current);
+          if (paystackRedirectTimer.current)
+            clearTimeout(paystackRedirectTimer.current);
           setShowSuccess(false);
           navigate("/orders");
         }}

@@ -13,8 +13,8 @@ import {
   PackageCheck,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { paymentService, type PaymentDoc } from "@/services/payment.service";
-import { orderService, type OrderDoc } from "@/services/order.service";
+import { paymentService, type PaymentDoc } from "@/services/Payment.service";
+import { orderService, type OrderDoc } from "@/services/Order.service";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CONFIRMED_STATUSES = new Set(["success", "cancelled"]);

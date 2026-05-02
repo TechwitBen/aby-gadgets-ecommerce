@@ -90,18 +90,16 @@ export const staffService = {
   },
 
   updatePermissions: async (id: string, permissions: StaffPermissions) => {
-    const { data } = await api.patch(
-      `${STAFF_API}/${id}/permissions`,
-      { permissions }
-    );
+    const { data } = await api.patch(`${STAFF_API}/${id}/permissions`, {
+      permissions,
+    });
     return data;
   },
 
   updateStatus: async (id: string, staffStatus: "active" | "inactive") => {
-    const { data } = await api.patch(
-      `${STAFF_API}/${id}/status`,
-      { staffStatus }
-    );
+    const { data } = await api.patch(`${STAFF_API}/${id}/status`, {
+      staffStatus,
+    });
     return data;
   },
 
@@ -123,7 +121,7 @@ export const inviteAPI = {
   // accept invite
   acceptInvite: async (
     token: string,
-    payload: { username: string; password: string; name?: string }
+    payload: { username: string; password: string; name?: string },
   ) => {
     const { data } = await api.post(`/staff/invite/${token}`, payload);
     return data;

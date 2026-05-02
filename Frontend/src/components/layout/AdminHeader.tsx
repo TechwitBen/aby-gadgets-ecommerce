@@ -1,38 +1,63 @@
 import { useState, useEffect } from "react";
-import { Bell, User, Plus, ShieldCheck, LogOut, Menu, Activity } from "lucide-react";
+import {
+  Bell,
+  User,
+  Plus,
+  ShieldCheck,
+  LogOut,
+  Menu,
+  Activity,
+} from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSeparator, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { auditService } from "@/services/auditLog.service";
+import { auditService } from "@/services/AuditLog.service";
 
-interface AdminHeaderProps { onMobileMenuToggle: () => void; }
+interface AdminHeaderProps {
+  onMobileMenuToggle: () => void;
+}
 
 export const AdminHeader = ({ onMobileMenuToggle }: AdminHeaderProps) => {
   const { user, logout } = useAuth();
-  const navigate         = useNavigate();
-  const { toast }        = useToast();
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     if (user?.role !== "admin") return;
-    auditService.getUnreadCount()
+    auditService
+      .getUnreadCount()
       .then(setUnreadCount)
       .catch(() => {});
     // Poll every 60 seconds
     const id = setInterval(() => {
-      auditService.getUnreadCount().then(setUnreadCount).catch(() => {});
+      auditService
+        .getUnreadCount()
+        .then(setUnreadCount)
+        .catch(() => {});
     }, 60_000);
     return () => clearInterval(id);
   }, [user]);
 
   const handleLogout = async () => {
-    try { await logout(); navigate("/login"); }
-    catch { toast({ title: "Logout failed", description: "Please try again.", variant: "destructive" }); }
+    try {
+      await logout();
+      navigate("/login");
+    } catch {
+      toast({
+        title: "Logout failed",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -67,20 +92,34 @@ export const AdminHeader = ({ onMobileMenuToggle }: AdminHeaderProps) => {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors group">
               <span className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-xs font-semibold text-primary group-hover:bg-primary/20 transition-colors">
-                {user?.name
-                  ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
-                  : user?.username
-                    ? user.username.slice(0, 2).toUpperCase()
-                    : <User size={14} />}
+                {user?.name ? (
+                  user.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .toUpperCase()
+                    .slice(0, 2)
+                ) : user?.username ? (
+                  user.username.slice(0, 2).toUpperCase()
+                ) : (
+                  <User size={14} />
+                )}
               </span>
             </button>
           </DropdownMenuTrigger>
 
-          <DropdownMenuContent align="end" className="w-52 bg-card border-border shadow-lg rounded-xl p-1">
+          <DropdownMenuContent
+            align="end"
+            className="w-52 bg-card border-border shadow-lg rounded-xl p-1"
+          >
             {user && (
               <div className="px-3 py-2.5 border-b border-border mb-1">
-                <p className="text-xs font-semibold text-foreground truncate">{user.name ?? user.username}</p>
-                <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>
+                <p className="text-xs font-semibold text-foreground truncate">
+                  {user.name ?? user.username}
+                </p>
+                <p className="text-xs text-muted-foreground truncate mt-0.5">
+                  {user.email}
+                </p>
                 <span className="inline-flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
                   <ShieldCheck size={10} />
                   {user.role === "admin" ? "Admin" : "Staff"}
@@ -126,7 +165,8 @@ export const AdminHeader = ({ onMobileMenuToggle }: AdminHeaderProps) => {
         </DropdownMenu>
 
         {/* Add Product — hide from staff with no product add permission */}
-        {(user?.role === "admin" || user?.staffPermissions?.products?.addProducts) && (
+        {(user?.role === "admin" ||
+          user?.staffPermissions?.products?.addProducts) && (
           <Link to="products/add">
             <Button size="sm" className="gap-1">
               <Plus size={16} />

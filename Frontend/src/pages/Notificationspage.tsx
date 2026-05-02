@@ -17,7 +17,7 @@ import {
   notificationService,
   type NotificationDoc,
   type NotificationType,
-} from "@/services/notification.service";
+} from "@/services/Notification.service";
 import { useNotifications } from "@/contexts/Notificationcontext";
 import { useToast } from "@/hooks/use-toast";
 
@@ -31,14 +31,23 @@ const timeAgo = (dateStr: string): string => {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 7) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+  return new Date(dateStr).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "short",
+  });
 };
 
 type FilterType = "all" | NotificationType;
 
 const TYPE_CONFIG: Record<
   NotificationType,
-  { label: string; color: string; bg: string; dot: string; Icon: React.FC<{ className?: string }> }
+  {
+    label: string;
+    color: string;
+    bg: string;
+    dot: string;
+    Icon: React.FC<{ className?: string }>;
+  }
 > = {
   order: {
     label: "Orders",
@@ -86,22 +95,30 @@ const getActionLabel = (n: NotificationDoc): string | null => {
 };
 
 const getActionPath = (n: NotificationDoc): string => {
-  if (n.actionType === "track_order" && n.actionId) return `/track-order/${n.actionId}`;
-  if (n.actionType === "view_order" && n.actionId) return `/track-order/${n.actionId}`;
+  if (n.actionType === "track_order" && n.actionId)
+    return `/track-order/${n.actionId}`;
+  if (n.actionType === "view_order" && n.actionId)
+    return `/track-order/${n.actionId}`;
   return "/orders";
 };
 
 // ── Empty State ───────────────────────────────────────────────────────────────
 const EmptyState = ({ filter }: { filter: FilterType }) => {
   const icons: Record<FilterType, string> = {
-    all: "🔔", order: "📦", payment: "💳", account: "👤", admin_message: "💬",
+    all: "🔔",
+    order: "📦",
+    payment: "💳",
+    account: "👤",
+    admin_message: "💬",
   };
   return (
     <div className="flex flex-col items-center justify-center py-20 text-center px-4">
       <div className="w-20 h-20 rounded-3xl bg-gray-100 flex items-center justify-center text-4xl mb-5 shadow-inner">
         {icons[filter]}
       </div>
-      <h3 className="text-base font-bold text-gray-800 mb-1.5">No notifications yet</h3>
+      <h3 className="text-base font-bold text-gray-800 mb-1.5">
+        No notifications yet
+      </h3>
       <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
         {filter === "all"
           ? "You're all caught up! Updates about your orders, payments, and account will appear here."
@@ -113,7 +130,9 @@ const EmptyState = ({ filter }: { filter: FilterType }) => {
 
 // ── Notification Card ─────────────────────────────────────────────────────────
 const NotificationCard = ({
-  notification, onRead, onDelete,
+  notification,
+  onRead,
+  onDelete,
 }: {
   notification: NotificationDoc;
   onRead: (id: string) => void;
@@ -126,7 +145,9 @@ const NotificationCard = ({
 
   return (
     <div
-      onClick={() => { if (!notification.isRead) onRead(notification._id); }}
+      onClick={() => {
+        if (!notification.isRead) onRead(notification._id);
+      }}
       className={`group relative flex gap-3 sm:gap-4 p-4 sm:p-5 rounded-2xl border cursor-pointer transition-all duration-200 ${
         notification.isRead
           ? "bg-white border-gray-100 hover:border-gray-200 hover:shadow-sm"
@@ -135,22 +156,28 @@ const NotificationCard = ({
     >
       {/* Unread dot */}
       {!notification.isRead && (
-        <span className={`absolute top-4 right-4 w-2 h-2 rounded-full ${cfg.dot}`} />
+        <span
+          className={`absolute top-4 right-4 w-2 h-2 rounded-full ${cfg.dot}`}
+        />
       )}
 
       {/* Icon */}
-      <div className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl ${
-        notification.isRead ? "bg-gray-50" : cfg.bg
-      }`}>
+      <div
+        className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl ${
+          notification.isRead ? "bg-gray-50" : cfg.bg
+        }`}
+      >
         {notification.icon}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0 pr-6">
         <div className="flex items-start justify-between gap-2">
-          <h4 className={`text-sm font-semibold leading-snug ${
-            notification.isRead ? "text-gray-600" : "text-gray-900"
-          }`}>
+          <h4
+            className={`text-sm font-semibold leading-snug ${
+              notification.isRead ? "text-gray-600" : "text-gray-900"
+            }`}
+          >
             {notification.title}
           </h4>
           <span className="text-[10px] text-gray-400 flex-shrink-0 mt-0.5 whitespace-nowrap">
@@ -158,9 +185,11 @@ const NotificationCard = ({
           </span>
         </div>
 
-        <p className={`text-xs mt-1 leading-relaxed ${
-          notification.isRead ? "text-gray-400" : "text-gray-600"
-        }`}>
+        <p
+          className={`text-xs mt-1 leading-relaxed ${
+            notification.isRead ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           {notification.message}
         </p>
 
@@ -194,7 +223,10 @@ const NotificationCard = ({
 
       {/* Delete on hover */}
       <button
-        onClick={(e) => { e.stopPropagation(); onDelete(notification._id); }}
+        onClick={(e) => {
+          e.stopPropagation();
+          onDelete(notification._id);
+        }}
         className="absolute top-3 right-7 sm:right-8 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-red-50 text-gray-300 hover:text-red-400"
       >
         <Trash2 className="w-3.5 h-3.5" />
@@ -243,22 +275,32 @@ const NotificationsPage = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const handleMarkRead = async (id: string) => {
-    setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: true } : n));
+    setNotifications((prev) =>
+      prev.map((n) => (n._id === id ? { ...n, isRead: true } : n)),
+    );
     setUnreadCount((c) => Math.max(0, c - 1));
     refreshCount();
-    try { await notificationService.markAsRead(id); }
-    catch { setNotifications((prev) => prev.map((n) => n._id === id ? { ...n, isRead: false } : n)); }
+    try {
+      await notificationService.markAsRead(id);
+    } catch {
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === id ? { ...n, isRead: false } : n)),
+      );
+    }
   };
 
   const handleMarkAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
     resetCount();
-    try { await notificationService.markAllAsRead(); }
-    catch {
+    try {
+      await notificationService.markAllAsRead();
+    } catch {
       toast({ variant: "destructive", title: "Failed to mark all as read" });
       load(true);
     }
@@ -267,16 +309,24 @@ const NotificationsPage = () => {
   const handleDelete = async (id: string) => {
     const deleted = notifications.find((n) => n._id === id);
     setNotifications((prev) => prev.filter((n) => n._id !== id));
-    if (deleted && !deleted.isRead) { setUnreadCount((c) => Math.max(0, c - 1)); refreshCount(); }
-    try { await notificationService.deleteNotification(id); }
-    catch {
+    if (deleted && !deleted.isRead) {
+      setUnreadCount((c) => Math.max(0, c - 1));
+      refreshCount();
+    }
+    try {
+      await notificationService.deleteNotification(id);
+    } catch {
       toast({ variant: "destructive", title: "Failed to delete notification" });
       load(true);
     }
   };
 
-  const filtered = filter === "all" ? notifications : notifications.filter((n) => n.type === filter);
-  const countByType = (type: NotificationType) => notifications.filter((n) => n.type === type && !n.isRead).length;
+  const filtered =
+    filter === "all"
+      ? notifications
+      : notifications.filter((n) => n.type === filter);
+  const countByType = (type: NotificationType) =>
+    notifications.filter((n) => n.type === type && !n.isRead).length;
 
   return (
     <div className="min-h-screen bg-gray-50/60">
@@ -290,9 +340,13 @@ const NotificationsPage = () => {
                 <Bell className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">Notifications</h1>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight">
+                  Notifications
+                </h1>
                 <p className="text-xs text-gray-400 mt-0.5">
-                  {unreadCount > 0 ? `${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}` : "You're all caught up"}
+                  {unreadCount > 0
+                    ? `${unreadCount} unread message${unreadCount !== 1 ? "s" : ""}`
+                    : "You're all caught up"}
                 </p>
               </div>
             </div>
@@ -303,7 +357,9 @@ const NotificationsPage = () => {
                 disabled={isRefreshing}
                 className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors"
               >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`} />
+                <RefreshCw
+                  className={`w-4 h-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
               </button>
               {unreadCount > 0 && (
                 <button
@@ -335,7 +391,10 @@ const NotificationsPage = () => {
         <div className="max-w-2xl mx-auto px-4 py-3">
           <div className="flex gap-2 overflow-x-auto no-scrollbar">
             {FILTERS.map(({ key, label }) => {
-              const count = key !== "all" ? countByType(key as NotificationType) : unreadCount;
+              const count =
+                key !== "all"
+                  ? countByType(key as NotificationType)
+                  : unreadCount;
               const isActive = filter === key;
               return (
                 <button
@@ -349,9 +408,13 @@ const NotificationsPage = () => {
                 >
                   {label}
                   {count > 0 && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
-                      isActive ? "bg-white/20 text-white" : "bg-blue-600 text-white"
-                    }`}>
+                    <span
+                      className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center ${
+                        isActive
+                          ? "bg-white/20 text-white"
+                          : "bg-blue-600 text-white"
+                      }`}
+                    >
                       {count}
                     </span>
                   )}
@@ -366,7 +429,9 @@ const NotificationsPage = () => {
       <div className="max-w-2xl mx-auto px-4 py-5">
         {isLoading ? (
           <div className="space-y-3">
-            {[...Array(5)].map((_, i) => <SkeletonCard key={i} />)}
+            {[...Array(5)].map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="flex flex-col items-center py-16 gap-4">
@@ -390,9 +455,14 @@ const NotificationsPage = () => {
               return filtered.map((n) => {
                 const date = new Date(n.createdAt).toDateString();
                 const group =
-                  date === today ? "Today"
-                  : date === yesterday ? "Yesterday"
-                  : new Date(n.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "long" });
+                  date === today
+                    ? "Today"
+                    : date === yesterday
+                      ? "Yesterday"
+                      : new Date(n.createdAt).toLocaleDateString("en-GB", {
+                          day: "numeric",
+                          month: "long",
+                        });
                 const showHeader = group !== lastGroup;
                 lastGroup = group;
                 return (
@@ -402,7 +472,11 @@ const NotificationsPage = () => {
                         {group}
                       </p>
                     )}
-                    <NotificationCard notification={n} onRead={handleMarkRead} onDelete={handleDelete} />
+                    <NotificationCard
+                      notification={n}
+                      onRead={handleMarkRead}
+                      onDelete={handleDelete}
+                    />
                   </div>
                 );
               });

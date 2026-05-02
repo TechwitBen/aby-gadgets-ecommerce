@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, X, ChevronDown, Check, ImageIcon } from "lucide-react";
 import { categories, brands, conditions } from "@/pages/admin/data/mockData";
-import { productService, variantService } from "@/services/products.service";
-import { authAPI } from "@/services/api";
+import { productService, variantService } from "@/services/Products.service";
+import { authAPI } from "@/services/Api";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionBanner } from "@/components/ui/PermissionBanner";
 

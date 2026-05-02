@@ -16,7 +16,7 @@ import {
   Filter,
 } from "lucide-react";
 import AnalyticsSection from "@/components/ui/Analyticssection";
-import { usersAPI, type BackendUser } from "@/services/api";
+import { usersAPI, type BackendUser } from "@/services/Api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermission } from "@/contexts/PermissionContext";

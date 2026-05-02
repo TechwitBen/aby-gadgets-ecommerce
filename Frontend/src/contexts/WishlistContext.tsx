@@ -7,8 +7,8 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { wishlistService } from "@/services/wishlist.service";
-import type { Product } from "@/services/products.service";
+import { wishlistService } from "@/services/Wishlist.service";
+import type { Product } from "@/services/Products.service";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

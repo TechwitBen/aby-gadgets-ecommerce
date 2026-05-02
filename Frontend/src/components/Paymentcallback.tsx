@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { paymentService } from "@/services/payment.service";
+import { paymentService } from "@/services/Payment.service";
 import PaymentConfirmedModal from "@/components/modals/Paymentconfirmedmodal";
 
 /**

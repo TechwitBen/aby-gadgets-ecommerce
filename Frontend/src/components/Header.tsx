@@ -25,7 +25,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { orderService } from "@/services/order.service";
+import { orderService } from "@/services/Order.service";
 import { NotificationBell } from "@/components/Notificationbell";
 
 import blueLogoImg from "@/assets/blueLogo.png";
@@ -73,7 +73,9 @@ const Header = ({
     }
   }, [isAuthenticated]);
 
-  useEffect(() => { fetchOrderCount(); }, [fetchOrderCount]);
+  useEffect(() => {
+    fetchOrderCount();
+  }, [fetchOrderCount]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
@@ -83,7 +85,10 @@ const Header = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (userDropdownRef.current && !userDropdownRef.current.contains(e.target as Node)) {
+      if (
+        userDropdownRef.current &&
+        !userDropdownRef.current.contains(e.target as Node)
+      ) {
         setUserDropdownOpen(false);
       }
     };
@@ -93,7 +98,9 @@ const Header = ({
 
   useEffect(() => {
     document.body.style.overflow = mobileMenuOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      document.body.style.overflow = "";
+    };
   }, [mobileMenuOpen]);
 
   const navLinks = [
@@ -108,7 +115,7 @@ const Header = ({
   // When at top: fully transparent regardless of variant
   // When scrolled: crisp white with shadow
   const isHomePage = location.pathname === "/";
-const isAtTop = isHomePage ? !isScrolled : false;
+  const isAtTop = isHomePage ? !isScrolled : false;
 
   const headerBg = isAtTop
     ? "bg-transparent"
@@ -125,8 +132,14 @@ const isAtTop = isHomePage ? !isScrolled : false;
   // Logo: white version on transparent, coloured on white
   const logoSrc = isAtTop ? whiteLogoImg : blueLogoImg;
 
-  const handleLogin = () => { navigate("/login"); setMobileMenuOpen(false); };
-  const handleSignup = () => { navigate("/signup"); setMobileMenuOpen(false); };
+  const handleLogin = () => {
+    navigate("/login");
+    setMobileMenuOpen(false);
+  };
+  const handleSignup = () => {
+    navigate("/signup");
+    setMobileMenuOpen(false);
+  };
   const handleLogout = async () => {
     await logout();
     setUserDropdownOpen(false);
@@ -141,7 +154,6 @@ const isAtTop = isHomePage ? !isScrolled : false;
       >
         <div className="container mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-14 sm:h-16">
-
             {/* ── Left — Logo / Back ─────────────────────────────────────── */}
             <div className="flex items-center gap-3">
               {showBackButton ? (
@@ -150,7 +162,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
                   className={`flex items-center gap-2 transition-colors ${iconColor} ${iconHoverBg} rounded-lg px-2 py-1`}
                 >
                   <ArrowLeft className="h-5 w-5" />
-                  <span className="hidden sm:inline text-sm font-medium">Back</span>
+                  <span className="hidden sm:inline text-sm font-medium">
+                    Back
+                  </span>
                 </button>
               ) : (
                 <Link to="/" className="flex items-center gap-2.5 group">
@@ -162,10 +176,14 @@ const isAtTop = isHomePage ? !isScrolled : false;
                     />
                   </div>
                   <div className="flex flex-col">
-                    <span className={`font-bold text-base sm:text-lg leading-tight transition-colors ${textColor}`}>
+                    <span
+                      className={`font-bold text-base sm:text-lg leading-tight transition-colors ${textColor}`}
+                    >
                       Aby Gadgets
                     </span>
-                    <span className={`text-[10px] sm:text-xs hidden sm:block ${subtextColor}`}>
+                    <span
+                      className={`text-[10px] sm:text-xs hidden sm:block ${subtextColor}`}
+                    >
                       Premium Tech Store
                     </span>
                   </div>
@@ -174,7 +192,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
 
               {title && (
                 <div className="hidden md:flex items-center ml-2">
-                  <span className={`text-lg font-bold ${textColor} border-l border-current/30 pl-4`}>
+                  <span
+                    className={`text-lg font-bold ${textColor} border-l border-current/30 pl-4`}
+                  >
                     {title}
                   </span>
                 </div>
@@ -216,7 +236,6 @@ const isAtTop = isHomePage ? !isScrolled : false;
 
             {/* ── Right — Icons ─────────────────────────────────────────── */}
             <div className="flex items-center gap-1 sm:gap-1.5">
-
               {/* Desktop search bar */}
               <div
                 className="hidden md:flex items-center relative group cursor-pointer"
@@ -224,7 +243,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
               >
                 <Search
                   className={`absolute left-3.5 h-4 w-4 pointer-events-none transition-colors ${
-                    isAtTop ? "text-white/60 group-hover:text-white" : "text-gray-400 group-hover:text-[#6426E1]"
+                    isAtTop
+                      ? "text-white/60 group-hover:text-white"
+                      : "text-gray-400 group-hover:text-[#6426E1]"
                   }`}
                 />
                 <div
@@ -255,7 +276,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
                 {totalItems > 0 && (
                   <span
                     className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${
-                      isAtTop ? "bg-yellow-400 text-gray-900" : "bg-[#6426E1] text-white"
+                      isAtTop
+                        ? "bg-yellow-400 text-gray-900"
+                        : "bg-[#6426E1] text-white"
                     }`}
                   >
                     {totalItems}
@@ -297,7 +320,6 @@ const isAtTop = isHomePage ? !isScrolled : false;
                     {/* Dropdown */}
                     {userDropdownOpen && (
                       <div className="absolute right-0 mt-2 w-72 rounded-2xl shadow-xl border border-gray-100 bg-white overflow-hidden">
-
                         {/* User info */}
                         <div className="px-4 pt-4 pb-3 border-b border-gray-100">
                           <div className="flex items-center gap-3">
@@ -305,22 +327,33 @@ const isAtTop = isHomePage ? !isScrolled : false;
                               {getUserInitials()}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <h3 className="font-bold text-gray-900 text-sm truncate">{user?.username}</h3>
-                              <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                              <h3 className="font-bold text-gray-900 text-sm truncate">
+                                {user?.username}
+                              </h3>
+                              <p className="text-xs text-gray-500 truncate">
+                                {user?.email}
+                              </p>
                             </div>
                           </div>
 
                           {/* Orders pill */}
                           <button
-                            onClick={() => { navigate("/orders"); setUserDropdownOpen(false); }}
+                            onClick={() => {
+                              navigate("/orders");
+                              setUserDropdownOpen(false);
+                            }}
                             className="mt-3 w-full flex items-center justify-between px-3 py-2 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors group"
                           >
                             <div className="flex items-center gap-2">
                               <Package className="h-4 w-4 text-[#6426E1]" />
-                              <span className="text-xs text-gray-500">Total Orders</span>
+                              <span className="text-xs text-gray-500">
+                                Total Orders
+                              </span>
                             </div>
                             <div className="flex items-center gap-1.5">
-                              <span className="font-bold text-gray-900 text-sm">{orderCount}</span>
+                              <span className="font-bold text-gray-900 text-sm">
+                                {orderCount}
+                              </span>
                               <ChevronRight className="h-3.5 w-3.5 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
                             </div>
                           </button>
@@ -329,19 +362,45 @@ const isAtTop = isHomePage ? !isScrolled : false;
                         {/* Menu rows */}
                         <div className="p-2">
                           {[
-                            { icon: Package,    label: "My Orders",    path: "/orders" },
-                            { icon: Heart,      label: "Wishlist",     path: "/wishlist", count: wishlistCount },
-                            { icon: Bell,       label: "Notifications",path: "/notifications" },
-                            { icon: Settings,   label: "Settings",     path: "/settings" },
-                            { icon: HelpCircle, label: "Help Centre",  path: "/help" },
+                            {
+                              icon: Package,
+                              label: "My Orders",
+                              path: "/orders",
+                            },
+                            {
+                              icon: Heart,
+                              label: "Wishlist",
+                              path: "/wishlist",
+                              count: wishlistCount,
+                            },
+                            {
+                              icon: Bell,
+                              label: "Notifications",
+                              path: "/notifications",
+                            },
+                            {
+                              icon: Settings,
+                              label: "Settings",
+                              path: "/settings",
+                            },
+                            {
+                              icon: HelpCircle,
+                              label: "Help Centre",
+                              path: "/help",
+                            },
                           ].map((item) => (
                             <button
                               key={item.label}
-                              onClick={() => { navigate(item.path); setUserDropdownOpen(false); }}
+                              onClick={() => {
+                                navigate(item.path);
+                                setUserDropdownOpen(false);
+                              }}
                               className="flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl text-gray-700 hover:bg-[#6426E1]/8 hover:text-[#6426E1] transition-all duration-150 group"
                             >
                               <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
-                              <span className="flex-1 text-left">{item.label}</span>
+                              <span className="flex-1 text-left">
+                                {item.label}
+                              </span>
                               {"count" in item && item.count > 0 && (
                                 <span className="bg-[#6426E1] text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
                                   {item.count}
@@ -408,7 +467,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
       {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
       <div
         className={`fixed inset-0 z-[60] lg:hidden transition-all duration-300 ${
-          mobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+          mobileMenuOpen
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
       >
         {/* Backdrop */}
@@ -427,9 +488,15 @@ const isAtTop = isHomePage ? !isScrolled : false;
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl overflow-hidden shadow">
-                <img src={blueLogoImg} alt="logo" className="w-full h-full object-cover" />
+                <img
+                  src={blueLogoImg}
+                  alt="logo"
+                  className="w-full h-full object-cover"
+                />
               </div>
-              <span className="font-bold text-gray-900 text-base">Aby Gadgets</span>
+              <span className="font-bold text-gray-900 text-base">
+                Aby Gadgets
+              </span>
             </div>
             <button
               onClick={() => setMobileMenuOpen(false)}
@@ -447,12 +514,20 @@ const isAtTop = isHomePage ? !isScrolled : false;
                   {getUserInitials()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-gray-900 text-sm truncate">{user?.username}</p>
-                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
+                  <p className="font-bold text-gray-900 text-sm truncate">
+                    {user?.username}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {user?.email}
+                  </p>
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">Orders</p>
-                  <p className="font-bold text-[#6426E1] text-sm">{orderCount}</p>
+                  <p className="text-[10px] text-gray-400 uppercase tracking-wide">
+                    Orders
+                  </p>
+                  <p className="font-bold text-[#6426E1] text-sm">
+                    {orderCount}
+                  </p>
                 </div>
               </div>
             </div>
@@ -468,7 +543,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
                 placeholder="Search products..."
                 className="w-full pl-9 pr-4 py-2.5 text-sm rounded-xl bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#6426E1]/30 focus:border-[#6426E1]/40 transition-all"
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") { navigate("/search"); setMobileMenuOpen(false); }
+                  if (e.key === "Enter") {
+                    navigate("/search");
+                    setMobileMenuOpen(false);
+                  }
                 }}
               />
             </div>
@@ -490,7 +568,9 @@ const isAtTop = isHomePage ? !isScrolled : false;
                       : "text-gray-700 hover:bg-gray-100"
                   }`}
                 >
-                  <link.icon className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`} />
+                  <link.icon
+                    className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
+                  />
                   {link.name}
                 </Link>
               );
@@ -503,7 +583,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
             </p>
 
             <button
-              onClick={() => { navigate("/wishlist"); setMobileMenuOpen(false); }}
+              onClick={() => {
+                navigate("/wishlist");
+                setMobileMenuOpen(false);
+              }}
               className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
             >
               <Heart className="h-4 w-4 text-pink-500 flex-shrink-0" />
@@ -516,7 +599,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
             </button>
 
             <button
-              onClick={() => { navigate("/cart"); setMobileMenuOpen(false); }}
+              onClick={() => {
+                navigate("/cart");
+                setMobileMenuOpen(false);
+              }}
               className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
             >
               <ShoppingCart className="h-4 w-4 text-blue-500 flex-shrink-0" />
@@ -531,7 +617,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
             {isAuthenticated && (
               <>
                 <button
-                  onClick={() => { navigate("/orders"); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    navigate("/orders");
+                    setMobileMenuOpen(false);
+                  }}
                   className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
                 >
                   <Package className="h-4 w-4 text-[#6426E1] flex-shrink-0" />
@@ -544,7 +633,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
                 </button>
 
                 <button
-                  onClick={() => { navigate("/notifications"); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    navigate("/notifications");
+                    setMobileMenuOpen(false);
+                  }}
                   className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
                 >
                   <Bell className="h-4 w-4 text-amber-500 flex-shrink-0" />
@@ -552,7 +644,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
                 </button>
 
                 <button
-                  onClick={() => { navigate("/settings"); setMobileMenuOpen(false); }}
+                  onClick={() => {
+                    navigate("/settings");
+                    setMobileMenuOpen(false);
+                  }}
                   className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
                 >
                   <Settings className="h-4 w-4 text-gray-400 flex-shrink-0" />
@@ -562,7 +657,10 @@ const isAtTop = isHomePage ? !isScrolled : false;
             )}
 
             <button
-              onClick={() => { navigate("/help"); setMobileMenuOpen(false); }}
+              onClick={() => {
+                navigate("/help");
+                setMobileMenuOpen(false);
+              }}
               className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
             >
               <HelpCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />

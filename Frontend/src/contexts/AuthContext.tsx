@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from "react";
 
-import { authAPI, toAuthUser, type AuthUser } from "@/services/api";
+import { authAPI, toAuthUser, type AuthUser } from "@/services/Api";
 import axios from "axios";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
@@ -15,7 +15,11 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (username: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
+  register: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
   logout: () => Promise<void>;
   setUserManually: (user: AuthUser) => void;
 }
@@ -35,7 +39,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const currentUser = await authAPI.getCurrentUser();
       // Block inactive staff from proceeding
-      if (currentUser.role === "staff" && currentUser.staffStatus === "inactive") {
+      if (
+        currentUser.role === "staff" &&
+        currentUser.staffStatus === "inactive"
+      ) {
         await authAPI.logout();
         setUser(null);
       } else {
@@ -48,12 +55,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  
   // ── REGISTER ───────────────────────────────────────────────
   const register = async (
     username: string,
     email: string,
-    password: string
+    password: string,
   ) => {
     try {
       await authAPI.register({ username, email, password });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { inviteAPI } from "@/services/staff.service";
+import { inviteAPI } from "@/services/Staff.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Eye, EyeOff, CheckCircle } from "lucide-react";
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { productService, type Product } from "@/services/products.service";
+import { productService, type Product } from "@/services/Products.service";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,

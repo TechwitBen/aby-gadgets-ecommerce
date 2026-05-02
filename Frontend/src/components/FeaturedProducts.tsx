@@ -15,7 +15,7 @@ import {
   productService,
   formatPrice,
   type Product,
-} from "@/services/products.service";
+} from "@/services/Products.service";
 import { getTypeIcon, getTypeColor, getTwoSpecs } from "@/utils/productUtils";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
@@ -122,7 +122,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
             {product.type && (
-              <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${typeColor}`}>
+              <div
+                className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${typeColor}`}
+              >
                 <TypeIcon className="w-2.5 h-2.5" />
                 <span className="hidden sm:inline">
                   {product.type.charAt(0).toUpperCase() + product.type.slice(1)}
@@ -132,7 +134,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
             {!isOutOfStock && (
               <span
                 className="text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit"
-                style={{ backgroundColor: isNewArrival ? "#ef4444" : "#6426E1" }}
+                style={{
+                  backgroundColor: isNewArrival ? "#ef4444" : "#6426E1",
+                }}
               >
                 {isNewArrival ? "NEW" : "DEAL"}
               </span>
@@ -184,7 +188,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           {/* Brand + rating */}
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-1">
-              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeColor}`}>
+              <span
+                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeColor}`}
+              >
                 {product.brand}
               </span>
               {product.condition === "Brand New" && (
@@ -194,7 +200,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
             {product.rating > 0 && (
               <div className="flex items-center gap-0.5">
                 <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                <span className="text-[11px] font-bold text-gray-900">{product.rating}</span>
+                <span className="text-[11px] font-bold text-gray-900">
+                  {product.rating}
+                </span>
               </div>
             )}
           </div>
@@ -275,7 +283,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
             <h3 className="text-lg sm:text-2xl lg:text-3xl font-bold text-gray-900 leading-tight">
               {title}
             </h3>
-            <p className="text-gray-500 text-xs sm:text-sm mt-0.5 truncate">{subtitle}</p>
+            <p className="text-gray-500 text-xs sm:text-sm mt-0.5 truncate">
+              {subtitle}
+            </p>
           </div>
         </div>
         {showViewAll && (
@@ -305,7 +315,9 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
         </div>
       ) : (
         <div className="text-center py-10 sm:py-12 bg-gray-50 rounded-2xl border border-gray-200">
-          <p className="text-gray-500 text-sm">No products available right now.</p>
+          <p className="text-gray-500 text-sm">
+            No products available right now.
+          </p>
         </div>
       )}
     </div>
@@ -336,8 +348,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
             </div>
           </div>
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-6">
-            Discover Premium{" "}
-            <span style={{ color: "#6426E1" }}>Gadgets</span>
+            Discover Premium <span style={{ color: "#6426E1" }}>Gadgets</span>
           </h2>
           <p className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-xl mx-auto leading-relaxed px-2">
             Latest arrivals and exclusive deals — all verified and authentic

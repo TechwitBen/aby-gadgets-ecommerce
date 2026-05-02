@@ -18,7 +18,7 @@ import {
   variantService,
   type Product,
   type Variant,
-} from "@/services/products.service";
+} from "@/services/Products.service";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";

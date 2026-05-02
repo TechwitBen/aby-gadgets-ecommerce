@@ -13,7 +13,7 @@ import {
   orderService,
   type OrderDoc,
   type FulfillmentType,
-} from "@/services/order.service";
+} from "@/services/Order.service";
 import { OrderDetailModal } from "@/pages/admin/OrderDetailModal";
 import { useToast } from "@/hooks/use-toast";
 import { usePermission } from "@/contexts/PermissionContext";

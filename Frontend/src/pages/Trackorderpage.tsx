@@ -6,8 +6,8 @@ import {
   orderService,
   type OrderDoc,
   type OrderStatus,
-} from "@/services/order.service";
-import { paymentService } from "@/services/payment.service";
+} from "@/services/Order.service";
+import { paymentService } from "@/services/Payment.service";
 
 // ── Human-readable ID ─────────────────────────────────────────────────────────
 const displayOrderId = (order: OrderDoc): string =>

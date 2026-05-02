@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import type { FulfillmentType } from "@/services/order.service";
+import type { FulfillmentType } from "@/services/Order.service";
 
 interface OrderSuccessModalProps {
   open: boolean;
