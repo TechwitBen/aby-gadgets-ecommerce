@@ -23,6 +23,7 @@ import Products from "./pages/Products";
 import ProductDetails from "./pages/ProductDetails";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
+import PaymentCallback from "./components/Paymentcallback";
 import Wishlist from "./pages/Wishlist";
 import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
@@ -82,7 +83,7 @@ const App = () => (
                       <Route path="/products" element={<Products />} />
                       <Route path="/products/:slug" element={<ProductDetails />} />
                       <Route path="/cart" element={<Cart />} />
-
+                      <Route path="/payment/callback" element={<PaymentCallback />} />
                       <Route
                         path="/checkout"
                         element={

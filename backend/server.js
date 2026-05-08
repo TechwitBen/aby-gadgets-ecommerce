@@ -46,7 +46,13 @@ const startServer = async () => {
   // =========================
   // 2. BODY PARSERS
   // =========================
-  app.use(express.json());
+  app.use(express.json({
+    // This 'verify' function is the key. It captures the raw 
+    // bytes before Express turns them into a JavaScript object.
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  }));
   app.use(express.urlencoded({ extended: true }));
 
   // =========================

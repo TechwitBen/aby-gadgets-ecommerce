@@ -96,6 +96,7 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
     const inWishlist = isInWishlist(product.id);
     const TypeIcon = getTypeIcon(product.type);
     const typeColor = getTypeColor(product.type);
+    const specs = getTwoSpecs(product);
     const isOutOfStock = !product.inStock;
 
     const handleWishlist = (e: React.MouseEvent) => {
@@ -131,7 +132,27 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
                 </span>
               </div>
             )}
-            {!isOutOfStock && (
+            {product.section === "New Arrivals" && (
+              <span className="text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit bg-red-500">
+                NEW
+              </span>
+            )}
+            {product.condition === "UK Used" && (
+              <span className="bg-amber-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
+                UK USED
+              </span>
+            )}
+            {product.condition === "Open Box" && (
+              <span className="bg-purple-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
+                OPEN BOX
+              </span>
+            )}
+            {product.condition === "Refurbished" && (
+              <span className="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
+                REFURB
+              </span>
+            )}
+            {!isOutOfStock && !product.section && (
               <span
                 className="text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit"
                 style={{
@@ -142,23 +163,23 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
               </span>
             )}
             {isOutOfStock && (
-              <span className="bg-gray-700 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold">
+              <span className="bg-gray-700 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
                 SOLD OUT
               </span>
             )}
           </div>
 
-          {/* Wishlist */}
+          {/* Wishlist — z-30 so it always sits above the hover overlay */}
           <button
             onClick={handleWishlist}
-            className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all duration-200 border border-gray-200 z-10"
+            className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all border border-gray-200 z-30"
           >
             <Heart
               className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`}
             />
           </button>
 
-          {/* Desktop hover overlay */}
+          {/* Desktop hover overlay — hidden on mobile, shown on sm+ */}
           {!isOutOfStock && (
             <div className="hidden sm:flex absolute inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
               <div className="flex flex-col gap-2">
@@ -170,31 +191,31 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
                     handleAddToCart(product);
                   }}
                 >
-                  <ShoppingCart className="w-4 h-4 mr-2" /> Quick add
+                  <ShoppingCart className="w-4 h-4 mr-2" /> Quick Add
                 </Button>
                 <Link
                   to={`/products/${product.slug}`}
-                  className="bg-[#6426E1] hover:bg-[#5220c4] text-white px-4 py-2 rounded-xl font-semibold text-sm text-center transition-colors"
+                  className="bg-[#6426E1] hover:bg-[#5420c4] text-white px-4 py-2 rounded-xl font-semibold text-sm text-center transition-colors"
                 >
-                  View details
+                  View Details
                 </Link>
               </div>
             </div>
           )}
         </div>
 
-        {/* Card body */}
-        <div className="p-3 flex flex-col flex-1">
+        {/* ── Card body ── */}
+        <div className="p-3 sm:p-4 flex flex-col flex-1">
           {/* Brand + rating */}
-          <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center justify-between mb-1 sm:mb-1.5">
             <div className="flex items-center gap-1">
               <span
-                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${typeColor}`}
+                className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-full ${typeColor}`}
               >
                 {product.brand}
               </span>
               {product.condition === "Brand New" && (
-                <Check className="w-3 h-3 text-green-500" />
+                <Check className="w-3 h-3 text-green-500 hidden sm:block" />
               )}
             </div>
             {product.rating > 0 && (
@@ -208,43 +229,70 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           </div>
 
           {/* Name */}
-          <h3 className="font-bold text-gray-900 text-xs leading-snug line-clamp-2 mb-1.5 flex-1">
-            {product.name}
-          </h3>
+          <Link to={`/products/${product.slug}`}>
+            <h3 className="font-bold text-gray-900 text-xs sm:text-sm leading-snug line-clamp-2 mb-1.5 sm:mb-2 hover:text-[#6426E1] transition-colors">
+              {product.name}
+            </h3>
+          </Link>
 
-          {/* Price + condition */}
-          <div className="flex items-center justify-between mb-2 pt-1.5 border-t border-gray-100">
-            <div className="text-sm font-bold" style={{ color: "#6426E1" }}>
+          {/* Specs — sm+ only */}
+          {specs.length > 0 && (
+            <div className="hidden sm:block space-y-1 mb-3">
+              {specs.slice(0, 2).map((spec, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1.5 text-xs text-gray-500"
+                >
+                  <spec.icon className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                  <span className="truncate">{spec.value}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Price row */}
+          <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-gray-100 mb-2">
+            <div className="text-sm sm:text-base font-bold text-[#6426E1]">
               {formatPrice(product.price)}
             </div>
-            <div className="text-[10px] text-gray-400 truncate max-w-[80px] text-right">
+            <div className="hidden sm:block text-[10px] text-gray-400 truncate max-w-[90px] text-right">
               {product.condition}
             </div>
           </div>
 
-          {/* CTA */}
+          {/* ── CTA buttons ──
+              On mobile: always visible (desktop uses the hover overlay above)
+              On desktop (sm+): hidden because hover overlay handles it          */}
           {!isOutOfStock ? (
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 sm:hidden">
               <button
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
                   handleAddToCart(product);
                 }}
-                className="flex-1 py-1.5 bg-[#6426E1] hover:bg-[#5220c4] text-white text-[11px] font-semibold rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all"
+                className="flex-1 py-2 bg-[#6426E1] hover:bg-[#5420c4] text-white text-[11px] font-semibold rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all"
               >
                 <ShoppingCart className="w-3 h-3" />
-                Add
+                Add to Cart
               </button>
               <Link
                 to={`/products/${product.slug}`}
-                className="flex items-center justify-center w-8 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-400 transition-colors"
+                onClick={(e) => e.stopPropagation()}
+                className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 text-[11px] font-semibold transition-colors flex-shrink-0 whitespace-nowrap"
               >
-                <ArrowRight className="w-3.5 h-3.5" />
+                View Details
               </Link>
             </div>
           ) : (
-            <div className="py-1.5 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl">
+            <div className="py-1.5 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl sm:hidden">
+              Sold out
+            </div>
+          )}
+
+          {/* Desktop sold-out state (no hover overlay when out of stock) */}
+          {isOutOfStock && (
+            <div className="hidden sm:block py-2 text-center text-xs text-gray-400 font-medium border border-gray-200 rounded-xl">
               Sold out
             </div>
           )}

@@ -154,17 +154,17 @@ const ProductCard = ({ product }: { product: Product }) => {
           )}
         </div>
 
-        {/* Wishlist */}
+        {/* Wishlist — z-30 so it always sits above the hover overlay */}
         <button
           onClick={handleWishlist}
-          className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all border border-gray-200 z-10"
+          className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all border border-gray-200 z-30"
         >
           <Heart
             className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`}
           />
         </button>
 
-        {/* Desktop hover overlay */}
+        {/* Desktop hover overlay — hidden on mobile, shown on sm+ */}
         {!isOutOfStock && (
           <div className="hidden sm:flex absolute inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
             <div className="flex flex-col gap-2">
@@ -234,38 +234,44 @@ const ProductCard = ({ product }: { product: Product }) => {
           <div className="text-sm sm:text-base font-bold text-[#6426E1]">
             {formatPrice(product.price)}
           </div>
-          {/* Condition — hidden on mobile to save space */}
           <div className="hidden sm:block text-[10px] text-gray-400 truncate max-w-[90px] text-right">
             {product.condition}
           </div>
         </div>
 
-        {/* CTA buttons */}
+        {/* ── CTA buttons ──
+            On mobile: always visible (desktop uses the hover overlay above)
+            On desktop (sm+): hidden because hover overlay handles it          */}
         {!isOutOfStock ? (
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 sm:hidden">
             <button
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 handleAddToCart();
               }}
-              className="flex-1 py-1.5 sm:py-2 bg-[#6426E1] hover:bg-[#5420c4] text-white text-[11px] sm:text-xs font-semibold rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all"
+              className="flex-1 py-2 bg-[#6426E1] hover:bg-[#5420c4] text-white text-[11px] font-semibold rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all"
             >
-              <ShoppingCart className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              {/* "Add" on mobile, "Add to Cart" on sm+ */}
-              <span className="sm:hidden">Add</span>
-              <span className="hidden sm:inline">Add to Cart</span>
+              <ShoppingCart className="w-3 h-3" />
+              Add to Cart
             </button>
             <Link
               to={`/products/${product.slug}`}
               onClick={(e) => e.stopPropagation()}
-              className="flex items-center justify-center w-8 sm:w-9 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-400 transition-colors flex-shrink-0"
+              className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 text-[11px] font-semibold transition-colors flex-shrink-0 whitespace-nowrap"
             >
-              <ArrowRight className="w-3.5 h-3.5" />
+              View Details
             </Link>
           </div>
         ) : (
-          <div className="py-1.5 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl">
+          <div className="py-1.5 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl sm:hidden">
+            Sold out
+          </div>
+        )}
+
+        {/* Desktop sold-out state (no hover overlay when out of stock) */}
+        {isOutOfStock && (
+          <div className="hidden sm:block py-2 text-center text-xs text-gray-400 font-medium border border-gray-200 rounded-xl">
             Sold out
           </div>
         )}
@@ -417,10 +423,10 @@ const ProductListItem = ({ product }: { product: Product }) => {
             </button>
             <Link
               to={`/products/${product.slug}`}
-              className="flex items-center justify-center gap-1 text-xs h-8 sm:h-9 px-3 sm:px-4 rounded-xl font-semibold border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 transition-all"
+              className="flex items-center justify-center gap-1.5 text-xs h-8 sm:h-9 px-3 sm:px-4 rounded-xl font-semibold border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 transition-all whitespace-nowrap"
             >
               <Eye className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Details</span>
+              View Details
             </Link>
           </div>
         </div>
