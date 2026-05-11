@@ -76,23 +76,30 @@ const ProductCard = ({ product }: { product: Product }) => {
   const isOutOfStock = !product.inStock;
 
   const handleAddToCart = () => {
-    const variant =
-      product.variants?.find((v) => v.is_active && v.stock > 0) ??
-      product.variants?.[0];
-    addToCart({
-      id: product.id,
-      variantId: variant?._id ?? variant?.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-      storage: product.storage ?? undefined,
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
-  };
+  const variant =
+    product.variants?.find((v) => v.is_active && v.stock > 0) ??
+    product.variants?.[0];
+  if (!variant) {
+    toast({ title: "Error", description: "No variants available" });
+    return;
+  }
+  addToCart({
+    id: product.id,
+    variantId: variant.id,
+    name: product.name,
+    price: variant.price,
+    image: product.image,
+    quantity: 1,
+    storage: variant.storage ?? undefined,
+    color: variant.color,
+    sku: variant.sku,
+  });
+  toast({
+    title: "Added to cart",
+    description: `${product.name} has been added to your cart.`,
+  });
+};
+
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -294,26 +301,31 @@ const ProductListItem = ({ product }: { product: Product }) => {
   const specs = getTwoSpecs(product);
   const isOutOfStock = !product.inStock;
 
-  const handleAddToCart = () => {
-    if (isOutOfStock) return;
-    const variant =
-      product.variants?.find((v) => v.is_active && v.stock > 0) ??
-      product.variants?.[0];
-    addToCart({
-      id: product.id,
-      variantId: variant?._id ?? variant?.id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-      storage: product.storage ?? undefined,
-    });
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-    });
-  };
-
+ const handleAddToCart = () => {
+  if (isOutOfStock) return;
+  const variant =
+    product.variants?.find((v) => v.is_active && v.stock > 0) ??
+    product.variants?.[0];
+  if (!variant) {
+    toast({ title: "Error", description: "No variants available" });
+    return;
+  }
+  addToCart({
+    id: product.id,
+    variantId: variant.id,
+    name: product.name,
+    price: variant.price,
+    image: product.image,
+    quantity: 1,
+    storage: variant.storage ?? undefined,
+    color: variant.color,
+    sku: variant.sku,
+  });
+  toast({
+    title: "Added to cart",
+    description: `${product.name} has been added to your cart.`,
+  });
+};
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();

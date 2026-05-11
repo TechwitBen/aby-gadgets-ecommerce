@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -15,8 +16,14 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const location = useLocation();
 
   // Wait for session rehydration before deciding
-  if (isLoading) return null;
-
+ if (isLoading) {
+  return (
+    <div className="flex items-center justify-center py-32 text-muted-foreground gap-3">
+      <Loader2 size={20} className="animate-spin text-primary" />
+      <span className="text-sm">Loading</span>
+    </div>
+  );
+}
   if (!isAuthenticated) {
     const redirectTo = location.pathname + location.search;
     return (

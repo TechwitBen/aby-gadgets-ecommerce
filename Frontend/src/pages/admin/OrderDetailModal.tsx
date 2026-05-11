@@ -17,6 +17,9 @@ import {
   Truck,
   Wallet,
   AlertCircle,
+  Banknote,
+  Smartphone,
+  QrCode,
 } from "lucide-react";
 import React from "react";
 import {
@@ -40,6 +43,25 @@ import { AdminMessagePanel } from "@/pages/admin/Adminmessagepanel";
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PaymentDocStatus = "pending" | "success" | "failed" | "cancelled" | null;
 
+// ── Channel config ─────────────────────────────────────────────────────────────
+// Mirrors payment.model.js — `channel` field stores how the customer paid.
+const CHANNEL_CFG: Record<
+  string,
+  { label: string; sublabel: string; Icon: React.FC<{ className?: string }> }
+> = {
+  card:          { label: "Card",          sublabel: "Debit / Credit",   Icon: CreditCard  },
+  bank:          { label: "Bank Transfer", sublabel: "Direct transfer",  Icon: Banknote    },
+  bank_transfer: { label: "Bank Transfer", sublabel: "Direct transfer",  Icon: Banknote    },
+  ussd:          { label: "USSD",          sublabel: "Mobile dial code", Icon: Smartphone  },
+  qr:            { label: "QR Code",       sublabel: "Scan to pay",      Icon: QrCode      },
+  mobile_money:  { label: "Mobile Money",  sublabel: "Mobile wallet",    Icon: Wallet      },
+};
+
+const getChannelCfg = (channel: string | null | undefined) => {
+  if (!channel) return null;
+  return CHANNEL_CFG[channel.toLowerCase()] ?? null;
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const displayOrderId = (order: OrderDoc): string =>
   order.order_number ?? `#${order._id.slice(-8).toUpperCase()}`;
@@ -53,22 +75,13 @@ const extractUserId = (
 
 // ── Status options split by fulfillment type ──────────────────────────────────
 const DELIVERY_STATUS_OPTIONS: OrderStatus[] = [
-  "pending",
-  "confirmed",
-  "shipped",
-  "out_for_delivery",
-  "delivered",
-  "cancelled",
-  "refunded",
+  "pending", "confirmed", "shipped", "out_for_delivery",
+  "delivered", "cancelled", "refunded",
 ];
 
 const PICKUP_STATUS_OPTIONS: OrderStatus[] = [
-  "pending",
-  "confirmed",
-  "ready_for_pickup",
-  "collected",
-  "cancelled",
-  "refunded",
+  "pending", "confirmed", "ready_for_pickup",
+  "collected", "cancelled", "refunded",
 ];
 
 const PAYMENT_STATUS_OPTIONS = [
@@ -80,17 +93,21 @@ const PAYMENT_STATUS_OPTIONS = [
 const isTerminalStatus = (s: string) =>
   ["delivered", "collected", "cancelled", "refunded"].includes(s);
 
-// ── Paystack payment doc status panel ────────────────────────────────────────
-// Shows a rich, contextual panel for each possible Paystack payment state.
+// ── Paystack payment doc status panel ─────────────────────────────────────────
 const PaystackPaymentStatusPanel = ({
   order,
   paymentDocStatus,
+  paymentChannel,
   isLoadingPaymentDoc,
 }: {
   order: OrderDoc;
   paymentDocStatus: PaymentDocStatus;
+  paymentChannel: string | null;
   isLoadingPaymentDoc: boolean;
 }) => {
+  const channelCfg = getChannelCfg(paymentChannel);
+  const ChannelIcon = channelCfg?.Icon;
+
   if (isLoadingPaymentDoc) {
     return (
       <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3">
@@ -100,7 +117,6 @@ const PaystackPaymentStatusPanel = ({
     );
   }
 
-  // Already paid — simple green confirmed state
   if (order.payment_status === "paid") {
     return (
       <div className="space-y-2">
@@ -113,6 +129,19 @@ const PaystackPaymentStatusPanel = ({
           </div>
           <Lock size={14} className="text-emerald-300" />
         </div>
+
+        {/* Channel chip — show HOW they paid once known */}
+        {channelCfg && ChannelIcon && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-100 rounded-xl">
+            <ChannelIcon className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+            <span className="text-xs font-semibold text-emerald-700">
+              {channelCfg.label}
+            </span>
+            <span className="text-xs text-emerald-500">·</span>
+            <span className="text-xs text-emerald-500">{channelCfg.sublabel}</span>
+          </div>
+        )}
+
         <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
           <CreditCard size={12} className="mt-0.5 flex-shrink-0" />
           Paystack payment confirmed via webhook. Status is locked automatically.
@@ -121,7 +150,6 @@ const PaystackPaymentStatusPanel = ({
     );
   }
 
-  // ── Failed payment doc ────────────────────────────────────────────────────
   if (paymentDocStatus === "failed") {
     return (
       <div className="space-y-2">
@@ -134,6 +162,14 @@ const PaystackPaymentStatusPanel = ({
           </div>
           <Lock size={14} className="text-red-300" />
         </div>
+        {channelCfg && ChannelIcon && (
+          <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-100 rounded-xl">
+            <ChannelIcon className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
+            <span className="text-xs font-semibold text-red-600">
+              Failed via {channelCfg.label}
+            </span>
+          </div>
+        )}
         <div className="bg-red-50 border border-red-100 rounded-lg px-3 py-2.5 space-y-1">
           <p className="text-xs font-semibold text-red-800">
             Declined by bank / card issuer
@@ -141,7 +177,7 @@ const PaystackPaymentStatusPanel = ({
           <p className="text-xs text-red-700 leading-relaxed">
             The customer's bank or card declined the payment. The customer must
             retry from their Orders page using a different card or payment
-            method. A new payment reference will be created automatically.
+            method.
           </p>
         </div>
         <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
@@ -153,7 +189,6 @@ const PaystackPaymentStatusPanel = ({
     );
   }
 
-  // ── Cancelled payment doc (customer abandoned / closed popup) ─────────────
   if (paymentDocStatus === "cancelled") {
     return (
       <div className="space-y-2">
@@ -172,8 +207,7 @@ const PaystackPaymentStatusPanel = ({
           </p>
           <p className="text-xs text-amber-700 leading-relaxed">
             The customer opened the Paystack popup but navigated away before
-            completing payment. They can retry from their Orders page — a fresh
-            reference will be generated.
+            completing payment. They can retry from their Orders page.
           </p>
         </div>
         <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
@@ -185,7 +219,6 @@ const PaystackPaymentStatusPanel = ({
     );
   }
 
-  // ── Pending payment doc (webhook hasn't arrived yet) ──────────────────────
   if (paymentDocStatus === "pending") {
     return (
       <div className="space-y-2">
@@ -205,7 +238,7 @@ const PaystackPaymentStatusPanel = ({
           <p className="text-xs text-blue-700 leading-relaxed">
             The customer initiated payment and Paystack is processing it. The
             status will update automatically when the webhook arrives (usually
-            within 30 seconds). No action required.
+            within 30 seconds).
           </p>
         </div>
         <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
@@ -217,8 +250,7 @@ const PaystackPaymentStatusPanel = ({
     );
   }
 
-  // ── No payment doc at all (initialization never completed) ────────────────
-  // paymentDocStatus === null
+  // null = no payment doc
   return (
     <div className="space-y-2">
       <div className="w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex items-center justify-between">
@@ -237,8 +269,7 @@ const PaystackPaymentStatusPanel = ({
         <p className="text-xs text-orange-700 leading-relaxed">
           No Payment document exists for this order. The Paystack initialization
           likely failed before a record could be created. The customer must go
-          to their Orders page and tap{" "}
-          <strong>Complete Payment</strong> to start a fresh payment.
+          to their Orders page and tap <strong>Complete Payment</strong>.
         </p>
       </div>
       <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
@@ -279,46 +310,49 @@ export const OrderDetailModal = ({
   const isPickup = order.fulfillment_type === "pickup";
 
   // ── Local state ────────────────────────────────────────────────────────────
-  const [orderStatus,      setOrderStatus]      = useState<OrderStatus>(order.status);
-  const [paymentStatusLabel, setPaymentStatusLabel] = useState<string>(
+  const [orderStatus,         setOrderStatus]         = useState<OrderStatus>(order.status);
+  const [paymentStatusLabel,  setPaymentStatusLabel]  = useState<string>(
     PAYMENT_STATUS_LABELS[order.payment_status] ?? "Awaiting Confirmation",
   );
-  const [internalNote,     setInternalNote]     = useState("");
-  const [savedNote,        setSavedNote]        = useState("");
-  const [isSaving,         setIsSaving]         = useState(false);
-  const [saveSuccess,      setSaveSuccess]      = useState(false);
-  const [saveError,        setSaveError]        = useState<string | null>(null);
-  const [showDeleteConfirm,setShowDeleteConfirm]= useState(false);
-  const [orderDDOpen,      setOrderDDOpen]      = useState(false);
-  const [paymentDDOpen,    setPaymentDDOpen]    = useState(false);
+  const [internalNote,        setInternalNote]        = useState("");
+  const [savedNote,           setSavedNote]           = useState("");
+  const [isSaving,            setIsSaving]            = useState(false);
+  const [saveSuccess,         setSaveSuccess]         = useState(false);
+  const [saveError,           setSaveError]           = useState<string | null>(null);
+  const [showDeleteConfirm,   setShowDeleteConfirm]   = useState(false);
+  const [orderDDOpen,         setOrderDDOpen]         = useState(false);
+  const [paymentDDOpen,       setPaymentDDOpen]       = useState(false);
 
   // ── Paystack payment doc state ─────────────────────────────────────────────
   const [paymentDocStatus,    setPaymentDocStatus]    = useState<PaymentDocStatus>(null);
+  // The actual Paystack channel ("card", "bank", "ussd", etc.) — null until known
+  const [paymentChannel,      setPaymentChannel]      = useState<string | null>(null);
   const [isLoadingPaymentDoc, setIsLoadingPaymentDoc] = useState(false);
 
-  // Fetch the most recent Payment doc when the modal opens, but only for
-  // Paystack orders that aren't already paid/cancelled.
   useEffect(() => {
     if (!open) return;
-    const isPaystack   = order.payment_method === "paystack";
-    const alreadyPaid  = order.payment_status === "paid";
+    const isPaystack     = order.payment_method === "paystack";
+    const alreadyPaid    = order.payment_status === "paid";
     const orderCancelled = order.status === "cancelled";
 
-    if (!isPaystack || alreadyPaid || orderCancelled) {
+    if (!isPaystack || orderCancelled) {
       setPaymentDocStatus(alreadyPaid ? "success" : null);
       setIsLoadingPaymentDoc(false);
       return;
     }
 
+    // For already-paid orders we still fetch to get the channel value
     setIsLoadingPaymentDoc(true);
     paymentService
       .getPaymentForOrder(order._id)
       .then((payment: PaymentDoc) => {
         setPaymentDocStatus(payment.status as PaymentDocStatus);
+        // Read channel from the new dedicated field
+        setPaymentChannel((payment as any).channel ?? null);
       })
       .catch(() => {
-        // 404 = no Payment doc at all
-        setPaymentDocStatus(null);
+        setPaymentDocStatus(alreadyPaid ? "success" : null);
+        setPaymentChannel(null);
       })
       .finally(() => setIsLoadingPaymentDoc(false));
   }, [open, order._id, order.payment_method, order.payment_status, order.status]);
@@ -337,6 +371,34 @@ export const OrderDetailModal = ({
     isTerminalStatus(order.status) && order.payment_status === "paid";
 
   const statusOptions = isPickup ? PICKUP_STATUS_OPTIONS : DELIVERY_STATUS_OPTIONS;
+
+  // ── Derive the payment doc badge ───────────────────────────────────────────
+  const channelCfg = getChannelCfg(paymentChannel);
+  const channelLabel = channelCfg ? channelCfg.label : null;
+
+  const paymentDocBadge = (() => {
+    if (order.payment_status === "paid")
+      return {
+        label: channelLabel ? `Paid · ${channelLabel}` : "Confirmed",
+        cls: "bg-emerald-100 text-emerald-700",
+      };
+    if (order.payment_status === "refunded")
+      return { label: "Refunded",          cls: "bg-gray-100 text-gray-600"     };
+    if (order.payment_method === "pod")
+      return {
+        label: isPickup ? "Pay at Pickup" : "Cash on Delivery",
+        cls: "bg-amber-100 text-amber-700",
+      };
+    if (isLoadingPaymentDoc)
+      return { label: "Checking…",         cls: "bg-gray-100 text-gray-500"     };
+    if (paymentDocStatus === "failed")
+      return { label: "Payment Failed",    cls: "bg-red-100 text-red-700"       };
+    if (paymentDocStatus === "cancelled")
+      return { label: "Payment Abandoned", cls: "bg-amber-100 text-amber-700"   };
+    if (paymentDocStatus === "pending")
+      return { label: "Awaiting Webhook",  cls: "bg-blue-100 text-blue-700"     };
+    return   { label: "No Payment Record", cls: "bg-orange-100 text-orange-700" };
+  })();
 
   // ── Save handler ───────────────────────────────────────────────────────────
   const handleSave = async () => {
@@ -397,27 +459,6 @@ export const OrderDetailModal = ({
       onClose();
     }
   };
-
-  // ── Derive a concise payment status label for the "Payment Info" badge ─────
-  const paymentDocBadge = (() => {
-    if (order.payment_status === "paid")
-      return { label: "Confirmed",           cls: "bg-emerald-100 text-emerald-700" };
-    if (order.payment_status === "refunded")
-      return { label: "Refunded",            cls: "bg-gray-100 text-gray-600"       };
-    if (order.payment_method === "pod")
-      return { label: isPickup ? "Pay at Pickup" : "Cash on Delivery",
-                                             cls: "bg-amber-100 text-amber-700"     };
-    if (isLoadingPaymentDoc)
-      return { label: "Checking…",           cls: "bg-gray-100 text-gray-500"       };
-    if (paymentDocStatus === "failed")
-      return { label: "Payment Failed",      cls: "bg-red-100 text-red-700"         };
-    if (paymentDocStatus === "cancelled")
-      return { label: "Payment Abandoned",   cls: "bg-amber-100 text-amber-700"     };
-    if (paymentDocStatus === "pending")
-      return { label: "Awaiting Webhook",    cls: "bg-blue-100 text-blue-700"       };
-    // null = no payment doc
-    return   { label: "No Payment Record",   cls: "bg-orange-100 text-orange-700"   };
-  })();
 
   return (
     <div
@@ -641,7 +682,9 @@ export const OrderDetailModal = ({
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-bold text-gray-900">Order Details</h3>
-                <span className="text-xs text-gray-400">Total Items: {totalQty}</span>
+                <span className="text-xs text-gray-400">
+                  Total Items: {totalQty}
+                </span>
               </div>
               <div className="space-y-3">
                 {order.items.map((item, idx) => {
@@ -682,9 +725,13 @@ export const OrderDetailModal = ({
                           </span>
                         )}
                         {specParts.length > 0 && (
-                          <p className="text-xs text-gray-400 mt-1">{specParts.join(" · ")}</p>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {specParts.join(" · ")}
+                          </p>
                         )}
-                        <p className="text-xs text-gray-500 mt-1">Price {fmt(item.unit_price)}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          Price {fmt(item.unit_price)}
+                        </p>
                       </div>
                       <div className="flex flex-col items-end justify-between flex-shrink-0 gap-1">
                         <div className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-xs font-semibold text-gray-700">
@@ -706,7 +753,9 @@ export const OrderDetailModal = ({
             {/* ── Order Status Dropdown ── */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-bold text-gray-900">Update Order Status</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Update Order Status
+                </h3>
                 {(isFullyCompleted || !canUpdateStatus) && (
                   <Lock size={13} className="text-gray-400" />
                 )}
@@ -714,20 +763,34 @@ export const OrderDetailModal = ({
 
               {isFullyCompleted || !canUpdateStatus ? (
                 <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm flex items-center justify-between">
-                  <span className={isFullyCompleted ? "font-medium text-emerald-700" : "text-gray-600"}>
+                  <span
+                    className={
+                      isFullyCompleted
+                        ? "font-medium text-emerald-700"
+                        : "text-gray-600"
+                    }
+                  >
                     {ORDER_STATUS_LABELS[orderStatus] ?? orderStatus}
                   </span>
                   <div className="flex items-center gap-2">
                     {!canUpdateStatus && !isFullyCompleted && (
-                      <span className="text-xs text-amber-500 italic">View only</span>
+                      <span className="text-xs text-amber-500 italic">
+                        View only
+                      </span>
                     )}
                     <Lock size={14} className="text-gray-300" />
                   </div>
                 </div>
               ) : (
-                <div className="relative" onClick={(e) => e.stopPropagation()}>
+                <div
+                  className="relative"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <button
-                    onClick={() => { setOrderDDOpen(!orderDDOpen); setPaymentDDOpen(false); }}
+                    onClick={() => {
+                      setOrderDDOpen(!orderDDOpen);
+                      setPaymentDDOpen(false);
+                    }}
                     className="w-full bg-violet-50 rounded-xl px-4 py-3 text-sm text-left flex justify-between items-center hover:bg-violet-100 transition-colors"
                   >
                     <span className="text-gray-800">{orderStatusDisplay}</span>
@@ -740,7 +803,8 @@ export const OrderDetailModal = ({
                           PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
                           order.payment_status === "paid";
                         const isBlocked =
-                          (s === "delivered" || s === "collected") && !paymentWillBePaid;
+                          (s === "delivered" || s === "collected") &&
+                          !paymentWillBePaid;
 
                         return (
                           <button
@@ -755,7 +819,11 @@ export const OrderDetailModal = ({
                               isBlocked
                                 ? "opacity-40 cursor-not-allowed bg-gray-50"
                                 : "hover:bg-violet-50"
-                            } ${s === orderStatus ? "text-violet-600 font-medium" : "text-gray-700"}`}
+                            } ${
+                              s === orderStatus
+                                ? "text-violet-600 font-medium"
+                                : "text-gray-700"
+                            }`}
                           >
                             <span>{ORDER_STATUS_LABELS[s] ?? s}</span>
                             {isBlocked && (
@@ -771,7 +839,7 @@ export const OrderDetailModal = ({
                 </div>
               )}
 
-              {/* Quick-action buttons for pickup orders */}
+              {/* Quick-action buttons for pickup */}
               {isPickup && !isFullyCompleted && canUpdateStatus && (
                 <div className="mt-3 flex gap-2">
                   {orderStatus !== "ready_for_pickup" && (
@@ -789,7 +857,9 @@ export const OrderDetailModal = ({
                           PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
                           order.payment_status === "paid";
                         if (!paymentOk) {
-                          setSaveError("⚠ Confirm payment before marking as Collected.");
+                          setSaveError(
+                            "⚠ Confirm payment before marking as Collected.",
+                          );
                           return;
                         }
                         setOrderStatus("collected");
@@ -809,10 +879,11 @@ export const OrderDetailModal = ({
             <div>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
                 <h3 className="text-sm font-bold text-gray-900">Payment Info</h3>
+                {/* Gateway badge — always "Paystack" or "Pay on Delivery" */}
                 <span className="text-xs font-medium px-3 py-1 rounded-lg bg-gray-100 text-gray-600">
                   {paymentMethodDisplay}
                 </span>
-                {/* Dynamic payment doc status badge */}
+                {/* Dynamic payment doc status badge — now includes channel when known */}
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${paymentDocBadge.cls}`}>
                   {paymentDocBadge.label}
                 </span>
@@ -820,19 +891,31 @@ export const OrderDetailModal = ({
               <div className="space-y-2.5">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Subtotal</span>
-                  <span className="text-gray-800 font-medium">{fmt(order.subtotal)}</span>
+                  <span className="text-gray-800 font-medium">
+                    {fmt(order.subtotal)}
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">
                     {isPickup ? "Pickup Fee" : "Delivery Fee"}
                   </span>
-                  <span className={`font-medium ${order.shipping_fee === 0 ? "text-green-600" : "text-gray-800"}`}>
-                    {order.shipping_fee === 0 ? "Free" : fmt(order.shipping_fee)}
+                  <span
+                    className={`font-medium ${
+                      order.shipping_fee === 0
+                        ? "text-green-600"
+                        : "text-gray-800"
+                    }`}
+                  >
+                    {order.shipping_fee === 0
+                      ? "Free"
+                      : fmt(order.shipping_fee)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm pt-2 border-t border-gray-100">
                   <span className="text-violet-600 font-bold">Total</span>
-                  <span className="text-violet-600 font-bold text-base">{fmt(order.total)}</span>
+                  <span className="text-violet-600 font-bold text-base">
+                    {fmt(order.total)}
+                  </span>
                 </div>
               </div>
             </div>
@@ -840,7 +923,9 @@ export const OrderDetailModal = ({
             {/* ── Payment Status Section ── */}
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-bold text-gray-900">Payment Status</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Payment Status
+                </h3>
                 {order.payment_method === "paystack" && (
                   <Lock size={13} className="text-gray-400" />
                 )}
@@ -850,23 +935,31 @@ export const OrderDetailModal = ({
                   )}
               </div>
 
-              {/* PAYSTACK — rich payment state panel */}
+              {/* Paystack — rich panel with channel */}
               {order.payment_method === "paystack" ? (
                 <PaystackPaymentStatusPanel
                   order={order}
                   paymentDocStatus={paymentDocStatus}
+                  paymentChannel={paymentChannel}
                   isLoadingPaymentDoc={isLoadingPaymentDoc}
                 />
-              ) : /* POD / manual — editable dropdown */ isFullyCompleted ||
-                !canConfirmPayment ? (
+              ) : isFullyCompleted || !canConfirmPayment ? (
                 <div className="space-y-2">
                   <div className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm flex items-center justify-between">
-                    <span className={isFullyCompleted ? "font-medium text-emerald-700" : "text-gray-600"}>
+                    <span
+                      className={
+                        isFullyCompleted
+                          ? "font-medium text-emerald-700"
+                          : "text-gray-600"
+                      }
+                    >
                       {isFullyCompleted ? "Confirmed" : paymentStatusLabel}
                     </span>
                     <div className="flex items-center gap-2">
                       {!canConfirmPayment && !isFullyCompleted && (
-                        <span className="text-xs text-amber-500 italic">View only</span>
+                        <span className="text-xs text-amber-500 italic">
+                          View only
+                        </span>
                       )}
                       <Lock size={14} className="text-gray-300" />
                     </div>
@@ -874,9 +967,15 @@ export const OrderDetailModal = ({
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                  <div
+                    className="relative"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <button
-                      onClick={() => { setPaymentDDOpen(!paymentDDOpen); setOrderDDOpen(false); }}
+                      onClick={() => {
+                        setPaymentDDOpen(!paymentDDOpen);
+                        setOrderDDOpen(false);
+                      }}
                       className="w-full bg-violet-50 rounded-xl px-4 py-3 text-sm text-left flex justify-between items-center hover:bg-violet-100 transition-colors"
                     >
                       <span className="text-gray-800">{paymentStatusLabel}</span>
@@ -887,7 +986,10 @@ export const OrderDetailModal = ({
                         {PAYMENT_STATUS_OPTIONS.map((label) => (
                           <button
                             key={label}
-                            onClick={() => { setPaymentStatusLabel(label); setPaymentDDOpen(false); }}
+                            onClick={() => {
+                              setPaymentStatusLabel(label);
+                              setPaymentDDOpen(false);
+                            }}
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors hover:bg-violet-50 ${
                               label === paymentStatusLabel
                                 ? "text-violet-600 font-medium"
@@ -915,7 +1017,9 @@ export const OrderDetailModal = ({
 
           {/* ── Internal Note ── */}
           <section>
-            <h3 className="text-sm font-bold text-gray-900 mb-2">Internal Note</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-2">
+              Internal Note
+            </h3>
             {savedNote && (
               <div className="bg-violet-50 rounded-xl px-4 py-3 text-sm text-gray-700 mb-2">
                 {savedNote}

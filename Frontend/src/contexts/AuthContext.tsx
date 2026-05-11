@@ -6,7 +6,7 @@ import {
   ReactNode,
 } from "react";
 
-import { authAPI, toAuthUser, type AuthUser } from "@/services/Api";
+import { authAPI, toAuthUser, type AuthUser } from "@/services/api";
 import axios from "axios";
 import { LoadingScreen } from "@/components/ui/loading-screen";
 
@@ -14,6 +14,7 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  logoutReason: "manual" | "expired" | null;
   login: (username: string, password: string) => Promise<void>;
   register: (
     username: string,
@@ -27,8 +28,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+const [user, setUser] = useState<AuthUser | null>(null);
+const [isLoading, setIsLoading] = useState(true);
+
+const [logoutReason, setLogoutReason] = useState<"manual" | "expired" | null>(null);
 
   // ── Check session on app load ─────────────────────────────
   useEffect(() => {
@@ -45,10 +48,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ) {
         await authAPI.logout();
         setUser(null);
+        
       } else {
         setUser(currentUser);
       }
     } catch {
+        setLogoutReason("expired");
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -63,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   ) => {
     try {
       await authAPI.register({ username, email, password });
+      setLogoutReason(null); 
 
       // Always fetch real user from backend (NO fake user)
       const currentUser = await authAPI.getCurrentUser();
@@ -77,25 +83,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // ── LOGIN ──────────────────────────────────────────────────
   const login = async (username: string, password: string) => {
-    try {
-      const result = await authAPI.login({ username, password });
-
-      if (result.data) {
-        const user = toAuthUser(result.data);
-        setUser(user);
-      } else {
-        // fallback: always trust backend session
-        const currentUser = await authAPI.getCurrentUser();
-        setUser(currentUser);
-      }
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        throw new Error(err.response?.data?.error || "Login failed");
-      }
-      throw err;
+  try {
+    const result = await authAPI.login({ username, password });
+    setLogoutReason(null); // ← reset it
+    if (result.data) {
+      setUser(toAuthUser(result.data));
+    } else {
+      const currentUser = await authAPI.getCurrentUser();
+      setUser(currentUser);
     }
-  };
-
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw new Error(err.response?.data?.error || "Login failed");
+    }
+    throw err;
+  }
+};
   // ── LOGOUT ────────────────────────────────────────────────
   const logout = async () => {
     try {
@@ -103,6 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.error("Logout failed:", error);
     } finally {
+       setLogoutReason("manual");
       setUser(null);
     }
   };
@@ -124,6 +128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         login,
         register,
         logout,
+        logoutReason,
         setUserManually,
       }}
     >

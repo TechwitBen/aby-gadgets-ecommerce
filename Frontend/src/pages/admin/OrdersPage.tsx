@@ -4,10 +4,14 @@ import { Button } from "@/components/ui/button";
 import {
   Trash2,
   X,
+  Package ,
   Loader2,
   RefreshCw,
   AlertTriangle,
   ChevronRight,
+  Banknote,
+  CheckCircle2,
+  Clock,
 } from "lucide-react";
 import {
   orderService,
@@ -37,8 +41,7 @@ const STATUS_STYLES: Record<string, string> = {
   ready_for_pickup: "bg-teal-100 text-teal-700",
   collected: "bg-emerald-100 text-emerald-700",
 };
-const statusClass = (s: string) =>
-  STATUS_STYLES[s] ?? "bg-gray-100 text-gray-700";
+const statusClass = (s: string) => STATUS_STYLES[s] ?? "bg-gray-100 text-gray-700";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pending",
@@ -53,17 +56,10 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const ACTIVE_STATUSES = new Set([
-  "pending",
-  "confirmed",
-  "shipped",
-  "out_for_delivery",
-  "ready_for_pickup",
+  "pending", "confirmed", "shipped", "out_for_delivery", "ready_for_pickup",
 ]);
 const COMPLETED_STATUSES = new Set([
-  "delivered",
-  "collected",
-  "cancelled",
-  "refunded",
+  "delivered", "collected", "cancelled", "refunded",
 ]);
 
 // ── Fulfillment badge ─────────────────────────────────────────────────────────
@@ -78,8 +74,35 @@ const FulfillmentBadge = ({ type }: { type?: FulfillmentType }) =>
     </span>
   );
 
+// ── Payment chip ──────────────────────────────────────────────────────────────
+const PaymentChip = ({ order, size = "sm" }: { order: OrderDoc; size?: "sm" | "xs" }) => {
+  const cls = size === "xs"
+    ? "text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+    : "inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full";
+
+  if (order.payment_method === "pod") {
+    return (
+      <span className={`${cls} bg-amber-100 text-amber-700`}>
+        {size === "sm" && <Banknote className="w-2.5 h-2.5" />} POD
+      </span>
+    );
+  }
+  if (order.payment_status === "paid") {
+    return (
+      <span className={`${cls} bg-emerald-100 text-emerald-700`}>
+        {size === "sm" && <CheckCircle2 className="w-2.5 h-2.5" />} Paid
+      </span>
+    );
+  }
+  return (
+    <span className={`${cls} bg-amber-100 text-amber-700`}>
+      {size === "sm" && <Clock className="w-2.5 h-2.5" />} Unpaid
+    </span>
+  );
+};
+
 // ── Address helpers ───────────────────────────────────────────────────────────
-const getShippingName = (o: OrderDoc) => o.shipping_address?.full_name ?? "—";
+const getShippingName  = (o: OrderDoc) => o.shipping_address?.full_name ?? "—";
 const getShippingPhone = (o: OrderDoc) => o.shipping_address?.phone ?? "—";
 const getShippingAddress = (o: OrderDoc) => {
   if (o.fulfillment_type === "pickup") return "Store Pickup";
@@ -90,10 +113,7 @@ const getShippingAddress = (o: OrderDoc) => {
 
 // ── Delete Confirmation Modal ─────────────────────────────────────────────────
 const DeleteConfirmModal = ({
-  open,
-  order,
-  onConfirm,
-  onCancel,
+  open, order, onConfirm, onCancel,
 }: {
   open: boolean;
   order: OrderDoc | null;
@@ -108,66 +128,45 @@ const DeleteConfirmModal = ({
   return (
     <div
       className="fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-[100] p-0 sm:p-4 backdrop-blur-sm"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onCancel();
-      }}
+      onClick={(e) => { if (e.target === e.currentTarget) onCancel(); }}
     >
       <div className="bg-popover text-popover-foreground rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-2xl overflow-hidden border border-border">
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
-        <div
-          className={`flex items-center justify-between px-6 py-4 border-b border-border ${isHighRisk ? "bg-amber-50/50" : ""}`}
-        >
+        <div className={`flex items-center justify-between px-6 py-4 border-b border-border ${isHighRisk ? "bg-amber-50/50" : ""}`}>
           <div className="flex items-center gap-3">
-            <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${isHighRisk ? "bg-amber-100" : "bg-destructive/10"}`}
-            >
-              {isHighRisk ? (
-                <AlertTriangle size={20} className="text-amber-600" />
-              ) : (
-                <Trash2 size={20} className="text-destructive" />
-              )}
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isHighRisk ? "bg-amber-100" : "bg-destructive/10"}`}>
+              {isHighRisk
+                ? <AlertTriangle size={20} className="text-amber-600" />
+                : <Trash2 size={20} className="text-destructive" />}
             </div>
             <p className="text-sm font-bold text-foreground">
               {isHighRisk ? "High-Risk Deletion" : "Delete Order"}
             </p>
           </div>
-          <button
-            onClick={onCancel}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-          >
+          <button onClick={onCancel} className="text-muted-foreground hover:text-foreground transition-colors">
             <X size={18} />
           </button>
         </div>
         <div className="px-6 py-5">
           <p className="text-sm text-muted-foreground leading-relaxed">
             Are you sure you want to delete order{" "}
-            <span className="font-mono font-bold text-foreground">
-              {displayOrderId(order)}
-            </span>
-            ?
+            <span className="font-mono font-bold text-foreground">{displayOrderId(order)}</span>?
           </p>
           {isHighRisk && (
             <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-lg">
-              <p className="text-xs text-red-700 font-bold uppercase mb-1">
-                Warning:
-              </p>
+              <p className="text-xs text-red-700 font-bold uppercase mb-1">Warning:</p>
               <p className="text-xs text-red-600">
                 This order is marked as <strong>PAID</strong> and{" "}
-                <strong>
-                  {order.status === "collected" ? "COLLECTED" : "DELIVERED"}
-                </strong>
-                . Deleting this will permanently remove this transaction from
-                your financial records.
+                <strong>{order.status === "collected" ? "COLLECTED" : "DELIVERED"}</strong>.
+                Deleting this will permanently remove this transaction from your financial records.
               </p>
             </div>
           )}
         </div>
         <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-border bg-secondary/20">
-          <Button variant="ghost" size="sm" onClick={onCancel}>
-            Cancel
-          </Button>
+          <Button variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
           <Button
             size="sm"
             onClick={onConfirm}
@@ -183,11 +182,7 @@ const DeleteConfirmModal = ({
 
 // ── Mobile Order Card ─────────────────────────────────────────────────────────
 const OrderCard = ({
-  order,
-  onSelect,
-  onDelete,
-  canDelete,
-  canViewContact,
+  order, onSelect, onDelete, canDelete, canViewContact,
 }: {
   order: OrderDoc;
   onSelect: (o: OrderDoc) => void;
@@ -202,41 +197,27 @@ const OrderCard = ({
     <div className="flex items-start justify-between gap-2">
       <div className="min-w-0">
         <div className="flex items-center gap-2 flex-wrap mb-0.5">
-          <p className="text-sm font-mono font-bold text-primary">
-            {displayOrderId(order)}
-          </p>
+          <p className="text-sm font-mono font-bold text-primary">{displayOrderId(order)}</p>
           <FulfillmentBadge type={order.fulfillment_type} />
         </div>
-        <p className="text-sm font-medium text-foreground mt-0.5 truncate">
-          {getShippingName(order)}
-        </p>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">
-          {getShippingAddress(order)}
-        </p>
+        <p className="text-sm font-medium text-foreground mt-0.5 truncate">{getShippingName(order)}</p>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">{getShippingAddress(order)}</p>
       </div>
       <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-        <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusClass(order.status)}`}
-        >
-          {STATUS_LABELS[order.status] ?? order.status}
-        </span>
-        <p className="text-sm font-bold text-foreground">
-          ₦{order.total.toLocaleString()}
-        </p>
+        <div className="flex items-center gap-1 flex-wrap justify-end">
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${statusClass(order.status)}`}>
+            {STATUS_LABELS[order.status] ?? order.status}
+          </span>
+          <PaymentChip order={order} size="xs" />
+        </div>
+        <p className="text-sm font-bold text-foreground">₦{order.total.toLocaleString()}</p>
       </div>
     </div>
     <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
       <p className="text-xs text-muted-foreground">
-        {canViewContact ? (
-          getShippingPhone(order)
-        ) : (
-          <span className="italic">Phone hidden</span>
-        )}
+        {canViewContact ? getShippingPhone(order) : <span className="italic">Phone hidden</span>}
       </p>
-      <div
-        className="flex items-center gap-2"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
         {canDelete && (
           <button
             onClick={() => onDelete(order)}
@@ -258,12 +239,7 @@ const OrderCard = ({
 
 // ── Orders Table ──────────────────────────────────────────────────────────────
 const OrdersTable = ({
-  orders,
-  onSelect,
-  onDelete,
-  canDelete,
-  canViewContact,
-  emptyMessage,
+  orders, onSelect, onDelete, canDelete, canViewContact, emptyMessage,
 }: {
   orders: OrderDoc[];
   onSelect: (o: OrderDoc) => void;
@@ -279,6 +255,7 @@ const OrdersTable = ({
     ...(canViewContact ? ["Phone"] : []),
     "Address / Zone",
     "Status",
+    "Payment",
     "Total",
     ...(canDelete ? ["Actions"] : []),
   ];
@@ -292,10 +269,7 @@ const OrdersTable = ({
             <thead>
               <tr className="border-b border-border bg-muted/30">
                 {headers.map((h) => (
-                  <th
-                    key={h}
-                    className="p-4 text-muted-foreground font-semibold whitespace-nowrap"
-                  >
+                  <th key={h} className="p-4 text-muted-foreground font-semibold whitespace-nowrap">
                     {h}
                   </th>
                 ))}
@@ -304,10 +278,7 @@ const OrdersTable = ({
             <tbody className="divide-y divide-border">
               {orders.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={headers.length}
-                    className="p-12 text-center text-muted-foreground italic"
-                  >
+                  <td colSpan={headers.length} className="p-12 text-center text-muted-foreground italic">
                     {emptyMessage}
                   </td>
                 </tr>
@@ -324,29 +295,24 @@ const OrdersTable = ({
                     <td className="p-4">
                       <FulfillmentBadge type={order.fulfillment_type} />
                     </td>
-                    <td className="p-4 font-medium text-foreground">
-                      {getShippingName(order)}
-                    </td>
+                    <td className="p-4 font-medium text-foreground">{getShippingName(order)}</td>
                     {canViewContact && (
-                      <td className="p-4 text-muted-foreground">
-                        {getShippingPhone(order)}
-                      </td>
+                      <td className="p-4 text-muted-foreground">{getShippingPhone(order)}</td>
                     )}
                     <td className="p-4 text-muted-foreground max-w-[200px] truncate">
                       {order.fulfillment_type === "pickup" ? (
-                        <span className="text-teal-600 font-medium">
-                          Store Pickup
-                        </span>
+                        <span className="text-teal-600 font-medium">Store Pickup</span>
                       ) : (
                         order.delivery_city || getShippingAddress(order)
                       )}
                     </td>
                     <td className="p-4">
-                      <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass(order.status)}`}
-                      >
+                      <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${statusClass(order.status)}`}>
                         {STATUS_LABELS[order.status] ?? order.status}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <PaymentChip order={order} size="sm" />
                     </td>
                     <td className="p-4 font-bold text-foreground">
                       ₦{order.total.toLocaleString()}
@@ -372,9 +338,7 @@ const OrdersTable = ({
       {/* Mobile */}
       <div className="md:hidden space-y-2">
         {orders.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm py-12 italic">
-            {emptyMessage}
-          </p>
+          <p className="text-center text-muted-foreground text-sm py-12 italic">{emptyMessage}</p>
         ) : (
           orders.map((order) => (
             <OrderCard
@@ -401,15 +365,15 @@ const OrdersPage = () => {
   const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
   const { toast } = useToast();
 
-  const canViewOrders = isAdmin || can("order", "viewOrder");
+  const canViewOrders   = isAdmin || can("order", "viewOrder");
   const canDeleteOrders = isAdmin;
-  const canViewContact = isAdmin || can("payments", "contactCustomers");
+  const canViewContact  = isAdmin || can("payments", "contactCustomers");
 
-  const [orders, setOrders] = useState<OrderDoc[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<Tab>("active");
+  const [orders, setOrders]           = useState<OrderDoc[]>([]);
+  const [isLoading, setIsLoading]     = useState(true);
+  const [fetchError, setFetchError]   = useState<string | null>(null);
+  const [searchTerm, setSearchTerm]   = useState("");
+  const [activeTab, setActiveTab]     = useState<Tab>("active");
   const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDoc | null>(null);
 
@@ -426,16 +390,10 @@ const OrdersPage = () => {
     }
   }, []);
 
-  useEffect(() => {
-    fetchOrders();
-  }, [fetchOrders]);
+  useEffect(() => { fetchOrders(); }, [fetchOrders]);
 
-  const activeCount = orders.filter((o) =>
-    ACTIVE_STATUSES.has(o.status),
-  ).length;
-  const completedCount = orders.filter((o) =>
-    COMPLETED_STATUSES.has(o.status),
-  ).length;
+  const activeCount    = orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length;
+  const completedCount = orders.filter((o) => COMPLETED_STATUSES.has(o.status)).length;
 
   const tabFiltered = orders.filter((o) =>
     activeTab === "active"
@@ -456,9 +414,7 @@ const OrdersPage = () => {
 
   const handleDeleteClick = (order: OrderDoc) => {
     if (!canDeleteOrders) {
-      deny(
-        "You don't have permission to delete orders. Only admins can delete orders.",
-      );
+      deny("You don't have permission to delete orders. Only admins can delete orders.");
       return;
     }
     setDeletingOrder(order);
@@ -527,31 +483,24 @@ const OrdersPage = () => {
       {/* Dashboard header */}
       <div className="flex items-center justify-between bg-card border border-border rounded-2xl p-4 sm:p-6 shadow-sm">
         <div>
-          <p className="text-muted-foreground text-sm sm:text-lg">
-            Welcome back,
-          </p>
-          <h1 className="text-primary text-xl sm:text-3xl font-bold tracking-tight">
-            Admin Dashboard
-          </h1>
+          <p className="text-muted-foreground text-sm sm:text-lg">Welcome back,</p>
+          <h1 className="text-primary text-xl sm:text-3xl font-bold tracking-tight">Admin Dashboard</h1>
           <p className="text-muted-foreground text-xs sm:text-sm mt-1 hidden sm:block">
             "It's okay to take breaks, but never stop pushing."
           </p>
         </div>
         <div className="w-16 h-16 sm:w-24 sm:h-24 bg-primary/5 rounded-2xl items-center justify-center border border-primary/10 hidden sm:flex">
-          <span className="text-3xl sm:text-4xl">📦</span>
-        </div>
+  <Package className="w-8 h-8 sm:w-10 sm:h-10 text-primary/40" />
+</div>
       </div>
 
       {/* Orders section */}
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h2 className="text-lg sm:text-xl font-bold text-foreground">
-              Customer Orders
-            </h2>
+            <h2 className="text-lg sm:text-xl font-bold text-foreground">Customer Orders</h2>
             <p className="text-muted-foreground text-sm">
-              {filteredOrders.length} order
-              {filteredOrders.length !== 1 ? "s" : ""} shown
+              {filteredOrders.length} order{filteredOrders.length !== 1 ? "s" : ""} shown
             </p>
           </div>
           <SearchInput
@@ -619,9 +568,7 @@ const OrdersPage = () => {
             }
           }}
           onStatusUpdated={(updated) => {
-            setOrders((prev) =>
-              prev.map((o) => (o._id === updated._id ? updated : o)),
-            );
+            setOrders((prev) => prev.map((o) => (o._id === updated._id ? updated : o)));
             setSelectedOrder(updated);
           }}
         />

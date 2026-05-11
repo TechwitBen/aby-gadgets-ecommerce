@@ -1,11 +1,19 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  ReactNode,
+} from "react";
 import { cartService, type CartDoc } from "@/services/Cart.service";
 import { useAuth } from "@/contexts/AuthContext";
 
 // ── CartItem — the shape stored locally and used by UI ────────────────────────
 export interface CartItem {
-  id: string;           // product _id (used as a display/grouping key)
-  variantId: string;    // variant _id — THIS is the unique cart key
+  id: string;        // product _id (used as a display/grouping key)
+  variantId: string; // variant _id — THIS is the unique cart key
   name: string;
   price: number;
   originalPrice?: number;
@@ -32,89 +40,124 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_KEY = "abygadget_cart";
 
-// ── Helper: map a backend CartDoc → local CartItem[] ─────────────────────────
+// ── Helper: map backend CartDoc → local CartItem[] ────────────────────────────
 const docToItems = (doc: CartDoc): CartItem[] =>
   doc.items.map((item) => ({
-    id:        item.product._id,
+    id: item.product._id,
     variantId: item.variant._id,
-    name:      item.product.name,
-    price:     item.variant.price,
-    image:     item.product.images?.[0] ?? "",
-    quantity:  item.quantity,
-    color:     item.variant.color,
-    storage:   item.variant.storage,
-    ram:       item.variant.ram,
-    sku:       item.variant.sku,
+    name: item.product.name,
+    price: item.variant.price,
+    image: item.product.images?.[0] ?? "",
+    quantity: item.quantity,
+    color: item.variant.color,
+    storage: item.variant.storage,
+    ram: item.variant.ram,
+    sku: item.variant.sku,
   }));
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const { isAuthenticated } = useAuth();
-  const [items,        setItems]        = useState<CartItem[]>([]);
-  const [isSyncing,    setIsSyncing]    = useState(false);
+  const { isAuthenticated, logoutReason } = useAuth();
+
+  const [items, setItems] = useState<CartItem[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // ── Load from localStorage on mount ────────────────────────────────────────
+  // Tracks whether user was logged in during this session
+  const wasAuthenticated = useRef(false);
+
+  // ── 1. Load from localStorage on mount ─────────────────────────────────────
   useEffect(() => {
     try {
       const stored = localStorage.getItem(CART_KEY);
-      if (stored) setItems(JSON.parse(stored));
+      if (stored) {
+        setItems(JSON.parse(stored));
+      }
     } catch {
-      /* ignore */
+      /* ignore corrupted localStorage */
     }
+
     setIsInitialized(true);
   }, []);
 
-  // ── Persist to localStorage whenever items change ─────────────────────────
+  // ── 2. Persist to localStorage whenever items change ───────────────────────
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem(CART_KEY, JSON.stringify(items));
-    }
+    if (!isInitialized) return;
+
+    localStorage.setItem(CART_KEY, JSON.stringify(items));
   }, [items, isInitialized]);
 
-  // ── On login: fetch server cart and merge with local ──────────────────────
+  // ── 3. Clear cart ONLY on manual logout ────────────────────────────────────
+  useEffect(() => {
+    if (isAuthenticated) {
+      // user is logged in
+      wasAuthenticated.current = true;
+      return;
+    }
+
+    if (
+      wasAuthenticated.current &&
+      isInitialized &&
+      logoutReason === "manual"
+    ) {
+      // real logout → clear everything
+      wasAuthenticated.current = false;
+      setItems([]);
+      localStorage.removeItem(CART_KEY);
+    }
+  }, [isAuthenticated, isInitialized, logoutReason]);
+
+  // ── 4. On login: sync local cart with server ───────────────────────────────
   useEffect(() => {
     if (!isAuthenticated || !isInitialized) return;
 
     const syncOnLogin = async () => {
       setIsSyncing(true);
+
       try {
         const serverCart = await cartService.getCart();
         const serverItems = docToItems(serverCart);
 
-        // Merge: for any local item not on server, add it; server wins on price
-        const localItems = JSON.parse(localStorage.getItem(CART_KEY) ?? "[]") as CartItem[];
+        // Read local cart
+        const localItems = JSON.parse(
+          localStorage.getItem(CART_KEY) ?? "[]"
+        ) as CartItem[];
+
         const merged = [...serverItems];
 
+        // Push local-only items to server
         for (const local of localItems) {
-          if (!merged.find((s) => s.variantId === local.variantId)) {
-            // Push local-only items to server too
+          const alreadyExists = merged.find(
+            (s) => s.variantId === local.variantId
+          );
+
+          if (!alreadyExists) {
             try {
               await cartService.addItem({
-                product:  local.id,
-                variant:  local.variantId,
+                product: local.id,
+                variant: local.variantId,
                 quantity: local.quantity,
               });
+
               merged.push(local);
             } catch {
-              /* variant may no longer be valid — silently skip */
+              // variant may no longer exist → skip
             }
           }
         }
 
         setItems(merged);
       } catch {
-        /* server unavailable — keep local items */
+        // server unavailable → keep local cart
       } finally {
         setIsSyncing(false);
       }
     };
 
     syncOnLogin();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, isInitialized]);
 
-  // ── Internal helper: update from server response ───────────────────────────
+  // ── Helper: replace local state with server cart ───────────────────────────
   const applyServerCart = useCallback((doc: CartDoc) => {
     setItems(docToItems(doc));
   }, []);
@@ -122,30 +165,41 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // ── addToCart ──────────────────────────────────────────────────────────────
   const addToCart = useCallback(
     async (item: CartItem) => {
-      // Optimistic update
+      // Never allow undefined variantId
+      if (!item.variantId) return;
+
+      // optimistic local update
       setItems((prev) => {
-        const existing = prev.find((i) => i.variantId === item.variantId);
+        const existing = prev.find(
+          (i) => i.variantId === item.variantId
+        );
+
         if (existing) {
           return prev.map((i) =>
             i.variantId === item.variantId
-              ? { ...i, quantity: i.quantity + item.quantity }
+              ? {
+                  ...i,
+                  quantity: i.quantity + item.quantity,
+                }
               : i
           );
         }
+
         return [...prev, item];
       });
 
-      // Sync with backend if authenticated
+      // sync to backend if logged in
       if (isAuthenticated) {
         try {
           const doc = await cartService.addItem({
-            product:  item.id,
-            variant:  item.variantId,
+            product: item.id,
+            variant: item.variantId,
             quantity: item.quantity,
           });
+
           applyServerCart(doc);
         } catch {
-          /* keep optimistic state */
+          // keep optimistic state
         }
       }
     },
@@ -155,14 +209,17 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // ── removeFromCart ─────────────────────────────────────────────────────────
   const removeFromCart = useCallback(
     async (variantId: string) => {
-      setItems((prev) => prev.filter((i) => i.variantId !== variantId));
+      // optimistic
+      setItems((prev) =>
+        prev.filter((i) => i.variantId !== variantId)
+      );
 
       if (isAuthenticated) {
         try {
           const doc = await cartService.removeItem(variantId);
           applyServerCart(doc);
         } catch {
-          /* keep optimistic state */
+          // keep optimistic state
         }
       }
     },
@@ -177,16 +234,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // optimistic
       setItems((prev) =>
-        prev.map((i) => (i.variantId === variantId ? { ...i, quantity } : i))
+        prev.map((i) =>
+          i.variantId === variantId
+            ? { ...i, quantity }
+            : i
+        )
       );
 
       if (isAuthenticated) {
         try {
-          const doc = await cartService.updateItem({ variant: variantId, quantity });
+          const doc = await cartService.updateItem({
+            variant: variantId,
+            quantity,
+          });
+
           applyServerCart(doc);
         } catch {
-          /* keep optimistic state */
+          // keep optimistic state
         }
       }
     },
@@ -196,6 +262,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // ── clearCart ──────────────────────────────────────────────────────────────
   const clearCart = useCallback(async () => {
     setItems([]);
+    localStorage.removeItem(CART_KEY);
+
     if (isAuthenticated) {
       try {
         await cartService.clearCart();
@@ -205,8 +273,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [isAuthenticated]);
 
-  const totalItems = items.reduce((s, i) => s + i.quantity, 0);
-  const subtotal   = items.reduce((s, i) => s + i.price * i.quantity, 0);
+  const totalItems = items.reduce(
+    (sum, item) => sum + item.quantity,
+    0
+  );
+
+  const subtotal = items.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
 
   return (
     <CartContext.Provider
@@ -226,8 +301,15 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
 export const useCart = () => {
   const ctx = useContext(CartContext);
-  if (!ctx) throw new Error("useCart must be used within a CartProvider");
+
+  if (!ctx) {
+    throw new Error(
+      "useCart must be used within a CartProvider"
+    );
+  }
+
   return ctx;
 };

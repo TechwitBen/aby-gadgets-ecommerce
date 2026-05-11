@@ -17,10 +17,10 @@ const PaymentSchema = new Schema(
     },
 
     // ── Core fields ───────────────────────────────────────────────────────────
-    order:   { type: Schema.Types.ObjectId, ref: "Order", required: true },
-    user:    { type: Schema.Types.ObjectId, ref: "User",  required: true },
-    amount:  { type: Number, required: true, min: 0 },
-    currency:{ type: String, default: "NGN" },
+    order:    { type: Schema.Types.ObjectId, ref: "Order", required: true },
+    user:     { type: Schema.Types.ObjectId, ref: "User",  required: true },
+    amount:   { type: Number, required: true, min: 0 },
+    currency: { type: String, default: "NGN" },
 
     status: {
       type:    String,
@@ -28,16 +28,61 @@ const PaymentSchema = new Schema(
       default: "pending",
     },
 
-    reference:           { type: String, required: true, unique: true }, // gateway ref
-    paystack_reference:  { type: String },
-    payment_method:      { type: String },
-    metadata:            { type: Schema.Types.Mixed },
+    // ── Payment method ────────────────────────────────────────────────────────
+    // PERMANENT — set once at Payment.create(), never overwritten.
+    // Identifies WHICH gateway was used, not how the customer paid.
+    //
+    //   "paystack" → any online payment routed through Paystack
+    //                (card, bank transfer, USSD, QR, mobile money, etc.)
+    //   "pod"      → pay on delivery / pay at pickup (cash, no gateway)
+    //
+    // Safe to use for permanent filtering, reporting, and business logic.
+    payment_method: {
+      type:    String,
+      enum:    ["paystack", "pod"],
+      default: "paystack",
+    },
+
+    // ── Paystack channel ──────────────────────────────────────────────────────
+    // HOW the customer actually paid through Paystack.
+    // Populated by the webhook (charge.success) or verifyPayment once the
+    // transaction completes. Always null for POD orders and for pending
+    // Paystack transactions where the customer hasn't chosen a method yet.
+    //
+    // Possible values (from Paystack's event.data.channel):
+    //   "card"          → debit or credit card
+    //   "bank"          → direct bank payment
+    //   "bank_transfer" → manual bank transfer
+    //   "ussd"          → USSD dial code (*737# etc.)
+    //   "qr"            → QR code scan
+    //   "mobile_money"  → mobile money wallet
+    channel: {
+      type:    String,
+      enum:    ["card", "bank", "bank_transfer", "ussd", "qr", "mobile_money", null],
+      default: null,
+    },
+
+    // ── References ────────────────────────────────────────────────────────────
+    // `reference`          — our internal reference generated at init time.
+    //                        Format: PAY-{timestamp}-{random}
+    //                        Used to look up the Payment doc from Paystack callbacks.
+    // `paystack_reference` — Paystack's own transaction reference returned by
+    //                        their API. Stored for reconciliation and support.
+    reference:          { type: String, required: true, unique: true },
+    paystack_reference: { type: String },
+
+    metadata: { type: Schema.Types.Mixed },
   },
   { collection: "payments", timestamps: true },
 );
 
-PaymentSchema.index({ order: 1 });
-PaymentSchema.index({ user:  1 });
+// ── Indexes ───────────────────────────────────────────────────────────────────
+PaymentSchema.index({ order:          1 });
+PaymentSchema.index({ user:           1 });
+PaymentSchema.index({ payment_method: 1 }); // fast admin filter by gateway
+PaymentSchema.index({ channel:        1 }); // fast admin filter by channel
+PaymentSchema.index({ status:         1 }); // fast admin filter by status
+PaymentSchema.index({ createdAt:      -1 }); // default sort (newest first)
 
 const Payment =
   mongoose.models.Payment || mongoose.model("Payment", PaymentSchema);

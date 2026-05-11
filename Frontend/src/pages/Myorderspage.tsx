@@ -14,6 +14,7 @@ import {
   type FulfillmentType,
 } from "@/services/Order.service";
 import { paymentService } from "@/services/Payment.service";
+import { useToast } from "@/hooks/use-toast";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COMPLETED_STATUSES = new Set([
@@ -210,6 +211,7 @@ const completedButtonConfig = (status: OrderStatus, isPickup: boolean) => {
 // ─────────────────────────────────────────────────────────────────────────────
 const MyOrdersPage = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const [orders, setOrders] = useState<OrderDoc[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -217,30 +219,58 @@ const MyOrdersPage = () => {
   const [tab, setTab] = useState<Tab>("active");
   const [filter, setFilter] = useState<"All" | OrderStatus>("All");
   const [search, setSearch] = useState("");
-  // Track which order is currently retrying payment (stores the order _id)
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    setIsLoading(true);
+  // FIX: added `silent` flag — background re-fetches skip the loading spinner
+  // so the UI doesn't flash while the user is looking at their orders.
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       setOrders(await orderService.getMyOrders());
     } catch {
-      setError("Failed to load orders. Please check your connection.");
+      if (!silent) setError("Failed to load orders. Please check your connection.");
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, []);
 
+  // Initial load
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
+  // FIX: re-fetch silently whenever the tab becomes visible again.
+  // When the user returns from Paystack the webhook has already updated
+  // payment_status → "paid", so this single listener replaces the need
+  // for polling or manual refresh.
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchOrders(true);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [fetchOrders]);
+
+  // FIX: detect Paystack callback URL (?reference=xxx or ?trxref=xxx) and
+  // show a single informational toast so the user knows payment was received.
+  // Runs once on mount; cleans the URL so it never fires again on refresh.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("reference") || params.get("trxref");
+    if (!ref) return;
+    window.history.replaceState({}, "", window.location.pathname);
+    toast({
+      title: "Payment received",
+      description:
+        "Your payment is being verified. Your order status will update shortly.",
+    });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ── Retry payment handler ─────────────────────────────────────────────────
-  // Calls the same initializePayment endpoint used at checkout.
-  // On success, redirects straight to Paystack.
-  // The existing webhook + verifyPayment endpoint handle the rest automatically.
   const handleRetryPayment = async (orderId: string) => {
     setRetryingId(orderId);
     setRetryError(null);
@@ -297,7 +327,7 @@ const MyOrdersPage = () => {
         <WifiOff className="w-10 h-10 text-gray-400" />
         <p className="text-sm text-gray-500">{error}</p>
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders()}
           className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium hover:border-purple-400 hover:text-purple-600 flex items-center gap-2"
         >
           <RefreshCw className="w-4 h-4" /> Try Again
@@ -398,7 +428,7 @@ const MyOrdersPage = () => {
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-        {/* Retry error banner — shown if initializePayment failed */}
+        {/* Retry error banner */}
         {retryError && (
           <div className="mb-4 flex items-start gap-3 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
             <svg
@@ -462,10 +492,6 @@ const MyOrdersPage = () => {
                 ? completedButtonConfig(order.status as OrderStatus, isPickup)
                 : null;
 
-              // Show "Complete Payment" when:
-              // - order is not cancelled
-              // - payment is still unpaid
-              // - payment method is paystack (not pod)
               const needsPayment =
                 order.status !== "cancelled" &&
                 order.payment_status === "unpaid" &&
@@ -572,7 +598,7 @@ const MyOrdersPage = () => {
                       )}
 
                     <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100 flex-wrap">
-                      {/* ── Complete Payment button (highest priority) ── */}
+                      {/* Complete Payment button (highest priority) */}
                       {needsPayment && (
                         <button
                           onClick={() => handleRetryPayment(order._id)}
@@ -601,7 +627,7 @@ const MyOrdersPage = () => {
                         </button>
                       )}
 
-                      {/* ── Track / View button ── */}
+                      {/* Track / View button */}
                       {orderIsCompleted && btnConfig ? (
                         <button
                           onClick={() => navigate(`/track-order/${order._id}`)}

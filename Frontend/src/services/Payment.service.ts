@@ -12,7 +12,18 @@ export type PaymentStatus = "pending" | "success" | "failed" | "cancelled";
 export interface PaymentDoc {
   _id: string;
   payment_number?: string;
-  order: string | { _id: string; order_number?: string; fulfillment_type?: string; status?: string; payment_status?: string; total?: number; shipping_fee?: number; delivery_city?: string };
+  order:
+    | string
+    | {
+        _id: string;
+        order_number?: string;
+        fulfillment_type?: string;
+        status?: string;
+        payment_status?: string;
+        total?: number;
+        shipping_fee?: number;
+        delivery_city?: string;
+      };
   user: string;
   amount: number;
   currency: string;
@@ -20,6 +31,7 @@ export interface PaymentDoc {
   reference: string;
   paystack_reference?: string;
   payment_method?: string;
+  channel?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -41,23 +53,18 @@ export interface VerifyPaymentResponse {
 }
 
 export const paymentService = {
-  /** POST /initialize */
   initializePayment: (payload: { orderId: string }): Promise<InitializePaymentResponse> =>
     api.post<InitializePaymentResponse>("/initialize", payload).then((r) => r.data),
 
-  /** GET /verify/:reference — checks Paystack and updates our DB */
   verifyPayment: (reference: string): Promise<VerifyPaymentResponse> =>
     api.get<VerifyPaymentResponse>(`/verify/${reference}`).then((r) => r.data),
 
-  /** GET /order/:orderId — most recent payment doc for an order */
   getPaymentForOrder: (orderId: string): Promise<PaymentDoc> =>
     api.get<PaymentDoc>(`/order/${orderId}`).then((r) => r.data),
 
-  /** GET /status/:reference */
   getPaymentStatus: (reference: string): Promise<PaymentDoc> =>
     api.get<PaymentDoc>(`/status/${reference}`).then((r) => r.data),
 
-  /** GET /all — admin */
   getAllPayments: (): Promise<{ payments: PaymentDoc[]; total: number }> =>
     api.get("/all").then((r) => r.data),
 };

@@ -12,6 +12,16 @@ import {
   Loader2,
   RefreshCw,
   AlertCircle,
+  ShoppingBag,
+  CheckCircle2,
+  Truck,
+  Store,
+  XCircle,
+  RotateCcw,
+  Clock,
+  Shield,
+  Mail,
+  Key,
 } from "lucide-react";
 import {
   notificationService,
@@ -20,6 +30,35 @@ import {
 } from "@/services/Notification.service";
 import { useNotifications } from "@/contexts/Notificationcontext";
 import { useToast } from "@/hooks/use-toast";
+
+// ── Icon Mapping ──────────────────────────────────────────────────────────────
+const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
+  // Order icons
+  "order-placed": ShoppingBag,
+  "order-confirmed": CheckCircle2,
+  "order-shipped": Truck,
+  "order-delivery": Truck,
+  "order-delivered": CheckCircle2,
+  "order-pickup-ready": Store,
+  "order-collected": CheckCircle2,
+  "order-cancelled": XCircle,
+  "order-refunded": RotateCcw,
+  // Payment icons
+  "payment-success": CreditCard,
+  "payment-pending": Clock,
+  "payment-failed": XCircle,
+  "payment-cancelled": AlertCircle,
+  "payment-refunded": RotateCcw,
+  // Account icons
+  "account-security": Shield,
+  "account-email": Mail,
+  "account-profile": User,
+  "account-login": Key,
+  // Admin message
+  "admin-message": Bell,
+  // Fallback
+  "bell": Bell,
+};
 
 // ── Time helpers ──────────────────────────────────────────────────────────────
 const timeAgo = (dateStr: string): string => {
@@ -128,7 +167,7 @@ const EmptyState = ({ filter }: { filter: FilterType }) => {
   );
 };
 
-// ── Notification Card ─────────────────────────────────────────────────────────
+// ── Notification Card (updated with ICON_MAP) ─────────────────────────────────
 const NotificationCard = ({
   notification,
   onRead,
@@ -142,6 +181,9 @@ const NotificationCard = ({
   const cfg = TYPE_CONFIG[notification.type];
   const actionLabel = getActionLabel(notification);
   const actionPath = getActionPath(notification);
+
+  // Use ICON_MAP to get the correct Lucide icon, fallback to Bell
+  const IconComponent = ICON_MAP[notification.icon] ?? Bell;
 
   return (
     <div
@@ -163,11 +205,13 @@ const NotificationCard = ({
 
       {/* Icon */}
       <div
-        className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center text-xl ${
+        className={`flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center ${
           notification.isRead ? "bg-gray-50" : cfg.bg
         }`}
       >
-        {notification.icon}
+        <IconComponent
+          className={`w-5 h-5 ${notification.isRead ? "text-gray-400" : "text-current"}`}
+        />
       </div>
 
       {/* Content */}
@@ -330,10 +374,9 @@ const NotificationsPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/60">
-      {/* ── Page Header — white card style, NOT purple ── */}
+      {/* ── Page Header ── */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 pt-6 pb-5">
-          {/* Title row */}
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-sm">
