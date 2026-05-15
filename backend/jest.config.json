@@ -1,0 +1,9 @@
+{
+  "testEnvironment": "node",
+  "transform": {
+    "^.+\\.js$": "babel-jest"
+  },
+  "testMatch": ["**/testing/**/*.test.js"],
+  "setupFiles": ["<rootDir>/testing/setupEnv.js"],
+  "setupFilesAfterEnv": ["<rootDir>/testing/setup.js"]
+}

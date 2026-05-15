@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api/v1/orders",
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1/orders`,
   withCredentials: true,
 });
 
@@ -151,8 +151,14 @@ export const orderService = {
   getOrderById: (id: string) =>
     api.get<OrderDoc>(`/${id}`).then(r => r.data),
 
-  getAllOrders: () =>
-    api.get<OrderDoc[]>("").then(r => r.data),
+ // In Order.service.ts:
+getAllOrders: async (params?: { page?: number; limit?: number }) => {
+  const query = new URLSearchParams();
+  if (params?.page) query.set("page", String(params.page));
+  if (params?.limit) query.set("limit", String(params.limit));
+  const res = await api.get(`/orders?${query.toString()}`);
+  return res.data;
+},
 
   updateStatus: (id: string, status: OrderStatus) =>
     api.patch<OrderDoc>(`/${id}/status`, { status }).then(r => r.data),

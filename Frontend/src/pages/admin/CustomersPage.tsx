@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { StatsCard } from "@/components/ui/stats-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,6 @@ import {
   X,
   User,
   Trash2,
-  Edit2,
   BarChart2,
   Users,
   Loader2,
@@ -16,7 +15,7 @@ import {
   Filter,
 } from "lucide-react";
 import AnalyticsSection from "@/components/ui/Analyticssection";
-import { usersAPI, type BackendUser } from "@/services/Api";
+import { usersAPI, type BackendUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePermission } from "@/contexts/PermissionContext";
@@ -155,143 +154,11 @@ const DeleteConfirmModal = ({
   );
 };
 
-// ── Edit Customer Modal ───────────────────────────────────────────────────────
-const EditCustomerModal = ({
-  open,
-  customer,
-  onClose,
-  onSave,
-}: {
-  open: boolean;
-  customer: Customer | null;
-  onClose: () => void;
-  onSave: (updated: Customer) => void;
-}) => {
-  const [form, setForm] = useState({ name: "", email: "" });
-  const [errors, setErrors] = useState<Partial<typeof form>>({});
-  const [saveSuccess, setSaveSuccess] = useState(false);
-
-  useEffect(() => {
-    if (customer) setForm({ name: customer.name, email: customer.email ?? "" });
-  }, [customer]);
-
-  if (!open || !customer) return null;
-
-  const validate = () => {
-    const e: Partial<typeof form> = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.email.trim() || !form.email.includes("@"))
-      e.email = "Enter a valid email";
-    return e;
-  };
-
-  const handleSubmit = () => {
-    const e = validate();
-    if (Object.keys(e).length > 0) {
-      setErrors(e);
-      return;
-    }
-    onSave({ ...customer, name: form.name.trim(), email: form.email.trim() });
-    setSaveSuccess(true);
-    setTimeout(() => {
-      setSaveSuccess(false);
-      setErrors({});
-      onClose();
-    }, 1200);
-  };
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-popover text-popover-foreground rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl overflow-hidden">
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-border" />
-        </div>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-              <User size={16} className="text-primary" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-foreground">
-                Edit customer
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Update the details below
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-foreground p-1 rounded-md hover:bg-secondary"
-          >
-            <X size={16} />
-          </button>
-        </div>
-        <div className="px-6 py-5 space-y-4">
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Full name <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-                setErrors({ ...errors, name: undefined });
-              }}
-              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.name ? "ring-2 ring-destructive" : ""}`}
-            />
-            {errors.name && (
-              <p className="text-xs text-destructive mt-1">{errors.name}</p>
-            )}
-          </div>
-          <div>
-            <label className="text-xs text-muted-foreground block mb-1">
-              Email address <span className="text-destructive">*</span>
-            </label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => {
-                setForm({ ...form, email: e.target.value });
-                setErrors({ ...errors, email: undefined });
-              }}
-              className={`w-full bg-secondary text-foreground rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary ${errors.email ? "ring-2 ring-destructive" : ""}`}
-            />
-            {errors.email && (
-              <p className="text-xs text-destructive mt-1">{errors.email}</p>
-            )}
-          </div>
-        </div>
-        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t border-border">
-          <Button variant="outline" size="sm" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            onClick={handleSubmit}
-            className={`gap-1.5 ${saveSuccess ? "bg-green-500 hover:bg-green-500 text-white" : ""}`}
-          >
-            <Edit2 size={14} />
-            {saveSuccess ? "Saved!" : "Save changes"}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // ── Customer Detail Modal ─────────────────────────────────────────────────────
 const CustomerDetailModal = ({
   customer,
   open,
   onClose,
-  onEdit,
   onDelete,
   canViewContact,
   isAdmin,
@@ -299,7 +166,6 @@ const CustomerDetailModal = ({
   customer: Customer | null;
   open: boolean;
   onClose: () => void;
-  onEdit: (c: Customer) => void;
   onDelete: (c: Customer) => void;
   canViewContact: boolean;
   isAdmin: boolean;
@@ -406,22 +272,9 @@ const CustomerDetailModal = ({
               <Trash2 size={14} /> Delete
             </Button>
           ) : (
-            <div /> // spacer so edit/close stays right-aligned
+            <div /> // spacer so close button stays right-aligned
           )}
           <div className="flex items-center gap-2">
-            {isAdmin && (
-              <Button
-                size="sm"
-                variant="outline"
-                className="gap-1.5"
-                onClick={() => {
-                  onClose();
-                  onEdit(customer);
-                }}
-              >
-                <Edit2 size={14} /> Edit
-              </Button>
-            )}
             <Button
               size="sm"
               onClick={onClose}
@@ -440,14 +293,12 @@ const CustomerDetailModal = ({
 const CustomerCard = ({
   customer,
   onSelect,
-  onEdit,
   onDelete,
   canViewContact,
   isAdmin,
 }: {
   customer: Customer;
   onSelect: (c: Customer) => void;
-  onEdit: (c: Customer) => void;
   onDelete: (c: Customer) => void;
   canViewContact: boolean;
   isAdmin: boolean;
@@ -502,12 +353,6 @@ const CustomerCard = ({
         {isAdmin && (
           <>
             <button
-              onClick={() => onEdit(customer)}
-              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-            >
-              <Edit2 size={15} />
-            </button>
-            <button
               onClick={() => onDelete(customer)}
               className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
             >
@@ -528,10 +373,10 @@ const CustomersPage = () => {
   // Permission flags
   const canViewContact = isAdmin || can("customers", "viewContactInfo");
   const canDelete = isAdmin;
-  const canEdit = isAdmin;
 
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("All Customers");
@@ -541,32 +386,67 @@ const CustomersPage = () => {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null,
   );
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(
     null,
   );
 
+  // ── Pagination state ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCustomers, setTotalCustomers] = useState(0);
+  const LIMIT = 20;
+
   const { toast } = useToast();
 
-  const fetchCustomers = useCallback(async () => {
-    setIsLoading(true);
+  // ── Scroll to top on filter change ──────────────────────────────────────
+  const prevFilterRef = useRef(filter);
+
+  useEffect(() => {
+    if (prevFilterRef.current !== filter) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      prevFilterRef.current = filter;
+    }
+  }, [filter]);
+
+  // ── fetchCustomers ────────────────────────────────────────────────────────
+  const fetchCustomers = useCallback(async (page = 1, isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setInitialLoading(true);
+    }
     setFetchError(null);
     try {
-      const users = await usersAPI.getAll();
-      setCustomers(users.filter((u) => u.role === "user").map(toCustomer));
+      const res = await usersAPI.getAll({ page, limit: LIMIT });
+      const allUsers = res?.users ?? res; // handle both shapes
+      const filtered = allUsers.filter((u) => u.role === "user").map(toCustomer);
+
+      if (page === 1) {
+        setCustomers(filtered);
+      } else {
+        setCustomers((prev) => [...prev, ...filtered]); // append
+      }
+
+      setCurrentPage(page);
+      setTotalPages(res?.pages ?? 1);
+      setTotalCustomers(res?.total ?? filtered.length);
     } catch (err: any) {
       setFetchError(
         err?.response?.data?.error ??
-          err?.response?.data?.message ??
-          "Failed to load customers. Please try again.",
+        err?.response?.data?.message ??
+        "Failed to load customers. Please try again."
       );
     } finally {
-      setIsLoading(false);
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
+        setInitialLoading(false);
+      }
     }
   }, []);
 
   useEffect(() => {
-    fetchCustomers();
+    fetchCustomers(1, false);
   }, [fetchCustomers]);
 
   const handleConfirmDelete = async () => {
@@ -589,14 +469,6 @@ const CustomersPage = () => {
     } finally {
       setDeletingCustomer(null);
     }
-  };
-
-  const handleSaveEdit = (updated: Customer) => {
-    setCustomers((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c)),
-    );
-    setEditingCustomer(null);
-    toast({ title: "Customer updated", description: "Changes saved locally." });
   };
 
   const applyFilter = (list: Customer[]) => {
@@ -637,19 +509,39 @@ const CustomersPage = () => {
     );
   }).length;
 
-  if (isLoading)
+  if (initialLoading) {
     return (
-      <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
-        <Loader2 size={20} className="animate-spin" />
-        <span className="text-sm">Loading customers…</span>
+      <div className="admin-theme">
+        {/* Stats placeholders */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card border border-border rounded-xl p-4 animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/2 mb-2" />
+              <div className="h-8 bg-muted rounded w-3/4" />
+            </div>
+          ))}
+        </div>
+        {/* Table skeleton */}
+        <div className="bg-card rounded-lg overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="border-b border-border p-4 animate-pulse">
+              <div className="flex gap-4">
+                <div className="h-5 bg-muted rounded w-1/4" />
+                <div className="h-5 bg-muted rounded w-1/4" />
+                <div className="h-5 bg-muted rounded w-1/4" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
+  }
 
   if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
         <p className="text-sm text-destructive">{fetchError}</p>
-        <Button variant="outline" onClick={fetchCustomers} className="gap-2">
+        <Button variant="outline" onClick={() => fetchCustomers(1, false)} className="gap-2">
           <RefreshCw size={14} /> Retry
         </Button>
       </div>
@@ -661,7 +553,7 @@ const CustomersPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <StatsCard
           title="Total Customers"
-          value={String(customers.length)}
+          value={String(totalCustomers || customers.length)}
           subtitle="Registered users"
           variant="primary"
         />
@@ -750,7 +642,7 @@ const CustomersPage = () => {
                     ...(canViewContact ? ["Email"] : []),
                     "Member Since",
                     "Provider",
-                    ...(canEdit ? ["Actions"] : []),
+                    ...(canDelete ? ["Actions"] : []),
                   ].map((h) => (
                     <th
                       key={h}
@@ -825,19 +717,13 @@ const CustomersPage = () => {
                           {customer.provider}
                         </span>
                       </td>
-                      {/* Action buttons — admin only */}
-                      {canEdit && (
+                      {/* Action buttons — delete only (admin only) */}
+                      {canDelete && (
                         <td
                           className="p-4"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => setEditingCustomer(customer)}
-                              className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
-                            >
-                              <Edit2 size={15} />
-                            </button>
                             <button
                               onClick={() => setDeletingCustomer(customer)}
                               className="p-1.5 rounded-md text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
@@ -866,7 +752,6 @@ const CustomersPage = () => {
                   key={customer.id}
                   customer={customer}
                   onSelect={setSelectedCustomer}
-                  onEdit={setEditingCustomer}
                   onDelete={setDeletingCustomer}
                   canViewContact={canViewContact}
                   isAdmin={isAdmin}
@@ -874,6 +759,21 @@ const CustomersPage = () => {
               ))
             )}
           </div>
+
+          {/* ── Load more button ──────────────────────────────────── */}
+          {currentPage < totalPages && (
+            <div className="flex justify-center mt-6">
+              <Button
+                variant="outline"
+                onClick={() => fetchCustomers(currentPage + 1, true)}
+                disabled={loadingMore}
+                className="gap-2"
+              >
+                {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+                {loadingMore ? "Loading..." : "Load more customers"}
+              </Button>
+            </div>
+          )}
         </>
       )}
 
@@ -883,17 +783,9 @@ const CustomersPage = () => {
         customer={selectedCustomer}
         open={!!selectedCustomer}
         onClose={() => setSelectedCustomer(null)}
-        onEdit={(c) => setEditingCustomer(c)}
         onDelete={(c) => setDeletingCustomer(c)}
         canViewContact={canViewContact}
         isAdmin={isAdmin}
-      />
-      <EditCustomerModal
-        key={editingCustomer?.id ? `edit-${editingCustomer.id}` : "edit-none"}
-        open={!!editingCustomer}
-        customer={editingCustomer}
-        onClose={() => setEditingCustomer(null)}
-        onSave={handleSaveEdit}
       />
       <DeleteConfirmModal
         open={!!deletingCustomer}

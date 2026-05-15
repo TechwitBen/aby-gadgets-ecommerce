@@ -2,3 +2,6 @@ packages:
   - "frontend"
   - "backend"
   - "admin"
+allowBuilds:
+  mongodb-memory-server: true
+  unrs-resolver: true

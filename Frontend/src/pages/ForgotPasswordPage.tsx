@@ -4,7 +4,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Mail, CheckCircle, AlertCircle } from "lucide-react";
-import { authAPI } from "@/services/Api";
+import { authAPI } from "@/services/api";
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 

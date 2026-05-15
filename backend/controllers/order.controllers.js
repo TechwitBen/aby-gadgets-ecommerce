@@ -197,13 +197,26 @@ export const getOrderById = async (req, res) => {
  */
 export const getAllOrders = async (req, res) => {
   try {
-    const orders = await Order.find({})
-      .populate("user", "name email")
-      .populate("items.product", "name images condition")  // ← ADD THIS
-      .populate("items.variant", "color storage ram price sku")  // ← ADD THIS
-      .sort({ createdAt: -1 });
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    res.status(200).json(orders);
+    const [orders, total] = await Promise.all([
+      Order.find({})
+        .populate("user", "name email")
+        .populate("items.product", "name images condition")
+        .populate("items.variant", "color storage ram price sku")
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(Number(limit)),
+      Order.countDocuments(),
+    ]);
+
+    res.status(200).json({
+      orders,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to fetch orders", error: error.message });
   }

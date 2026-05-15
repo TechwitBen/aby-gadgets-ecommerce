@@ -3,12 +3,19 @@ import { ArrowLeft, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInView, fadeUp } from "@/hooks/useInView";
 import { formatPrice } from "@/services/Products.service";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // 🎬 Page entrance animation
+  const { ref: contentRef, isInView: contentInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const handleCheckout = () => {
     if (isAuthenticated) {
@@ -44,7 +51,11 @@ const Cart = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      {/* 🎬 Animated content */}
+      <div
+        ref={contentRef}
+        className={`container mx-auto px-3 sm:px-4 py-4 sm:py-6 ${fadeUp(contentInView)}`}
+      >
         {items.length === 0 ? (
           <div className="text-center py-16 sm:py-24">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-5">

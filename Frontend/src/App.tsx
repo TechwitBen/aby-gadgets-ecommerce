@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import { CartProvider } from "@/contexts/CartContext";
+import ErrorBoundary from "@/components/ErrorBoundary"; 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PermissionProvider } from "@/contexts/PermissionContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
@@ -61,6 +62,7 @@ import AcceptInvitePage from "./pages/AcceptInvitePage";
 const queryClient = new QueryClient();
 
 const App = () => (
+  <ErrorBoundary>
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <NotificationProvider>
@@ -154,6 +156,7 @@ const App = () => (
       </NotificationProvider>
     </AuthProvider>
   </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

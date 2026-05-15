@@ -1,11 +1,12 @@
 /**
- * User controller — address endpoints updated.
+ * User controller
+ *
+ * CHANGE: profilePhoto has been removed entirely.
+ * Avatars are now generated on the frontend from the user's name/username/email initials.
  *
  * CHANGE: full_name and phone have been removed from the address sub-document.
  * When a shipping label or delivery contact is needed, callers should read
  * `user.name` and `user.phone` from the parent user document instead.
- *
- * All other controller logic is unchanged.
  */
 
 import User from "../models/user.model.js";
@@ -13,7 +14,9 @@ import User from "../models/user.model.js";
 // ── GET /user/profile ─────────────────────────────────────────────────────────
 export const getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("-hashed_password -salt -resetPasswordToken -resetPasswordExpires");
+    const user = await User.findById(req.user._id).select(
+      "-hashed_password -salt -resetPasswordToken -resetPasswordExpires",
+    );
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
     return res.status(200).json(user);
   } catch (err) {
@@ -22,18 +25,21 @@ export const getProfile = async (req, res) => {
 };
 
 // ── PATCH /user/profile ───────────────────────────────────────────────────────
+// Only name and phone are updatable — profilePhoto has been removed.
 export const updateProfile = async (req, res) => {
   try {
-    const { name, phone, profilePhoto } = req.body;
+    const { name, phone } = req.body;
     const updates = {};
-    if (name        !== undefined) updates.name         = name.trim();
-    if (phone       !== undefined) updates.phone        = phone.trim();
-    if (profilePhoto !== undefined) updates.profilePhoto = profilePhoto;
+    if (name  !== undefined) updates.name  = name.trim();
+    if (phone !== undefined) updates.phone = phone.trim();
 
     const user = await User.findByIdAndUpdate(
       req.user._id,
       { $set: updates },
-      { new: true, select: "-hashed_password -salt -resetPasswordToken -resetPasswordExpires" },
+      {
+        new: true,
+        select: "-hashed_password -salt -resetPasswordToken -resetPasswordExpires",
+      },
     );
     return res.status(200).json(user);
   } catch (err) {
@@ -51,7 +57,6 @@ export const changePassword = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // Verify current password (assumes bcrypt or similar helper on model)
     const valid = await user.comparePassword(currentPassword);
     if (!valid) return res.status(401).json({ success: false, message: "Current password is incorrect" });
 
@@ -86,7 +91,6 @@ export const addAddress = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    // If new address is default, clear existing defaults
     if (isDefault) {
       user.addresses.forEach((a) => { a.isDefault = false; });
     }
@@ -101,7 +105,7 @@ export const addAddress = async (req, res) => {
       isDefault:   isDefault   ?? false,
     });
 
-    // If this is the first address, auto-set as default
+    // Auto-default first address
     if (user.addresses.length === 1) {
       user.addresses[0].isDefault = true;
     }
@@ -125,7 +129,6 @@ export const updateAddress = async (req, res) => {
     const addr = user.addresses.id(addrId);
     if (!addr) return res.status(404).json({ success: false, message: "Address not found" });
 
-    // If setting as default, clear others
     if (isDefault) {
       user.addresses.forEach((a) => { a.isDefault = false; });
     }
@@ -158,7 +161,7 @@ export const deleteAddress = async (req, res) => {
     const wasDefault = addr.isDefault;
     addr.deleteOne();
 
-    // If deleted address was default and others remain, promote the first one
+    // Promote first remaining address to default if the deleted one was default
     if (wasDefault && user.addresses.length > 0) {
       user.addresses[0].isDefault = true;
     }

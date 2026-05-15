@@ -7,19 +7,26 @@ import {
   Clock, Zap,
 } from "lucide-react";
 
+// ── Brand colour ──────────────────────────────────────────────────────────────
+const BRAND        = "#6426E1";
+const BRAND_LIGHT  = "#F0EBFF";
+const BRAND_BORDER = "#D9CAFF";
+
 // ── FAQ Data ──────────────────────────────────────────────────────────────────
 interface FAQ { q: string; a: string; tags: string[]; }
 interface Category {
   key: string; label: string;
   icon: React.FC<{ className?: string }>;
-  color: string; bg: string; border: string; accent: string;
+  color: string; bg: string; border: string; iconBg: string; iconColor: string;
   faqs: FAQ[];
 }
 
 const CATEGORIES: Category[] = [
   {
-    key: "orders", label: "Orders", icon: Package,
-    color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-100", accent: "bg-blue-600",
+    key: "orders", label: "Orders",
+    icon: Package,
+    color: "text-blue-700", bg: "bg-blue-50", border: "border-blue-100",
+    iconBg: "bg-blue-600", iconColor: "text-white",
     faqs: [
       { q: "How do I track my order?", a: "Once your order is confirmed and shipped, go to My Orders and tap Track Order next to your order. You'll see a real-time timeline showing your order's progress from processing all the way to delivery.", tags: ["track", "order", "shipping"] },
       { q: "Can I cancel my order?", a: "You can request a cancellation while your order is still in 'Pending' status. Once an order has been confirmed or shipped, cancellation is no longer available. Please contact us immediately if you need to cancel — we'll do our best to help.", tags: ["cancel", "order"] },
@@ -29,8 +36,10 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "payments", label: "Payments", icon: CreditCard,
-    color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-100", accent: "bg-emerald-600",
+    key: "payments", label: "Payments",
+    icon: CreditCard,
+    color: "text-emerald-700", bg: "bg-emerald-50", border: "border-emerald-100",
+    iconBg: "bg-emerald-600", iconColor: "text-white",
     faqs: [
       { q: "What payment methods do you accept?", a: "We accept online payments via Paystack (debit/credit cards, bank transfer, USSD) and Pay on Delivery (POD) for eligible orders. You can choose your preferred method at checkout.", tags: ["payment", "methods", "card", "transfer", "paystack"] },
       { q: "Is online payment secure?", a: "Yes. All online payments are processed through Paystack, a PCI-DSS compliant payment gateway. We never store your card details — all payment data is handled securely by Paystack.", tags: ["secure", "payment", "safe", "card"] },
@@ -40,8 +49,10 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "delivery", label: "Delivery", icon: Truck,
-    color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-100", accent: "bg-amber-600",
+    key: "delivery", label: "Delivery",
+    icon: Truck,
+    color: "text-amber-700", bg: "bg-amber-50", border: "border-amber-100",
+    iconBg: "bg-amber-500", iconColor: "text-white",
     faqs: [
       { q: "What are your delivery zones?", a: "We currently deliver across Lagos (all major areas) and to other states in Nigeria. Delivery fees and timelines vary by zone — you can see exact fees when you enter your address at checkout.", tags: ["zone", "area", "delivery", "lagos"] },
       { q: "How much is the delivery fee?", a: "Delivery fees are calculated based on your location at checkout. Some zones qualify for free delivery. Pickup is always free — collect from our store at no extra cost.", tags: ["fee", "cost", "delivery", "free"] },
@@ -51,8 +62,10 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "returns", label: "Returns", icon: RotateCcw,
-    color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-100", accent: "bg-rose-600",
+    key: "returns", label: "Returns",
+    icon: RotateCcw,
+    color: "text-rose-700", bg: "bg-rose-50", border: "border-rose-100",
+    iconBg: "bg-rose-500", iconColor: "text-white",
     faqs: [
       { q: "What is your return policy?", a: "We accept returns within 7 days of delivery for items in their original condition. Items must be unused, undamaged, and in original packaging. Please contact us to initiate a return before sending anything back.", tags: ["return", "policy", "7 days"] },
       { q: "How do I initiate a return?", a: "Go to My Orders, find the delivered order, and contact us via the Help Center or support channels with your order number and reason for return. We'll guide you through the process.", tags: ["return", "how", "initiate"] },
@@ -61,10 +74,12 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    key: "account", label: "Account", icon: User,
-    color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-100", accent: "bg-violet-600",
+    key: "account", label: "Account",
+    icon: User,
+    color: "text-violet-700", bg: "bg-violet-50", border: "border-violet-100",
+    iconBg: "bg-violet-600", iconColor: "text-white",
     faqs: [
-      { q: "How do I update my profile information?", a: "Go to Settings from the menu and update your name, phone number, or profile photo from the Profile tab. Your updated details will be pre-filled automatically at checkout.", tags: ["profile", "update", "name", "settings"] },
+      { q: "How do I update my profile information?", a: "Go to Settings from the menu and update your name or phone number from the Profile tab. Your updated details will be pre-filled automatically at checkout.", tags: ["profile", "update", "name", "settings"] },
       { q: "How do I change my password?", a: "In Settings, go to the Security tab. Enter your current password and your new password (minimum 8 characters). Click Change Password to save.", tags: ["password", "change", "security"] },
       { q: "I forgot my password — how do I reset it?", a: "On the login page, click 'Forgot Password' and enter your email address. We'll send you a reset link valid for 1 hour. Check your spam folder if you don't see the email.", tags: ["forgot", "password", "reset", "login"] },
       { q: "How do I manage my saved addresses?", a: "Go to Settings → Addresses. You can add, edit, or delete addresses and set a default address for faster checkout.", tags: ["address", "saved", "settings"] },
@@ -81,14 +96,15 @@ const FAQItem = ({ faq, isOpen, onToggle }: { faq: FAQ; isOpen: boolean; onToggl
       onClick={onToggle}
       className="w-full flex items-start justify-between gap-3 px-4 sm:px-5 py-4 text-left"
     >
-      <span className={`text-sm font-semibold leading-snug flex-1 ${
-        isOpen ? "text-gray-900" : "text-gray-700"
-      }`}>
+      <span className={`text-sm font-semibold leading-snug flex-1 ${isOpen ? "text-gray-900" : "text-gray-700"}`}>
         {faq.q}
       </span>
-      <div className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all mt-0.5 ${
-        isOpen ? "bg-gray-900 text-white rotate-180" : "bg-gray-100 text-gray-500"
-      }`}>
+      <div
+        className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-all mt-0.5"
+        style={isOpen
+          ? { backgroundColor: BRAND, color: "#fff", transform: "rotate(180deg)" }
+          : { backgroundColor: "#f3f4f6", color: "#6b7280" }}
+      >
         <ChevronDown className="w-3.5 h-3.5" />
       </div>
     </button>
@@ -103,9 +119,9 @@ const FAQItem = ({ faq, isOpen, onToggle }: { faq: FAQ; isOpen: boolean; onToggl
 // ── Page ──────────────────────────────────────────────────────────────────────
 const HelpCenterPage = () => {
   const navigate = useNavigate();
-  const [search, setSearch] = useState("");
+  const [search, setSearch]               = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [openFAQ, setOpenFAQ] = useState<string | null>(null);
+  const [openFAQ, setOpenFAQ]             = useState<string | null>(null);
 
   const searchResults = useMemo(() => {
     if (!search.trim()) return null;
@@ -113,7 +129,11 @@ const HelpCenterPage = () => {
     const results: { category: Category; faq: FAQ }[] = [];
     for (const cat of CATEGORIES) {
       for (const faq of cat.faqs) {
-        if (faq.q.toLowerCase().includes(q) || faq.a.toLowerCase().includes(q) || faq.tags.some((t) => t.includes(q))) {
+        if (
+          faq.q.toLowerCase().includes(q) ||
+          faq.a.toLowerCase().includes(q) ||
+          faq.tags.some((t) => t.includes(q))
+        ) {
           results.push({ category: cat, faq });
         }
       }
@@ -134,12 +154,14 @@ const HelpCenterPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50/60">
-      {/* ── Page Header — clean white, not purple ── */}
+      {/* ── Page Header ── */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 pt-6 pb-6">
-          {/* Title */}
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-10 h-10 rounded-2xl bg-gray-900 flex items-center justify-center shadow-sm flex-shrink-0">
+            <div
+              className="w-10 h-10 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
+              style={{ background: `linear-gradient(135deg, ${BRAND} 0%, #8B5CF6 100%)` }}
+            >
               <HelpCircle className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -156,11 +178,14 @@ const HelpCenterPage = () => {
               value={search}
               onChange={(e) => { setSearch(e.target.value); setActiveCategory(null); setOpenFAQ(null); }}
               placeholder="Search — e.g. 'track order', 'refund', 'payment'"
-              className="w-full pl-11 pr-10 py-3 sm:py-3.5 rounded-xl text-sm text-gray-900 bg-gray-100 border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-900/15 focus:bg-white focus:border-gray-300 transition-all placeholder:text-gray-400"
+              className="w-full pl-11 pr-10 py-3 sm:py-3.5 rounded-xl text-sm text-gray-900 bg-gray-100 border border-gray-200 focus:outline-none focus:bg-white focus:border-gray-300 transition-all placeholder:text-gray-400"
+              style={{ outline: "none" }}
+              onFocus={(e) => { e.currentTarget.style.boxShadow = `0 0 0 3px ${BRAND_LIGHT}`; e.currentTarget.style.borderColor = BRAND; }}
+              onBlur={(e)  => { e.currentTarget.style.boxShadow = ""; e.currentTarget.style.borderColor = "#e5e7eb"; }}
             />
             {search && (
               <button
-                onClick={() => { setSearch(""); }}
+                onClick={() => setSearch("")}
                 className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full bg-gray-300 text-gray-600 hover:bg-gray-400 transition-colors"
               >
                 <X className="w-3.5 h-3.5" />
@@ -175,7 +200,7 @@ const HelpCenterPage = () => {
                 <button
                   key={q}
                   onClick={() => { setSearch(q); setActiveCategory(null); setOpenFAQ(null); }}
-                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 border border-gray-200 transition-colors"
+                  className="flex-shrink-0 text-xs font-medium px-3 py-1.5 rounded-full border transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 border-gray-200"
                 >
                   {q}
                 </button>
@@ -198,7 +223,8 @@ const HelpCenterPage = () => {
               </p>
               <button
                 onClick={() => setSearch("")}
-                className="text-xs text-gray-400 hover:text-gray-600 font-medium"
+                className="text-xs font-medium hover:text-gray-600"
+                style={{ color: BRAND }}
               >
                 Clear
               </button>
@@ -212,7 +238,7 @@ const HelpCenterPage = () => {
                   Try different keywords, or browse the categories below.
                 </p>
                 <button onClick={() => setSearch("")}
-                  className="text-sm font-semibold text-gray-700 underline-offset-2 hover:underline">
+                  className="text-sm font-semibold underline-offset-2 hover:underline" style={{ color: BRAND }}>
                   Browse all topics
                 </button>
               </div>
@@ -223,7 +249,7 @@ const HelpCenterPage = () => {
                   return (
                     <div key={key}>
                       <div className="flex items-center gap-1.5 px-1 mb-1.5">
-                        <div className={`w-4 h-4 rounded flex items-center justify-center ${category.accent}`}>
+                        <div className={`w-4 h-4 rounded flex items-center justify-center ${category.iconBg}`}>
                           <category.icon className="w-2.5 h-2.5 text-white" />
                         </div>
                         <span className={`text-[10px] font-bold uppercase tracking-wide ${category.color}`}>
@@ -239,10 +265,9 @@ const HelpCenterPage = () => {
           </div>
         )}
 
-        {/* ── BROWSE CATEGORIES (default view) ── */}
+        {/* ── BROWSE CATEGORIES ── */}
         {!search && !activeCategory && (
           <>
-            {/* Category grid */}
             <div>
               <h2 className="text-sm font-bold text-gray-900 mb-3">Browse by Topic</h2>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -253,7 +278,7 @@ const HelpCenterPage = () => {
                     className={`flex flex-col items-start gap-3 p-4 sm:p-5 rounded-2xl border ${cat.bg} ${cat.border} hover:shadow-md transition-all group text-left`}
                   >
                     <div className="flex items-center justify-between w-full">
-                      <div className={`w-10 h-10 rounded-xl ${cat.accent} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
+                      <div className={`w-10 h-10 rounded-xl ${cat.iconBg} flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform`}>
                         <cat.icon className="w-5 h-5 text-white" />
                       </div>
                       <ChevronRight className={`w-4 h-4 ${cat.color} opacity-40 group-hover:opacity-80 group-hover:translate-x-0.5 transition-all`} />
@@ -286,12 +311,12 @@ const HelpCenterPage = () => {
               <h2 className="text-sm font-bold text-gray-900 mb-3">Still need help?</h2>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                 {[
-                  { icon: MessageCircle, title: "Live Chat", sub: "Mon–Sat · 9am–6pm", action: "Start Chat", color: "bg-blue-600" },
-                  { icon: Mail, title: "Email Support", sub: "Reply within 24hrs", action: "support@abygadgets.com", color: "bg-violet-600" },
-                  { icon: Phone, title: "Call Us", sub: "Mon–Sat · 9am–6pm", action: "+234 800 ABY TECH", color: "bg-emerald-600" },
-                ].map(({ icon: Icon, title, sub, action, color }) => (
+                  { icon: MessageCircle, title: "Live Chat",      sub: "Mon–Sat · 9am–6pm",    action: "Start Chat",              bg: BRAND },
+                  { icon: Mail,          title: "Email Support",  sub: "Reply within 24hrs",   action: "support@abygadgets.com",  bg: "#7C3AED" },
+                  { icon: Phone,         title: "Call Us",        sub: "Mon–Sat · 9am–6pm",    action: "+234 800 ABY TECH",       bg: "#059669" },
+                ].map(({ icon: Icon, title, sub, action, bg }) => (
                   <div key={title} className="bg-white rounded-2xl border border-gray-100 p-4 flex sm:flex-col items-center sm:text-center gap-3 hover:shadow-md transition-shadow">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${color}`}>
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: bg }}>
                       <Icon className="w-5 h-5 text-white" />
                     </div>
                     <div className="flex-1 sm:flex-none">
@@ -305,22 +330,25 @@ const HelpCenterPage = () => {
                 ))}
               </div>
 
-              {/* Quick nav links */}
+              {/* Quick actions */}
               <div className="bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
                 <h3 className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide">Quick Actions</h3>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Track my order", path: "/orders", icon: Truck },
-                    { label: "View all orders", path: "/orders", icon: Package },
-                    { label: "Update profile", path: "/settings", icon: User },
-                    { label: "Notifications", path: "/notifications", icon: Clock },
+                    { label: "Track my order",  path: "/orders",        icon: Truck    },
+                    { label: "View all orders", path: "/orders",        icon: Package  },
+                    { label: "Update profile",  path: "/settings",      icon: User     },
+                    { label: "Notifications",   path: "/notifications", icon: Clock    },
                   ].map(({ label, path, icon: Icon }) => (
                     <button
                       key={label}
                       onClick={() => navigate(path)}
-                      className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-gray-100 bg-gray-50/80 hover:bg-gray-100 hover:border-gray-200 transition-all text-left group"
+                      className="flex items-center gap-2.5 px-3.5 py-3 rounded-xl border border-gray-100 bg-gray-50/80 hover:border-gray-200 transition-all text-left group"
+                      style={{ hover: {} } as any}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = BRAND_BORDER; (e.currentTarget as HTMLElement).style.backgroundColor = BRAND_LIGHT; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = "#f3f4f6"; (e.currentTarget as HTMLElement).style.backgroundColor = ""; }}
                     >
-                      <Icon className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600 flex-shrink-0 transition-colors" />
+                      <Icon className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-colors" />
                       <span className="text-xs font-semibold text-gray-700">{label}</span>
                     </button>
                   ))}
@@ -329,9 +357,12 @@ const HelpCenterPage = () => {
             </div>
 
             {/* Trust badge */}
-            <div className="flex items-start gap-3 px-4 py-3.5 bg-emerald-50 border border-emerald-100 rounded-2xl">
-              <Shield className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-emerald-700 leading-relaxed">
+            <div
+              className="flex items-start gap-3 px-4 py-3.5 rounded-2xl"
+              style={{ backgroundColor: BRAND_LIGHT, border: `1px solid ${BRAND_BORDER}` }}
+            >
+              <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: BRAND }} />
+              <p className="text-xs leading-relaxed" style={{ color: "#5B2AC4" }}>
                 <strong>Aby Gadgets</strong> is committed to your satisfaction. If you experience any issues, our support team will resolve them promptly.
               </p>
             </div>
@@ -341,7 +372,6 @@ const HelpCenterPage = () => {
         {/* ── CATEGORY DETAIL ── */}
         {!search && activeCategory && displayedCategory && (
           <div>
-            {/* Back + header */}
             <div className="flex items-center gap-3 mb-5">
               <button
                 onClick={() => { setActiveCategory(null); setOpenFAQ(null); }}
@@ -349,7 +379,7 @@ const HelpCenterPage = () => {
               >
                 <ArrowLeft className="w-4 h-4" />
               </button>
-              <div className={`w-10 h-10 rounded-xl ${displayedCategory.accent} flex items-center justify-center`}>
+              <div className={`w-10 h-10 rounded-xl ${displayedCategory.iconBg} flex items-center justify-center`}>
                 <displayedCategory.icon className="w-5 h-5 text-white" />
               </div>
               <div>
@@ -361,22 +391,27 @@ const HelpCenterPage = () => {
             <div className="space-y-2">
               {displayedCategory.faqs.map((faq) => {
                 const key = `cat-${faq.q}`;
-                return (
-                  <FAQItem key={key} faq={faq} isOpen={openFAQ === key} onToggle={() => toggleFAQ(key)} />
-                );
+                return <FAQItem key={key} faq={faq} isOpen={openFAQ === key} onToggle={() => toggleFAQ(key)} />;
               })}
             </div>
 
-            {/* Still need help? — inline mini */}
             <div className="mt-6 p-4 bg-white rounded-2xl border border-gray-100 flex items-center gap-3 shadow-sm">
-              <MessageCircle className="w-9 h-9 text-blue-600 flex-shrink-0 bg-blue-50 rounded-xl p-2" />
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: BRAND_LIGHT }}
+              >
+                <MessageCircle className="w-5 h-5" style={{ color: BRAND }} />
+              </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-800">Didn't find your answer?</p>
                 <p className="text-xs text-gray-400 mt-0.5">Our support team is available Mon–Sat, 9am–6pm</p>
               </div>
               <button
                 onClick={() => setActiveCategory(null)}
-                className="flex-shrink-0 text-xs font-semibold px-3 py-2 rounded-xl bg-gray-900 text-white hover:bg-gray-800 transition-colors"
+                className="flex-shrink-0 text-xs font-semibold px-3 py-2 rounded-xl text-white transition-colors"
+                style={{ backgroundColor: BRAND }}
+                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.opacity = "0.9"; }}
+                onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.opacity = "1"; }}
               >
                 Contact
               </button>

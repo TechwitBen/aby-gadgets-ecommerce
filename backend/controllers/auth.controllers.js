@@ -452,32 +452,40 @@ export const logoutController = (req, res) => {
 
 export const getAllUsersController = async (req, res) => {
   try {
-    const users = await User.find(
-      {},
-      "-hashed_password -salt -resetPasswordToken -resetPasswordExpires"
-    );
+    const { page = 1, limit = 20 } = req.query;
+    const skip = (Number(page) - 1) * Number(limit);
 
-    // If the requester is staff without viewContactInfo permission,
-    // strip email and any other contact fields from every user record
     const canViewContact =
       req.user.role === "admin" ||
       req.user.staffPermissions?.customers?.viewContactInfo === true;
 
+    const [users, total] = await Promise.all([
+      User.find({}, "-hashed_password -salt -resetPasswordToken -resetPasswordExpires")
+        .skip(skip)
+        .limit(Number(limit)),
+      User.countDocuments(),
+    ]);
+
     const safeUsers = users.map((u) => {
       const doc = u.toObject();
-      if (!canViewContact) {
-        delete doc.email;
-        // add phone here too once you store it on customers
-      }
+      if (!canViewContact) delete doc.email;
       return doc;
     });
 
-    return res.status(200).json({ success: true, users: safeUsers });
+    return res.status(200).json({
+      success: true,
+      users: safeUsers,
+      total,
+      page: Number(page),
+      pages: Math.ceil(total / Number(limit)),
+    });
   } catch (error) {
     console.error(error);
     return res.status(500).json({ success: false, error: "Failed to fetch users" });
   }
 };
+
+
 export const deleteUserController = async (req, res) => {
   try {
     const { id } = req.params;

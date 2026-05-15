@@ -1,10 +1,29 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "./configs/.env.configs.js";
+
+const required = [
+  "MONGODB_URI",
+  "SESSION_SECRET",
+  "PAYSTACK_SECRET_KEY",
+  "SMTP_HOST",
+  "SMTP_PORT",
+  "SMTP_USER",
+  "SMTP_PASS",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
+];
+
+for (const key of required) {
+  if (!process.env[key]) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+}
 
 import express from "express";
 import cors from "cors";
 import session from "express-session";
 import passport from "passport";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 
 import { authRouter } from "./routes/auth.routes.js";
 import orderRouter from "./routes/orders.routes.js";
@@ -16,65 +35,85 @@ import variantRouter from "./routes/variant.routes.js";
 import wishlistRouter from "./routes/wishlist.routes.js";
 import paymentRouter from "./routes/payment.routes.js";
 import contactRouter from "./routes/contact.routes.js";
-import staffRouter    from "./routes/staff.routes.js";
-import auditRouter    from "./routes/auditLog.routes.js";
+import staffRouter from "./routes/staff.routes.js";
+import auditRouter from "./routes/auditLog.routes.js";
 import settingsRouter from "./routes/settings.routes.js";
 import notificationRouter from "./routes/notification.routes.js";
-import userRouter         from "./routes/user.routes.js";
-
+import userRouter from "./routes/user.routes.js";
 
 import { connect } from "./db.js";
 import User from "./models/user.model.js";
-import { SESSION_SECRET } from "./configs/.env.configs.js";
 
 const app = express();
-const port = 3000;
 
 const startServer = async () => {
   await connect();
 
   // =========================
-  // 1. CORS (ONLY ONCE)
+  // 1. SECURITY HEADERS
   // =========================
-  app.use(
-    cors({
-      origin: ["http://localhost:5173", "http://localhost:8080"],
-      credentials: true,
-    })
-  );
+  app.use(helmet());
 
   // =========================
-  // 2. BODY PARSERS
+  // 2. CORS
+  // =========================
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(",")
+    : ["http://localhost:5173", "http://localhost:8080"];
+
+  app.use(cors({ origin: allowedOrigins, credentials: true }));
+
+  // =========================
+  // 3. RATE LIMITING
+  // =========================
+  app.set("trust proxy", 1);
+
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many requests, please try again later." },
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { success: false, message: "Too many login attempts, please try again later." },
+  });
+
+  app.use("/api/v1/", generalLimiter);
+  app.use("/api/v1/auth/login", authLimiter);
+  app.use("/api/v1/auth/register", authLimiter);
+
+  // =========================
+  // 4. BODY PARSERS
   // =========================
   app.use(express.json({
-    // This 'verify' function is the key. It captures the raw 
-    // bytes before Express turns them into a JavaScript object.
-    verify: (req, res, buf) => {
-      req.rawBody = buf;
-    },
+    verify: (req, res, buf) => { req.rawBody = buf; },
   }));
   app.use(express.urlencoded({ extended: true }));
 
   // =========================
-  // 3. SESSION
+  // 5. SESSION
   // =========================
-  app.use(
-    session({
-      secret: SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      name: "connect.sid",
-      cookie: {
-        maxAge: 60 * 60 * 1000, // 1 hour
-        sameSite: "lax",
-        secure: false, // set true in production (HTTPS)
-        httpOnly: true,
-      },
-    })
-  );
+  app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    name: "connect.sid",
+    cookie: {
+      maxAge: 60 * 60 * 1000,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      httpOnly: true,
+    },
+  }));
 
   // =========================
-  // 4. PASSPORT (ONLY ONCE)
+  // 6. PASSPORT
   // =========================
   app.use(passport.initialize());
   app.use(passport.session());
@@ -93,11 +132,9 @@ const startServer = async () => {
   });
 
   // =========================
-  // 5. ROUTES
+  // 7. ROUTES
   // =========================
-  app.get("/", (req, res) => {
-    res.send("server side is working");
-  });
+  app.get("/", (req, res) => res.send("server side is working"));
 
   app.use("/api/v1/auth", authRouter);
   app.use("/api/v1/products", productRouter);
@@ -109,16 +146,31 @@ const startServer = async () => {
   app.use("/api/v1/wishlist", wishlistRouter);
   app.use("/api/v1/variants", variantRouter);
   app.use("/api/v1/contact", contactRouter);
-  app.use("/api/v1/staff",    staffRouter);
-app.use("/api/v1/audit",    auditRouter);
-app.use("/api/v1/settings", settingsRouter);
-app.use("/api/v1/notifications", notificationRouter);
-app.use("/api/v1/user",          userRouter);
+  app.use("/api/v1/staff", staffRouter);
+  app.use("/api/v1/audit", auditRouter);
+  app.use("/api/v1/settings", settingsRouter);
+  app.use("/api/v1/notifications", notificationRouter);
+  app.use("/api/v1/user", userRouter);
+
   // =========================
-  // 6. START SERVER
+  // 8. GLOBAL ERROR HANDLER
   // =========================
-  app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({
+      success: false,
+      message: process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message,
+    });
+  });
+
+  // =========================
+  // 9. START SERVER
+  // =========================
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
   });
 };
 

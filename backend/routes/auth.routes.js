@@ -18,7 +18,7 @@ import {
   googleCallback,
 } from "../controllers/google-auth.controllers.js";
 
-import { facebookAuth, facebookAuthCallback } from "../controllers/facebook.auth.js";
+
 
 
 
@@ -59,5 +59,3 @@ authRouter.get(
 authRouter.delete("/users/:id", isAuthenticated, isAdmin, deleteUserController);
 
 
-authRouter.get("/facebook", facebookAuth);
-authRouter.get("/facebook/callback", facebookAuthCallback);

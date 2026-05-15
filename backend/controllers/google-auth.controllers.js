@@ -11,7 +11,7 @@ passport.use(
     {
       clientID: GOOGLE_CLIENT_ID,
       clientSecret: GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/api/v1/auth/google/callback",
+      callbackURL: `${process.env.BACKEND_URL}/api/v1/auth/google/callback`,
     },
     async function verify(accessToken, refreshToken, profile, cb) {
       try {
@@ -50,20 +50,20 @@ export const googleAuth = passport.authenticate("google", {
 export const googleCallback = (req, res, next) => {
   passport.authenticate("google", (err, user, info) => {
     if (err) {
-      return res.redirect("http://localhost:8080/login?error=google");
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
     }
 
     if (!user) {
-      return res.redirect("http://localhost:8080/login?error=google");
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
     }
 
     req.logIn(user, (err) => {
       if (err) {
-        return res.redirect("http://localhost:8080/login?error=google");
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=google`);
       }
 
       req.session.save(() => {
-        res.redirect("http://localhost:8080/");
+        res.redirect(`${process.env.FRONTEND_URL}/`);
       });
     });
   })(req, res, next);

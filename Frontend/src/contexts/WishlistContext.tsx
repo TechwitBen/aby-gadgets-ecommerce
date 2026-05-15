@@ -10,6 +10,7 @@ import {
 import { wishlistService } from "@/services/Wishlist.service";
 import type { Product } from "@/services/Products.service";
 import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -64,7 +65,6 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   }, [isAuthenticated]);
 
   // ── Fetch wishlist from server ─────────────────────────────────────────────
-  // Empty deps — always reads auth via ref, so the function itself is stable
   const refreshWishlist = useCallback(async () => {
     if (!isAuthRef.current) return;
     setIsLoading(true);
@@ -79,7 +79,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []); // stable reference intentionally
+  }, []);
 
   // Re-fetch whenever auth state changes (login / logout)
   useEffect(() => {
@@ -89,78 +89,52 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
       // Logged out — clear server products but keep localStorage IDs for guests
       setWishlistProducts([]);
     }
-  }, [isAuthenticated]); // intentionally only isAuthenticated, not refreshWishlist
+  }, [isAuthenticated]);
 
   // ── Toggle ─────────────────────────────────────────────────────────────────
   const toggleWishlist = useCallback(
     async (productId: string) => {
       const wasInList = wishlistIds.has(productId);
-      console.log(
-        `🔁 Toggling product ${productId}, currently in wishlist: ${wasInList}`,
-      );
 
       // 1. Optimistic update
       setWishlistIds((prev) => {
         const next = new Set(prev);
         wasInList ? next.delete(productId) : next.add(productId);
         saveLocal(next);
-        console.log(`📦 Optimistic update: wishlistIds size = ${next.size}`);
         return next;
       });
 
       // Guest: localStorage only — done
       if (!isAuthRef.current) {
-        console.log("👤 Guest mode, no server call");
         return;
       }
 
       try {
-        console.log(
-          `📡 Sending toggle request for product ${productId} to /api/v1/wishlist/toggle/${productId}`,
-        );
         const res = await wishlistService.toggle(productId);
-        console.log("✅ Server response:", res);
-
         const serverIds = new Set(res.productIds);
-        console.log(
-          `🔄 Server returned wishlist IDs (${serverIds.size} items):`,
-          [...serverIds],
-        );
-
         setWishlistIds(serverIds);
         saveLocal(serverIds);
-
-        console.log("🔄 Refreshing full wishlist products...");
         await refreshWishlist();
 
         if (!res.inWishlist) {
-          console.log(
-            `🗑️ Product ${productId} removed from wishlist, updating product list`,
-          );
           setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
-        } else {
-          console.log(
-            `✨ Product ${productId} added to wishlist, will appear after refresh`,
-          );
         }
       } catch (error) {
-        console.error("❌ Toggle failed, reverting optimistic update:", error);
-        setWishlistIds((prev) => {
-          const next = new Set(prev);
-          wasInList ? next.add(productId) : next.delete(productId);
-          saveLocal(next);
-          console.log(`↩️ Reverted: wishlistIds size = ${next.size}`);
-          return next;
-        });
-      }
+  setWishlistIds((prev) => {
+    const next = new Set(prev);
+    wasInList ? next.add(productId) : next.delete(productId);
+    saveLocal(next);
+    return next;
+  });
+  toast.error("Could not update your wishlist. Please try again.");
+}
     },
     [wishlistIds, refreshWishlist],
-  ); // ← add refreshWishlist to dependencies
+  );
 
   // ── Explicit remove (trash icon on wishlist page) ─────────────────────────
   const removeFromWishlist = useCallback(
     async (productId: string) => {
-      // Optimistic
       setWishlistIds((prev) => {
         const next = new Set(prev);
         next.delete(productId);
@@ -203,7 +177,7 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
       value={{
         wishlistIds,
         wishlistProducts,
-        wishlistCount: wishlistIds.size, // derived from Set — always accurate
+        wishlistCount: wishlistIds.size,
         isLoading,
         isInWishlist,
         toggleWishlist,

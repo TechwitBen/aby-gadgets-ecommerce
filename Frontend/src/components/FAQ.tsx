@@ -1,26 +1,45 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
- 
+import { useInView } from "@/hooks/useInView";
+
 const faqs7 = [
   { question: "How do I track my delivery?",                         answer: "You can track your delivery by logging into your account and checking the 'My Orders' section. You'll also receive SMS and email updates with tracking information." },
   { question: "How do I distinguish an authentic product?",          answer: "Visit our verification page and enter the product's unique verification code. We'll confirm whether the item is genuine or not. You can also bring items to our store for physical verification." },
   { question: "Can I order online and pick up in-store?",            answer: "Yes! We offer both trade-in services and in-store pickup at our partner locations across Nigeria. Simply select 'Store Pickup' at checkout." },
   { question: "Do you offer payment plans or installments?",         answer: "Yes, we offer flexible payment plans through our trusted financing partners. You can spread your payments over 3-12 months depending on the product." },
 ];
- 
+
 const FAQ = () => {
+  const { ref: titleRef, isInView: titleInView } = useInView();
+  const { ref: listRef,  isInView: listInView  } = useInView({ threshold: 0.05 });
+
   return (
     <section className="py-10 sm:py-16 md:py-20" style={{ backgroundColor: "#F5F5F5" }}>
       <div className="w-[92%] sm:w-[90%] mx-auto max-w-3xl">
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground text-center mb-8 sm:mb-10">
+
+        <h2
+          ref={titleRef}
+          className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground text-center mb-8 sm:mb-10
+                     transition-all duration-700 ease-out"
+          style={{
+            opacity: titleInView ? 1 : 0,
+            transform: titleInView ? "translateY(0)" : "translateY(16px)",
+          }}
+        >
           Everything You Need to Know
         </h2>
- 
-        <Accordion type="single" collapsible className="space-y-2 sm:space-y-3">
+
+        <Accordion ref={listRef} type="single" collapsible className="space-y-2 sm:space-y-3">
           {faqs7.map((faq, index) => (
             <AccordionItem
               key={index}
               value={`item-${index}`}
-              className="bg-[hsl(200_60%_97%)] rounded-xl px-4 sm:px-6 border border-[hsl(200_60%_97%)] data-[state=open]:border-[hsl(200_60%_97%)]"
+              className="bg-[hsl(200_60%_97%)] rounded-xl px-4 sm:px-6 border border-[hsl(200_60%_97%)] data-[state=open]:border-[hsl(200_60%_97%)]
+                         transition-all duration-700 ease-out"
+              style={{
+                transitionDelay: `${index * 80}ms`,
+                opacity: listInView ? 1 : 0,
+                transform: listInView ? "translateY(0)" : "translateY(20px)",
+              }}
             >
               <AccordionTrigger className="text-left font-semibold hover:no-underline py-4 sm:py-5 text-sm sm:text-base text-foreground">
                 {faq.question}
@@ -35,6 +54,5 @@ const FAQ = () => {
     </section>
   );
 };
- 
+
 export default FAQ;
- 

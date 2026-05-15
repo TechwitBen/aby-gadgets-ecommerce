@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import {
   Trash2,
   X,
-  Package ,
+  Package,
   Loader2,
   RefreshCw,
   AlertTriangle,
@@ -370,27 +370,60 @@ const OrdersPage = () => {
   const canViewContact  = isAdmin || can("payments", "contactCustomers");
 
   const [orders, setOrders]           = useState<OrderDoc[]>([]);
-  const [isLoading, setIsLoading]     = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [fetchError, setFetchError]   = useState<string | null>(null);
   const [searchTerm, setSearchTerm]   = useState("");
   const [activeTab, setActiveTab]     = useState<Tab>("active");
   const [selectedOrder, setSelectedOrder] = useState<OrderDoc | null>(null);
   const [deletingOrder, setDeletingOrder] = useState<OrderDoc | null>(null);
 
-  const fetchOrders = useCallback(async () => {
-    setIsLoading(true);
+  // ── Scroll to top on tab change ────────────────────────────────────────────
+  const prevTabRef = useRef<Tab>("active");
+
+  useEffect(() => {
+    if (prevTabRef.current !== activeTab) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      prevTabRef.current = activeTab;
+    }
+  }, [activeTab]);
+
+  // ── Pagination state ──────────────────────────────────────────────────────
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages]   = useState(1);
+  const LIMIT = 20;
+
+  const fetchOrders = useCallback(async (page = 1, isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setInitialLoading(true);
+    }
     setFetchError(null);
     try {
-      const data = await orderService.getAllOrders();
-      setOrders(Array.isArray(data) ? data : []);
+      const res = await orderService.getAllOrders({ page, limit: LIMIT });
+      const fetched = Array.isArray(res) ? res : (res?.orders ?? []);
+
+      if (page === 1) {
+        setOrders(fetched);
+      } else {
+        setOrders((prev) => [...prev, ...fetched]); // append
+      }
+
+      setCurrentPage(page);
+      setTotalPages(res?.pages ?? 1);
     } catch {
       setFetchError("Failed to load orders. Please try again.");
     } finally {
-      setIsLoading(false);
+      if (isLoadMore) {
+        setLoadingMore(false);
+      } else {
+        setInitialLoading(false);
+      }
     }
   }, []);
 
-  useEffect(() => { fetchOrders(); }, [fetchOrders]);
+  useEffect(() => { fetchOrders(1, false); }, [fetchOrders]);
 
   const activeCount    = orders.filter((o) => ACTIVE_STATUSES.has(o.status)).length;
   const completedCount = orders.filter((o) => COMPLETED_STATUSES.has(o.status)).length;
@@ -441,11 +474,38 @@ const OrdersPage = () => {
     }
   };
 
-  if (isLoading)
+  // ── Skeleton loading ──────────────────────────────────────────────────────
+  if (initialLoading)
     return (
-      <div className="flex flex-col items-center justify-center py-32 gap-3 text-muted-foreground">
-        <Loader2 size={32} className="animate-spin text-primary" />
-        <span className="text-sm font-medium">Fetching orders...</span>
+      <div className="space-y-6 animate-pulse">
+        {/* Dashboard header skeleton */}
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+          <div className="h-6 bg-muted rounded w-1/4 mb-2" />
+          <div className="h-8 bg-muted rounded w-1/2" />
+        </div>
+
+        {/* Table skeleton */}
+        <div className="hidden md:block bg-card rounded-xl border border-border shadow-sm">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="border-b border-border p-4 flex gap-4">
+              <div className="h-5 bg-muted rounded w-1/6" />
+              <div className="h-5 bg-muted rounded w-1/6" />
+              <div className="h-5 bg-muted rounded w-1/6" />
+              <div className="h-5 bg-muted rounded w-1/6" />
+              <div className="h-5 bg-muted rounded w-1/6" />
+            </div>
+          ))}
+        </div>
+
+        {/* Mobile skeleton */}
+        <div className="md:hidden space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card border border-border rounded-xl p-4">
+              <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+              <div className="h-3 bg-muted rounded w-1/2" />
+            </div>
+          ))}
+        </div>
       </div>
     );
 
@@ -456,7 +516,7 @@ const OrdersPage = () => {
           <RefreshCw size={32} className="text-destructive" />
         </div>
         <p className="text-sm text-destructive font-medium">{fetchError}</p>
-        <Button variant="outline" onClick={fetchOrders} className="gap-2">
+        <Button variant="outline" onClick={() => fetchOrders(1, false)} className="gap-2">
           <RefreshCw size={14} /> Retry
         </Button>
       </div>
@@ -490,8 +550,8 @@ const OrdersPage = () => {
           </p>
         </div>
         <div className="w-16 h-16 sm:w-24 sm:h-24 bg-primary/5 rounded-2xl items-center justify-center border border-primary/10 hidden sm:flex">
-  <Package className="w-8 h-8 sm:w-10 sm:h-10 text-primary/40" />
-</div>
+          <Package className="w-8 h-8 sm:w-10 sm:h-10 text-primary/40" />
+        </div>
       </div>
 
       {/* Orders section */}
@@ -551,6 +611,21 @@ const OrdersPage = () => {
           canViewContact={canViewContact}
           emptyMessage={emptyMessage}
         />
+
+        {/* ── Load more button ────────────────────────────────────────────── */}
+        {currentPage < totalPages && (
+          <div className="flex justify-center mt-4">
+            <Button
+              variant="outline"
+              onClick={() => fetchOrders(currentPage + 1, true)}
+              disabled={loadingMore}
+              className="gap-2"
+            >
+              {loadingMore ? <Loader2 size={14} className="animate-spin" /> : null}
+              {loadingMore ? "Loading..." : "Load more orders"}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Modals */}

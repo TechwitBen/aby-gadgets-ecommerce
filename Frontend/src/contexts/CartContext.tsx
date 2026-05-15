@@ -165,6 +165,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   // ── addToCart ──────────────────────────────────────────────────────────────
   const addToCart = useCallback(
     async (item: CartItem) => {
+      if (isSyncing) return;
       // Never allow undefined variantId
       if (!item.variantId) return;
 

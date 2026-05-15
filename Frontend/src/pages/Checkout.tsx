@@ -24,15 +24,17 @@ import {
 } from "@/components/ui/select";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useInView, fadeUp } from "@/hooks/useInView";
 import { formatPrice } from "@/services/Products.service";
 import { orderService } from "@/services/Order.service";
-import { userService } from "@/services/User.service";
+import { userService } from "@/services/user.service";
 import {
   settingsService,
   type SiteSettings,
   type DeliveryConfig,
   type DeliveryZone,
-} from "@/services/Settings.service";
+} from "@/services/settings.service";
 import OrderSuccessModal from "@/components/modals/Ordersuccessmodal";
 
 type PaymentMethod  = "online" | "pod";
@@ -51,21 +53,6 @@ interface OrderItem {
 
 // ── Validation helpers ──────────────────────────────────────────────────────
 
-/**
- * Validates a Nigerian phone number.
- *
- * Accepted formats (spaces / hyphens allowed between groups):
- *   - Local:        0[7-9][01]\d{8}          e.g. 08012345678
- *   - Intl prefix:  +234[7-9][01]\d{8}       e.g. +2348012345678
- *   - Intl no plus: 234[7-9][01]\d{8}        e.g. 2348012345678
- *
- * Valid network prefixes (as of 2024):
- *   MTN      070x, 080x, 081x
- *   Airtel   070x, 080x, 081x
- *   Glo      080x, 081x
- *   9mobile  070x
- *   Ntel     080x
- */
 const NIGERIAN_PHONE_RE =
   /^(?:(?:\+?234)|0)[789][01]\d{8}$/;
 
@@ -75,16 +62,13 @@ function isValidNigerianPhone(raw: string): boolean {
 }
 
 function isValidEmail(value: string): boolean {
-  // RFC-5322 simplified — must have local@domain.tld
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim());
 }
 
-/** Only letters, hyphens, apostrophes and spaces — at least 2 chars */
 function isValidNamePart(value: string): boolean {
   return /^[A-Za-zÀ-ÖØ-öø-ÿ''\-\s]{2,}$/.test(value.trim());
 }
 
-// ── Field-level error map ────────────────────────────────────────────────────
 interface FieldErrors {
   firstName?:  string;
   lastName?:   string;
@@ -96,7 +80,6 @@ interface FieldErrors {
   terms?:      string;
 }
 
-// ── Nigerian states ──────────────────────────────────────────────────────────
 const nigerianStates = [
   "Lagos", "Abuja", "Oyo", "Port Harcourt", "Ibadan", "Kano", "Enugu",
   "Rivers", "Delta", "Edo", "Cross River", "Bayelsa", "Akwa Ibom", "Calabar",
@@ -105,19 +88,24 @@ const nigerianStates = [
   "Jigawa", "Yobe", "Borno", "Gombe", "Adamawa", "Taraba", "Sokoto",
 ];
 
-// ── Component ────────────────────────────────────────────────────────────────
 const Checkout = () => {
   const { subtotal, items, clearCart } = useCart();
   const { user }    = useAuth();
   const navigate    = useNavigate();
   const location    = useLocation();
+  const { toast }   = useToast();
+
+  // 🎬 Page entrance animation
+  const { ref: contentRef, isInView: contentInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const buyNowItem: OrderItem | undefined = location.state?.buyNowItem;
   const isBuyNow   = !!buyNowItem;
   const orderItems = isBuyNow ? [buyNowItem] : items;
   const orderSubtotal = isBuyNow ? buyNowItem.price * buyNowItem.quantity : subtotal;
 
-  // ── Form state ───────────────────────────────────────────────────────────
   const [firstName,       setFirstName]       = useState("");
   const [lastName,        setLastName]        = useState("");
   const [phone,           setPhone]           = useState("");
@@ -128,22 +116,17 @@ const Checkout = () => {
   const [infoConfirmed,   setInfoConfirmed]   = useState(false);
   const [showOrderSummary,setShowOrderSummary]= useState(false);
 
-  // ── Inline field errors ──────────────────────────────────────────────────
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // ── Profile pre-fill ─────────────────────────────────────────────────────
   const [profileLoading, setProfileLoading] = useState(true);
   const [hasProfileData, setHasProfileData] = useState(false);
 
-  // ── Fulfillment state ────────────────────────────────────────────────────
   const [fulfillment,  setFulfillment]  = useState<FulfillmentType>("delivery");
   const [selectedZone, setSelectedZone] = useState<DeliveryZone | null>(null);
   const [deliveryFee,  setDeliveryFee]  = useState(0);
 
-  // ── Payment state ────────────────────────────────────────────────────────
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
 
-  // ── Submit state ─────────────────────────────────────────────────────────
   const [isSubmitting,       setIsSubmitting]       = useState(false);
   const [submitError,        setSubmitError]        = useState<string | null>(null);
   const [showSuccess,        setShowSuccess]        = useState(false);
@@ -152,12 +135,10 @@ const Checkout = () => {
   const [createdPickupCode,  setCreatedPickupCode]  = useState<string | undefined>();
   const [paymentInitFailed,  setPaymentInitFailed]  = useState(false);
 
-  // ── Settings ─────────────────────────────────────────────────────────────
   const [siteSettings,   setSiteSettings]   = useState<SiteSettings | null>(null);
   const [deliveryConfig, setDeliveryConfig] = useState<DeliveryConfig | null>(null);
   const [settingsLoading,setSettingsLoading]= useState(true);
 
-  // ── Fetch site settings ──────────────────────────────────────────────────
   useEffect(() => {
     Promise.all([
       settingsService.get().catch(() => null),
@@ -174,7 +155,6 @@ const Checkout = () => {
     }).finally(() => setSettingsLoading(false));
   }, []);
 
-  // ── Pre-fill form from profile ───────────────────────────────────────────
   useEffect(() => {
     if (!user) { setProfileLoading(false); return; }
 
@@ -203,7 +183,6 @@ const Checkout = () => {
     }).catch(() => {}).finally(() => setProfileLoading(false));
   }, [user]);
 
-  // ── Reset delivery fee when switching to pickup ──────────────────────────
   useEffect(() => {
     if (fulfillment === "pickup") {
       setDeliveryFee(0);
@@ -211,7 +190,6 @@ const Checkout = () => {
     }
   }, [fulfillment]);
 
-  // ── Derived values ───────────────────────────────────────────────────────
   const onlineEnabled   = siteSettings === null ? true : siteSettings.onlinePayment;
   const podEnabled      = siteSettings === null ? true : siteSettings.payOnDelivery;
   const pickupEnabled   = deliveryConfig === null ? true : deliveryConfig.enablePickup;
@@ -241,11 +219,9 @@ const Checkout = () => {
     const zone = zones.find((z) => z.city === cityName) ?? null;
     setSelectedZone(zone);
     setDeliveryFee(zone?.fee ?? 0);
-    // Clear zone error on selection
     setFieldErrors((prev) => ({ ...prev, zone: undefined }));
   };
 
-  // ── Inline blur-time validators ──────────────────────────────────────────
   const validateField = (field: keyof FieldErrors, value: string) => {
     let error: string | undefined;
     switch (field) {
@@ -276,33 +252,27 @@ const Checkout = () => {
     setFieldErrors((prev) => ({ ...prev, [field]: error }));
   };
 
-  // ── Full validation before submit ────────────────────────────────────────
   const runFullValidation = (): boolean => {
     const errors: FieldErrors = {};
 
-    // First name
     if (!firstName.trim())
       errors.firstName = "First name is required.";
     else if (!isValidNamePart(firstName))
       errors.firstName = "First name contains invalid characters.";
 
-    // Last name
     if (!lastName.trim())
       errors.lastName = "Last name is required.";
     else if (!isValidNamePart(lastName))
       errors.lastName = "Last name contains invalid characters.";
 
-    // Email
     if (!email.trim())
       errors.email = "Email address is required.";
     else if (!isValidEmail(email))
       errors.email = "Enter a valid email address.";
 
-    // Phone (optional but must be valid Nigerian format if provided)
     if (phone.trim() && !isValidNigerianPhone(phone))
       errors.phone = "Enter a valid Nigerian number (e.g. 08012345678 or +2348012345678).";
 
-    // Delivery-specific fields
     if (fulfillment === "delivery") {
       if (!address.trim())
         errors.address = "Street address is required.";
@@ -316,7 +286,6 @@ const Checkout = () => {
         errors.zone = "Please select your delivery zone.";
     }
 
-    // Terms
     if (!termsAccepted || !infoConfirmed)
       errors.terms = "Please accept the terms and confirm your information.";
 
@@ -324,7 +293,6 @@ const Checkout = () => {
     return Object.keys(errors).length === 0;
   };
 
-  // ── Empty cart guard ─────────────────────────────────────────────────────
   if (orderItems.length === 0 && !showSuccess) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 px-4">
@@ -334,39 +302,47 @@ const Checkout = () => {
     );
   }
 
-  // ── Submit ───────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     setSubmitError(null);
 
     if (!runFullValidation()) {
-      setSubmitError("Please fix the highlighted errors before continuing.");
+      const msg = "Please fix the highlighted errors before continuing.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
       return;
     }
 
     if (orderItems.length === 0) {
-      setSubmitError("No items in your order.");
+      const msg = "No items in your order.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
       return;
     }
 
     const invalidItems = orderItems.filter((i) => !i.variantId || i.quantity < 1);
     if (invalidItems.length > 0) {
-      setSubmitError("Some items are missing required information. Please return to your cart.");
+      const msg = "Some items are missing required information. Please return to your cart.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
       return;
     }
 
     if (paymentMethod === "online" && !onlineEnabled) {
-      setSubmitError("Online payment is currently unavailable. Please choose Pay on Delivery.");
+      const msg = "Online payment is currently unavailable. Please choose Pay on Delivery.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
       return;
     }
     if (paymentMethod === "pod" && !podEnabled) {
-      setSubmitError("Pay on Delivery is currently unavailable. Please choose online payment.");
+      const msg = "Pay on Delivery is currently unavailable. Please choose online payment.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // 1. Create the order
       const order = await orderService.createOrder({
         orderItems: orderItems.map((item) => ({
           variant:  item.variantId,
@@ -400,20 +376,18 @@ const Checkout = () => {
 
       if (!isBuyNow) clearCart();
 
-      // 2. Show success modal (handles Pay Now for online orders internally)
       setPaymentInitFailed(false);
       setShowSuccess(true);
 
     } catch (err: any) {
-      setSubmitError(
-        err?.response?.data?.message || "Something went wrong. Please try again.",
-      );
+      const msg = err?.response?.data?.message || "Something went wrong. Please try again.";
+      setSubmitError(msg);
+      toast({ title: "Checkout Error", description: msg, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // ── Loading ──────────────────────────────────────────────────────────────
   if (settingsLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -444,10 +418,8 @@ const Checkout = () => {
     );
   }
 
-  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-white">
-
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100 shadow-sm">
         <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
@@ -472,8 +444,11 @@ const Checkout = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 sm:pb-16">
-
+      {/* 🎬 Animated content */}
+      <div
+        ref={contentRef}
+        className={`container mx-auto px-3 sm:px-4 py-4 sm:py-6 pb-32 sm:pb-16 ${fadeUp(contentInView)}`}
+      >
         {/* Global error banner */}
         {submitError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700">

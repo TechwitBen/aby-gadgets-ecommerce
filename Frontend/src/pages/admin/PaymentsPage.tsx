@@ -24,6 +24,7 @@ import {
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { paymentService, type PaymentDoc } from "@/services/Payment.service";
 import { orderService, type OrderDoc } from "@/services/Order.service";
+import { useToast } from "@/hooks/use-toast";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
@@ -530,6 +531,8 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
 const REFRESH_INTERVAL_MS = 30_000;
 
 const PaymentsPage = () => {
+  const { toast } = useToast();
+
   const [allItems,        setAllItems]        = useState<PaymentDisplayItem[]>([]);
   const [isLoading,       setIsLoading]       = useState(true);
   const [fetchError,      setFetchError]      = useState<string | null>(null);
@@ -541,9 +544,25 @@ const PaymentsPage = () => {
   const [selectedItem,    setSelectedItem]    = useState<PaymentDisplayItem | null>(null);
   const [lastRefreshed,   setLastRefreshed]   = useState<Date | null>(null);
 
+  // ── Fix 1: Scroll to top on tab or method change ──────────────────────────
+  const prevTabRef = useRef<TabKey>("all");
+  const prevMethodFilterRef = useRef("All");
+
+  useEffect(() => {
+    if (
+      prevTabRef.current !== activeTab || 
+      prevMethodFilterRef.current !== methodFilter
+    ) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      prevTabRef.current = activeTab;
+      prevMethodFilterRef.current = methodFilter;
+    }
+  }, [activeTab, methodFilter]);
+
   const activeTabRef = useRef(activeTab);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
+  // ── Load All ──────────────────────────────────────────────────────────────
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     setFetchError(null);
@@ -582,12 +601,21 @@ const PaymentsPage = () => {
 
       setAllItems(merged);
       setLastRefreshed(new Date());
-    } catch {
-      setFetchError("Failed to load payments. Please try again.");
+    } catch (err) {
+      // ── Fix 2: Silent refresh failure notification ────────────────────────
+      if (!silent) {
+        setFetchError("Failed to load payments. Please try again.");
+      } else {
+        toast({
+          title: "Auto-refresh failed",
+          description: "Unable to update payments. Please pull-to-refresh manually.",
+          variant: "destructive",
+        });
+      }
     } finally {
       if (!silent) setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 

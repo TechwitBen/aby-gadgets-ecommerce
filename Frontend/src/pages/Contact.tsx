@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Send, ChevronRight, Cpu, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import { useInView } from '@/hooks/useInView';
 
 const GadgetIllustration = () => (
   <svg viewBox="0 0 420 480" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ width: '100%', height: '100%' }}>
@@ -74,14 +75,19 @@ const GadgetIllustration = () => (
 );
 
 const services = [
-  'Product Inquiry','Technical Support','Order Tracking',
-  'Returns & Warranty','Bulk / Business Purchase','Other',
+  'Product Inquiry', 'Technical Support', 'Order Tracking',
+  'Returns & Warranty', 'Bulk / Business Purchase', 'Other',
 ];
 
 const Contact = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', service: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  // ── Animation refs ──────────────────────────────────────────────────────
+  const { ref: headingRef, isInView: headingInView } = useInView({ threshold: 0 });
+  const { ref: leftRef,    isInView: leftInView    } = useInView({ threshold: 0.05 });
+  const { ref: rightRef,   isInView: rightInView   } = useInView({ threshold: 0.05 });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -93,7 +99,7 @@ const Contact = () => {
     setIsSubmitting(true);
     setSubmitStatus('idle');
     try {
-      const response = await axios.post('http://localhost:3000/api/v1/contact', formData, {
+      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/contact`, formData, {
         headers: { 'Content-Type': 'application/json' },
       });
       if (response.data.success) {
@@ -117,14 +123,22 @@ const Contact = () => {
     <div className="min-h-screen bg-[#faf9ff]" style={{ fontFamily: "'DM Sans', 'Segoe UI', sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Syne:wght@600;700;800&display=swap');
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeUp { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeUp  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes shimmer { 0%,100% { opacity:.6; } 50% { opacity:1; } }
       `}</style>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12 md:py-16">
 
-        {/* Heading */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-end mb-8 sm:mb-12">
+        {/* ── Heading ──────────────────────────────────────────────────── */}
+        <div
+          ref={headingRef}
+          className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 items-end mb-8 sm:mb-12 transition-all duration-700 ease-out"
+          style={{
+            opacity: headingInView ? 1 : 0,
+            transform: headingInView ? "translateY(0)" : "translateY(20px)",
+          }}
+        >
           <div>
             <div className="flex items-center gap-2 mb-3">
               <div className="w-1.5 h-1.5 rounded-full bg-[#6426E1]" />
@@ -141,20 +155,28 @@ const Contact = () => {
           </div>
         </div>
 
-        {/* Main grid */}
+        {/* ── Main grid ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
 
           {/* LEFT: Visual Card */}
-          <div className="relative rounded-3xl overflow-hidden flex flex-col order-2 lg:order-1"
-            style={{ background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f35 50%, #0d1a2e 100%)', minHeight: '400px' }}>
-            {/* Illustration - hidden on small mobile, shown on sm+ */}
+          <div
+            ref={leftRef}
+            className="relative rounded-3xl overflow-hidden flex flex-col order-2 lg:order-1 transition-all duration-700 ease-out"
+            style={{
+              background: 'linear-gradient(135deg, #0f0a1e 0%, #1a0f35 50%, #0d1a2e 100%)',
+              minHeight: '400px',
+              opacity: leftInView ? 1 : 0,
+              transform: leftInView ? "translateX(0)" : "translateX(-28px)",
+            }}
+          >
+            {/* Illustration */}
             <div className="hidden sm:flex flex-1 items-center justify-center px-8 py-6">
               <div className="w-full max-w-xs">
                 <GadgetIllustration />
               </div>
             </div>
 
-            {/* Mobile: compact banner */}
+            {/* Mobile compact banner */}
             <div className="sm:hidden flex items-center justify-center py-8 px-6">
               <div className="text-center text-white">
                 <div className="text-4xl mb-3">📱💻⌚</div>
@@ -166,7 +188,10 @@ const Contact = () => {
             </div>
 
             {/* Bottom overlay */}
-            <div className="p-5 sm:p-7" style={{ background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+            <div
+              className="p-5 sm:p-7"
+              style={{ background: 'rgba(100,38,225,0.15)', backdropFilter: 'blur(12px)', borderTop: '1px solid rgba(100,38,225,0.25)' }}
+            >
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full bg-[#a78bfa]" />
                 <span className="text-xs font-semibold tracking-widest uppercase text-[#c4a8ff]">Direct Support</span>
@@ -181,7 +206,7 @@ const Contact = () => {
                 href="https://wa.me/2348012345678?text=Hello%2C%20I%20have%20an%20enquiry%20about%20Aby%20Gadgets"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 sm:gap-3 bg-white text-[#0f0a1e] text-sm font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-full transition-all hover:shadow-lg hover:-translate-y-0.5"
+                className="inline-flex items-center gap-2 sm:gap-3 bg-white text-[#0f0a1e] text-sm font-bold px-4 sm:px-5 py-2.5 sm:py-3 rounded-full transition-all hover:shadow-lg hover:-translate-y-0.5 hover:shadow-[#6426E1]/20"
               >
                 <span className="w-7 h-7 bg-[#25D366] rounded-full flex items-center justify-center flex-shrink-0">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="#ffffff">
@@ -196,31 +221,39 @@ const Contact = () => {
           </div>
 
           {/* RIGHT: Form Card */}
-          <div className="bg-white rounded-3xl border border-[#ede8fb] p-5 sm:p-8 shadow-sm order-1 lg:order-2"
-            style={{ boxShadow: '0 4px 40px rgba(100, 38, 225, 0.06)' }}>
+          <div
+            ref={rightRef}
+            className="bg-white rounded-3xl border border-[#ede8fb] p-5 sm:p-8 shadow-sm order-1 lg:order-2 transition-all duration-700 ease-out delay-100"
+            style={{
+              boxShadow: '0 4px 40px rgba(100, 38, 225, 0.08)',
+              opacity: rightInView ? 1 : 0,
+              transform: rightInView ? "translateX(0)" : "translateX(28px)",
+            }}
+          >
             <p style={{ fontFamily: 'Syne, sans-serif', fontWeight: 700 }} className="text-xl sm:text-2xl text-[#0f0a1e] mb-1">
               Send Us a Message
             </p>
             <p className="text-sm text-gray-400 mb-6">We'll get back to you within 24 hours.</p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+
               {/* Full Name */}
               <div>
                 <label className="block text-xs font-semibold text-[#374151] mb-1.5">Full Name</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#d1c4fa] pointer-events-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6426E1]/40 pointer-events-none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
                   </span>
                   <input className={inputClass} name="name" type="text" placeholder="Enter your name" value={formData.name} onChange={handleChange} required />
                 </div>
               </div>
 
-              {/* Email + Phone - stack on mobile, side by side on sm+ */}
+              {/* Email + Phone */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-[#374151] mb-1.5">Email</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#d1c4fa] pointer-events-none">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6426E1]/40 pointer-events-none">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 7 10-7"/></svg>
                     </span>
                     <input className={inputClass} name="email" type="email" placeholder="your@email.com" value={formData.email} onChange={handleChange} required />
@@ -229,7 +262,7 @@ const Contact = () => {
                 <div>
                   <label className="block text-xs font-semibold text-[#374151] mb-1.5">Phone</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#d1c4fa] pointer-events-none">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6426E1]/40 pointer-events-none">
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.61 19a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3.09 4.18 2 2 0 0 1 5.07 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L9.09 9.91A16 16 0 0 0 15 15.91l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
                     </span>
                     <input className={inputClass} name="phone" type="tel" placeholder="+234 ..." value={formData.phone} onChange={handleChange} />
@@ -241,7 +274,7 @@ const Contact = () => {
               <div>
                 <label className="block text-xs font-semibold text-[#374151] mb-1.5">Select a Service</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#d1c4fa] pointer-events-none">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6426E1]/40 pointer-events-none">
                     <Cpu size={16} />
                   </span>
                   <select
@@ -253,7 +286,7 @@ const Contact = () => {
                     <option value="">Choose your service</option>
                     {services.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6426E1]/40 pointer-events-none">
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="m6 9 6 6 6-6"/></svg>
                   </span>
                 </div>
@@ -263,7 +296,7 @@ const Contact = () => {
               <div>
                 <label className="block text-xs font-semibold text-[#374151] mb-1.5">Message</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-3.5 text-[#d1c4fa] pointer-events-none">
+                  <span className="absolute left-3 top-3.5 text-[#6426E1]/40 pointer-events-none">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                   </span>
                   <textarea
@@ -278,11 +311,12 @@ const Contact = () => {
                 </div>
               </div>
 
-              {/* Submit */}
+              {/* Submit — primary color #6426E1 */}
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full flex items-center justify-center gap-2 bg-[#0f0a1e] hover:bg-[#6426E1] text-white text-sm font-bold py-3.5 sm:py-4 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98]"
+                className="w-full flex items-center justify-center gap-2 text-white text-sm font-bold py-3.5 sm:py-4 rounded-xl transition-all disabled:opacity-60 disabled:cursor-not-allowed active:scale-[0.98] hover:opacity-90 hover:scale-[1.01]"
+                style={{ backgroundColor: '#6426E1' }}
               >
                 {isSubmitting ? (
                   <>
@@ -305,7 +339,7 @@ const Contact = () => {
                 </div>
               )}
               {submitStatus === 'error' && (
-                <div className="px-4 py-3 rounded-xl text-sm font-medium text-center bg-[#fff1f2] border border-[#fecdd3] text-[#9f1239]" style={{ animation: 'fadeUp 0.3s ease' }}>
+                <div className="px-4 py-3 rounded-xl text-sm font-medium text-center bg-[#fdf4ff] border border-[#e9d5ff] text-[#6426E1]" style={{ animation: 'fadeUp 0.3s ease' }}>
                   ✗ Something went wrong. Please try again.
                 </div>
               )}

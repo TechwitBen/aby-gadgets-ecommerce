@@ -1,4 +1,6 @@
 import mongoose from "mongoose";
+import crypto from "crypto";
+
 const { Schema } = mongoose;
 
 // ── Staff permissions sub-schema ──────────────────────────────────────────────
@@ -30,22 +32,9 @@ const StaffPermissionsSchema = new Schema(
   { _id: false },
 );
 
-/**
- * Address sub-schema.
- *
- * full_name and phone have been REMOVED.
- * The delivery name & phone are now always sourced from the parent user's
- * `name` and `phone` profile fields, eliminating the redundancy of asking
- * users to re-enter their own details for every address.
- *
- * When generating a shipping label or displaying delivery info, read:
- *   user.name   — recipient name
- *   user.phone  — recipient phone
- *   address.*   — delivery location
- */
 const AddressSchema = new Schema(
   {
-    label:       { type: String, default: "Home" },  // Home | Work | School | Other
+    label:       { type: String, default: "Home" },
     street:      { type: String, default: "" },
     city:        { type: String, default: "" },
     state:       { type: String, default: "" },
@@ -56,7 +45,6 @@ const AddressSchema = new Schema(
   { timestamps: true },
 );
 
-// ── Notification preferences sub-schema ──────────────────────────────────────
 const NotificationPreferencesSchema = new Schema(
   {
     orderUpdates:       { type: Boolean, default: true },
@@ -66,10 +54,8 @@ const NotificationPreferencesSchema = new Schema(
   { _id: false },
 );
 
-// ── Main User schema ──────────────────────────────────────────────────────────
 const UserSchema = new Schema(
   {
-    // ── Auth fields ───────────────────────────────────────────────────────────
     email: {
       type: String, required: true, unique: true, lowercase: true, trim: true,
     },
@@ -85,13 +71,10 @@ const UserSchema = new Schema(
     google_id:   { type: String, unique: true, sparse: true },
     facebook_id: { type: String, unique: true, sparse: true },
 
-    // ── Profile fields ────────────────────────────────────────────────────────
-    // These are the canonical name & phone used on ALL delivery addresses.
-    name:         { type: String, default: "" },
-    phone:        { type: String, default: "" },
-    profilePhoto: { type: String, default: "" },
+    name:  { type: String, default: "" },
+    phone: { type: String, default: "" },
+    // profilePhoto intentionally removed — UI generates initials avatars
 
-    // ── Role / staff ──────────────────────────────────────────────────────────
     role: {
       type:    String,
       enum:    ["user", "admin", "staff"],
@@ -108,10 +91,8 @@ const UserSchema = new Schema(
       default: undefined,
     },
 
-    // ── Address book ──────────────────────────────────────────────────────────
     addresses: { type: [AddressSchema], default: [] },
 
-    // ── Notification preferences ──────────────────────────────────────────────
     notificationPreferences: {
       type:    NotificationPreferencesSchema,
       default: () => ({
@@ -121,7 +102,6 @@ const UserSchema = new Schema(
       }),
     },
 
-    // ── Password reset ────────────────────────────────────────────────────────
     resetPasswordToken:   { type: String },
     resetPasswordExpires: { type: Date },
   },
@@ -149,6 +129,47 @@ UserSchema.pre("save", function () {
     };
   }
 });
+
+// ── comparePassword — verify a plain password against the stored hash ─────────
+UserSchema.methods.comparePassword = function (plainPassword) {
+  return new Promise((resolve, reject) => {
+    crypto.pbkdf2(
+      plainPassword,
+      this.salt,
+      310000,
+      32,
+      "sha256",
+      (err, hash) => {
+        if (err) return reject(err);
+        resolve(
+          crypto.timingSafeEqual(
+            Buffer.from(this.hashed_password, "hex"),
+            hash,
+          ),
+        );
+      },
+    );
+  });
+};
+
+// ── hashPassword — hash a new plain password and return the hex string ────────
+UserSchema.methods.hashPassword = function (plainPassword) {
+  const newSalt = crypto.randomBytes(16).toString("hex");
+  return new Promise((resolve, reject) => {
+    crypto.pbkdf2(
+      plainPassword,
+      newSalt,
+      310000,
+      32,
+      "sha256",
+      async (err, hash) => {
+        if (err) return reject(err);
+        this.salt = newSalt;
+        resolve(hash.toString("hex"));
+      },
+    );
+  });
+};
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;

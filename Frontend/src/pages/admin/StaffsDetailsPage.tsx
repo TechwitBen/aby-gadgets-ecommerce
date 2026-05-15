@@ -5,7 +5,7 @@ import {
   type StaffMember,
   type StaffPermissions,
   DEFAULT_PERMISSIONS,
-} from "@/services/Staff.service";
+} from "@/services/staff.service";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Loader2, Trash2 } from "lucide-react";

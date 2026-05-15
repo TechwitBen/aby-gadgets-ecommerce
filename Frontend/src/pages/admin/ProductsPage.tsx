@@ -4,6 +4,7 @@ import { categories } from "@/pages/admin/data/mockData";
 import { StatsCard } from "@/components/ui/stats-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
   Plus,
   ChevronDown,
@@ -430,6 +431,8 @@ const ProductsPage = () => {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+    const { toast } = useToast();
+    
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
@@ -536,20 +539,29 @@ const ProductsPage = () => {
     sortLabel,
   ]);
 
-  const handleConfirmDelete = async () => {
+   const handleConfirmDelete = async () => {
     if (!deletingProduct) return;
     setIsDeleting(true);
     try {
       await productService.delete(deletingProduct._id);
       setProducts((prev) => prev.filter((p) => p._id !== deletingProduct._id));
       setDeletingProduct(null);
+      toast({
+        title: "Product deleted",
+        description: `${deletingProduct.name} has been removed successfully.`,
+      });
     } catch {
-      /* keep modal open */
+      // ✅ Fixed: Show error toast and close modal so user isn't stuck
+      toast({
+        title: "Delete failed",
+        description: "Could not remove the product. Please try again.",
+        variant: "destructive",
+      });
+      setDeletingProduct(null);
     } finally {
       setIsDeleting(false);
     }
   };
-
   const handleDeleteClick = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     if (!canDelete) {

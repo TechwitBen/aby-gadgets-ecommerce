@@ -1,54 +1,54 @@
 import axios from "axios";
-import type { StaffPermissions } from "@/services/Staff.service";
+import type { StaffPermissions } from "@/services/staff.service";
 
 const api = axios.create({
-  baseURL: "http://localhost:3000/api/v1",
+  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1`,
   withCredentials: true,
 });
 
 // ── Interfaces ────────────────────────────────────────────────────────────────
 
 export interface AuthUser {
-  id: string;
+  id:       string;
   username: string;
-  email: string;
-  name?: string;
-  phone?: string;
-  profilePhoto?: string;
+  email:    string;
+  name?:    string;
+  phone?:   string;
+  // profilePhoto intentionally removed — avatars are generated from initials
   provider?: string;
   role: "user" | "admin" | "staff";
-  staffStatus?: "active" | "inactive";
+  staffStatus?:      "active" | "inactive";
   staffPermissions?: StaffPermissions;
   notificationPreferences?: {
-    orderUpdates: boolean;
+    orderUpdates:       boolean;
     emailNotifications: boolean;
-    paymentAlerts: boolean;
+    paymentAlerts:      boolean;
   };
 }
 
 export interface BackendUser {
-  _id: string;
+  _id:      string;
   username: string;
-  email: string;
-  name?: string;
-  phone?: string;
-  profilePhoto?: string;
+  email:    string;
+  name?:    string;
+  phone?:   string;
+  // profilePhoto intentionally removed — avatars are generated from initials
   provider?: string;
   role: "user" | "admin" | "staff";
   createdAt: string;
   updatedAt: string;
-  staffStatus?: "active" | "inactive";
+  staffStatus?:      "active" | "inactive";
   staffPermissions?: StaffPermissions;
   notificationPreferences?: {
-    orderUpdates: boolean;
+    orderUpdates:       boolean;
     emailNotifications: boolean;
-    paymentAlerts: boolean;
+    paymentAlerts:      boolean;
   };
 }
 
 interface RegisterData {
   username: string;
-  email: string;
+  email:    string;
   password: string;
 }
 interface LoginData {
@@ -71,16 +71,16 @@ interface UsersResponse {
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
 export const toAuthUser = (raw: BackendUser): AuthUser => ({
-  id: raw._id,
+  id:       raw._id,
   username: raw.username ?? "",
-  email: raw.email,
-  name: raw.name,
-  phone: raw.phone,
-  profilePhoto: raw.profilePhoto,
+  email:    raw.email,
+  name:     raw.name,
+  phone:    raw.phone,
+  // profilePhoto intentionally omitted
   provider: raw.provider,
-  role: raw.role ?? "user",
-  staffStatus: raw.staffStatus,
-  staffPermissions: raw.staffPermissions,
+  role:     raw.role ?? "user",
+  staffStatus:             raw.staffStatus,
+  staffPermissions:        raw.staffPermissions,
   notificationPreferences: raw.notificationPreferences,
 });
 
@@ -115,13 +115,8 @@ export const authAPI = {
     return res.data;
   },
 
-  resetPassword: async (
-    token: string,
-    password: string,
-  ): Promise<ApiResponse> => {
-    const res = await api.post<ApiResponse>(`/auth/reset-password/${token}`, {
-      password,
-    });
+  resetPassword: async (token: string, password: string): Promise<ApiResponse> => {
+    const res = await api.post<ApiResponse>(`/auth/reset-password/${token}`, { password });
     return res.data;
   },
 
@@ -133,14 +128,17 @@ export const authAPI = {
 
 // ── Users API ─────────────────────────────────────────────────────────────────
 export const usersAPI = {
-  getAll: async (): Promise<BackendUser[]> => {
-    const res = await api.get<UsersResponse>("/auth/users");
-    return Array.isArray(res.data.users) ? res.data.users : [];
+  getAll: async (params?: { page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params?.page)  query.set("page",  String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+    const res = await api.get(`/auth/users?${query.toString()}`);
+    return res.data;
   },
 
   getAdmins: async (): Promise<BackendUser[]> => {
     const all = await usersAPI.getAll();
-    return all.filter((u) => u.role === "admin");
+    return all.filter((u: BackendUser) => u.role === "admin");
   },
 
   deleteUser: async (id: string): Promise<ApiResponse> => {
