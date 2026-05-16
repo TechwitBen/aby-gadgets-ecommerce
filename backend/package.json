@@ -5,6 +5,7 @@
   "main": "server.js",
   "type": "module",
   "scripts": {
+  "start": "node server.js",
   "test": "jest --runInBand",
   "test:watch": "jest --runInBand --watch",
   "dev": "nodemon server.js",
