@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { authAPI, usersAPI, type BackendUser } from "@/services/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInView, fadeUp } from "@/hooks/useInView";
 
 // ── Admin Card ────────────────────────────────────────────────────────────────
 const AdminCard = ({
@@ -216,6 +217,13 @@ const PromoteForm = ({ onPromoted }: { onPromoted: () => void }) => {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 const AdminManagePage = () => {
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
+
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const [admins, setAdmins] = useState<BackendUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -233,17 +241,18 @@ const AdminManagePage = () => {
         err?.response?.data?.message ??
         "Failed to load admins.";
       setFetchError(msg);
+      toast({ variant: "destructive", title: "Error", description: msg });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchAdmins();
   }, [fetchAdmins]);
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className={`max-w-2xl mx-auto space-y-6 ${fadeUp(pageInView)}`} ref={pageRef}>
       {/* Page title */}
       <div className="flex items-center justify-between">
         <div>

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Loader2, Send, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useInView, fadeUp } from "@/hooks/useInView";
 
 // Reuse the same permission row from StaffDetailsPage
 const PermissionRow = ({
@@ -42,6 +43,12 @@ type PermissionCategory = keyof StaffPermissions;
 const AddStaffPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -153,7 +160,7 @@ const AddStaffPage = () => {
   const p = permissions;
 
   return (
-    <div className="max-w-xl">
+    <div className={`max-w-xl ${fadeUp(pageInView)}`} ref={pageRef}>
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <button

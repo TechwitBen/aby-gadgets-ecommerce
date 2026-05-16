@@ -27,6 +27,7 @@ import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionBanner } from "@/components/ui/PermissionBanner";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";
+import { useInView, fadeUp } from "@/hooks/useInView";
 
 // ── Delete Modal ──────────────────────────────────────────────────────────────
 const DeleteConfirmModal = ({
@@ -411,6 +412,13 @@ const ProductsPage = () => {
   const navigate = useNavigate();
   const { isAdmin, can } = usePermission();
   const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
+  const { toast } = useToast();
+
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const canView = isAdmin || can("products", "viewProducts");
   const canAdd = isAdmin || can("products", "addProducts");
@@ -431,8 +439,6 @@ const ProductsPage = () => {
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-    const { toast } = useToast();
-    
   const fetchProducts = useCallback(async () => {
     setIsLoading(true);
     setFetchError(null);
@@ -441,10 +447,11 @@ const ProductsPage = () => {
       setProducts(Array.isArray(data?.products) ? data.products : []);
     } catch {
       setFetchError("Failed to load products. Please try again.");
+      toast({ variant: "destructive", title: "Error", description: "Failed to load products." });
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     fetchProducts();
@@ -539,7 +546,7 @@ const ProductsPage = () => {
     sortLabel,
   ]);
 
-   const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async () => {
     if (!deletingProduct) return;
     setIsDeleting(true);
     try {
@@ -551,7 +558,6 @@ const ProductsPage = () => {
         description: `${deletingProduct.name} has been removed successfully.`,
       });
     } catch {
-      // ✅ Fixed: Show error toast and close modal so user isn't stuck
       toast({
         title: "Delete failed",
         description: "Could not remove the product. Please try again.",
@@ -562,6 +568,7 @@ const ProductsPage = () => {
       setIsDeleting(false);
     }
   };
+
   const handleDeleteClick = (e: React.MouseEvent, product: Product) => {
     e.stopPropagation();
     if (!canDelete) {
@@ -627,9 +634,10 @@ const ProductsPage = () => {
 
   return (
     <div
-      onClick={() => setOpenDropdown(null)}
-      className="animate-in fade-in duration-500"
-    >
+  onClick={() => setOpenDropdown(null)}
+  ref={pageRef}
+  className={`animate-in fade-in duration-500 ${fadeUp(pageInView)}`}
+>
       {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
 
       <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-5">

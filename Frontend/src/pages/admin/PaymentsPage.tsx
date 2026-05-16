@@ -25,6 +25,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { paymentService, type PaymentDoc } from "@/services/Payment.service";
 import { orderService, type OrderDoc } from "@/services/Order.service";
 import { useToast } from "@/hooks/use-toast";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
@@ -38,9 +39,6 @@ const fmtDateTime = (iso: string) => {
 };
 
 // ── Channel config ─────────────────────────────────────────────────────────────
-// payment_method stores Paystack channel values: "card", "bank", "bank_transfer",
-// "ussd", "qr", "mobile_money" — or "pod" for pay-on-delivery.
-// "paystack" is the fallback for pending payments where channel isn't known yet.
 const CHANNEL_CFG: Record<
   string,
   { label: string; sublabel: string; Icon: React.FC<{ className?: string }> }
@@ -137,9 +135,6 @@ const TABS: { key: TabKey; label: string; Icon: React.FC<{ className?: string }>
 ];
 
 // ── Method filter options ──────────────────────────────────────────────────────
-// IMPORTANT: payment_method is now always "paystack" or "pod" (permanent gateway field).
-// channel holds the actual payment method once Paystack confirms (card, bank, ussd, etc.).
-// The filter uses payment_method for gateway (online vs POD), not channel.
 const METHOD_OPTIONS = [
   { value: "All",      label: "All Methods"      },
   { value: "online",   label: "Online (Paystack)" },
@@ -156,7 +151,6 @@ interface PaymentDisplayItem {
   fulfillment_type: "delivery" | "pickup" | undefined;
   amount:           number;
   delivery_fee:     number;
-  // Raw channel value from Paystack: "card" | "bank" | "ussd" | "pod" | "paystack" | etc.
   channel:          string;
   displayStatus:    DisplayStatus;
   createdAt:        string;
@@ -175,15 +169,6 @@ const extractOrderId = (order: PaymentDoc["order"]): string => {
 const paymentDocToItem = (p: PaymentDoc): PaymentDisplayItem => {
   const o = typeof p.order === "object" && p.order !== null ? (p.order as any) : null;
 
-  // ── Channel resolution ─────────────────────────────────────────────────────
-  // payment_method is now always "paystack" or "pod" — it never holds the
-  // channel value anymore. The actual channel ("card", "bank", "ussd", etc.)
-  // lives in p.channel (null until Paystack confirms the transaction).
-  //
-  // Display logic:
-  //   POD order          → show "pod"      (no Paystack channel exists)
-  //   Paystack + channel → show the channel ("card", "ussd", etc.)
-  //   Paystack + pending → show "paystack" fallback (channel not yet known)
   const isPOD = (p as any).payment_method === "pod";
   const resolvedChannel = isPOD
     ? "pod"
@@ -213,14 +198,12 @@ const paymentDocToItem = (p: PaymentDoc): PaymentDisplayItem => {
 const podOrderToItem = (o: OrderDoc): PaymentDisplayItem => ({
   _id:              `pod-${o._id}`,
   payment_number:   undefined,
-  // POD has no Paystack reference — use a human-readable pseudo-ref
   reference:        o.order_number ? `POD-${o.order_number}` : `POD-${o._id.slice(-8).toUpperCase()}`,
   orderId:          o._id,
   order_number:     o.order_number,
   fulfillment_type: o.fulfillment_type,
   amount:           o.total,
   delivery_fee:     o.shipping_fee ?? 0,
-  // POD orders have no Paystack channel — "pod" is the display sentinel value
   channel:          "pod",
   displayStatus:    o.payment_status === "paid" ? "success" : o.payment_status === "refunded" ? "cancelled" : "pending",
   createdAt:        o.createdAt,
@@ -286,7 +269,6 @@ const ChannelBadge = ({ channel, size = "sm" }: { channel: string; size?: "sm" |
   );
 };
 
-// ── DateTime cell ──────────────────────────────────────────────────────────────
 const DateTimeCell = ({ iso, className = "" }: { iso: string; className?: string }) => {
   const { date, time } = fmtDateTime(iso);
   return (
@@ -297,7 +279,6 @@ const DateTimeCell = ({ iso, className = "" }: { iso: string; className?: string
   );
 };
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
 const StatCard = ({
   label, value, accentBg, accentText, Icon,
 }: {
@@ -315,7 +296,6 @@ const StatCard = ({
   </div>
 );
 
-// ── Mobile card ───────────────────────────────────────────────────────────────
 const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () => void }) => {
   const { date, time } = fmtDateTime(item.createdAt);
   return (
@@ -364,7 +344,6 @@ const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () =
   );
 };
 
-// ── Filter sheet (mobile) ─────────────────────────────────────────────────────
 const FilterSheet = ({
   open, onClose, methodFilter, onMethodChange,
 }: {
@@ -405,11 +384,9 @@ const FilterSheet = ({
   );
 };
 
-// ── Detail Modal ───────────────────────────────────────────────────────────────
 const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClose: () => void }) => {
   if (!item) return null;
   const cfg = STATUS_CFG[item.displayStatus];
-  // channelCfg is null for pending payments (channel not yet known)
   const channelCfg = getChannelCfg(item.channel);
   const ChannelIcon = channelCfg?.Icon ?? CreditCard;
 
@@ -444,9 +421,7 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
 
   const { date, time } = fmtDateTime(item.createdAt);
 
-  // Gateway = which service processed the payment (permanent)
   const gatewayLabel = item.isPOD ? "Pay on Delivery" : "Paystack";
-  // Channel = how the customer actually paid (null until Paystack confirms)
   const channelLabel = channelCfg
     ? channelCfg.label
     : item.channel === "paystack"
@@ -462,9 +437,7 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
       label: "Delivery Fee",
       value: item.delivery_fee === 0 || item.fulfillment_type === "pickup" ? "Free" : fmt(item.delivery_fee),
     },
-    // Gateway — always shown ("Paystack" or "Pay on Delivery")
     { label: "Gateway",      value: gatewayLabel },
-    // Channel — shown when known ("Card", "USSD", etc.) or "Pending" for online awaiting
     ...(channelLabel ? [{ label: "Channel",  value: channelLabel }] : []),
     { label: "Date",  value: date },
     { label: "Time",  value: time },
@@ -489,7 +462,6 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
                 </span>
               )}
               <FulfillmentChip type={item.fulfillment_type} />
-              {/* Channel chip — only shown when channel is known */}
               {channelCfg ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                   <ChannelIcon className="w-2.5 h-2.5" />
@@ -504,13 +476,11 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
             </div>
           </div>
 
-          {/* Admin note */}
           <div className={`rounded-xl px-3 py-2.5 mb-4 text-xs leading-relaxed border ${noteCls[item.displayStatus]}`}>
             <p className="font-semibold mb-0.5">{cfg.label}</p>
             <p>{cfg.adminNote}</p>
           </div>
 
-          {/* Details */}
           <div className="space-y-2.5 mb-5">
             {rows.map(({ label, value }) => (
               <div key={label} className="flex items-start justify-between gap-4 text-sm">
@@ -533,6 +503,12 @@ const REFRESH_INTERVAL_MS = 30_000;
 const PaymentsPage = () => {
   const { toast } = useToast();
 
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
+
   const [allItems,        setAllItems]        = useState<PaymentDisplayItem[]>([]);
   const [isLoading,       setIsLoading]       = useState(true);
   const [fetchError,      setFetchError]      = useState<string | null>(null);
@@ -544,7 +520,6 @@ const PaymentsPage = () => {
   const [selectedItem,    setSelectedItem]    = useState<PaymentDisplayItem | null>(null);
   const [lastRefreshed,   setLastRefreshed]   = useState<Date | null>(null);
 
-  // ── Fix 1: Scroll to top on tab or method change ──────────────────────────
   const prevTabRef = useRef<TabKey>("all");
   const prevMethodFilterRef = useRef("All");
 
@@ -562,7 +537,6 @@ const PaymentsPage = () => {
   const activeTabRef = useRef(activeTab);
   useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
 
-  // ── Load All ──────────────────────────────────────────────────────────────
   const loadAll = useCallback(async (silent = false) => {
     if (!silent) setIsLoading(true);
     setFetchError(null);
@@ -602,9 +576,10 @@ const PaymentsPage = () => {
       setAllItems(merged);
       setLastRefreshed(new Date());
     } catch (err) {
-      // ── Fix 2: Silent refresh failure notification ────────────────────────
+      const msg = "Failed to load payments. Please try again.";
       if (!silent) {
-        setFetchError("Failed to load payments. Please try again.");
+        setFetchError(msg);
+        toast({ variant: "destructive", title: "Error", description: msg }); // ✅ toast for initial load error
       } else {
         toast({
           title: "Auto-refresh failed",
@@ -619,7 +594,6 @@ const PaymentsPage = () => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Auto-refresh every 30s, skip on confirmed tab
   useEffect(() => {
     const id = setInterval(() => {
       if (activeTabRef.current !== "success") loadAll(true);
@@ -645,10 +619,6 @@ const PaymentsPage = () => {
       item.orderId.toLowerCase().includes(q) ||
       (item.order_number ?? "").toLowerCase().includes(q);
 
-    // Method filter:
-    // "online" = any non-POD payment (card, bank, ussd, paystack fallback, etc.)
-    // "pod"    = pay on delivery
-    // "All"    = everything
     const matchMethod =
       methodFilter === "All" ||
       (methodFilter === "pod"    && item.channel === "pod") ||
@@ -657,7 +627,6 @@ const PaymentsPage = () => {
     return matchSearch && matchMethod;
   });
 
-  // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
@@ -666,7 +635,6 @@ const PaymentsPage = () => {
       </div>
     );
 
-  // ── Error state ────────────────────────────────────────────────────────────
   if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -678,10 +646,10 @@ const PaymentsPage = () => {
       </div>
     );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div
-      className="space-y-5 animate-in fade-in duration-500"
+      ref={pageRef}
+      className={`space-y-5 ${fadeUp(pageInView)}`}
       onClick={() => setShowMethodDD(false)}
     >
       {/* ── Header ── */}
@@ -756,7 +724,6 @@ const PaymentsPage = () => {
 
       {/* ── Toolbar ── */}
       <div className="flex items-center gap-3 flex-wrap">
-        {/* Mobile filter button */}
         <button
           className="sm:hidden inline-flex items-center gap-2 bg-secondary text-secondary-foreground rounded-lg px-3 py-2 relative"
           onClick={(e) => { e.stopPropagation(); setShowFilterSheet(true); }}

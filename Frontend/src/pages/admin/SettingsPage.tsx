@@ -10,6 +10,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, Plus, Trash2, Pencil, Check, X } from "lucide-react";
+import { useInView, fadeUp } from "@/hooks/useInView";
 
 // ── Reusable editable field ───────────────────────────────────────────────────
 const Field = ({
@@ -153,6 +154,12 @@ const SettingsPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
+
   useEffect(() => {
     if (user && user.role !== "admin") navigate("/admin", { replace: true });
   }, [user, navigate]);
@@ -232,7 +239,10 @@ const SettingsPage = () => {
     );
 
   return (
-    <div className="max-w-3xl mx-auto">
+   <div
+  ref={pageRef}
+  className={`max-w-3xl mx-auto ${fadeUp(pageInView)}`}
+>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
