@@ -28,6 +28,7 @@ import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 const StockBadge = ({ stock }: { stock: number }) => {
   if (stock === 0)
@@ -78,6 +79,12 @@ const ProductDetails = () => {
   const { isInWishlist, toggleWishlist } = useWishlist();
   const { toast } = useToast();
   const { user } = useAuth();
+
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,7 +164,14 @@ const ProductDetails = () => {
           setSimilarLoading(false);
         }
       })
-      .catch(() => setFetchError(true))
+      .catch(() => {
+        setFetchError(true);
+        toast({
+          title: "Error",
+          description: "Failed to load product details.",
+          variant: "destructive",
+        }); // ✅ toast on fetch error
+      })
       .finally(() => setIsLoading(false));
   }, [slug, fetchReviews]);
 
@@ -392,8 +406,11 @@ const ProductDetails = () => {
         </Link>
       </div>
 
-      {/* Main Product Section */}
-      <div className="container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-8">
+      {/* 🎬 Animated main content */}
+      <div
+        ref={pageRef}
+        className={`container mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pb-8 ${fadeUp(pageInView)}`}
+      >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 xl:gap-14">
           {/* Left — Gallery */}
           <div className="relative">

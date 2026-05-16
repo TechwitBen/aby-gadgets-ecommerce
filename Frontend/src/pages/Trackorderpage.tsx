@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { orderService, type OrderDoc } from "@/services/Order.service";
 import { paymentService, type PaymentDoc } from "@/services/Payment.service";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const displayOrderId = (o: OrderDoc) =>
@@ -482,11 +483,12 @@ const TrackOrderPage = () => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
 
-  // FIX A: removed "Order Found" success toast — navigation is its own
-  //        confirmation. Only the error toasts remain.
-  // FIX B: `toast` removed from the dependency array. It is not data and
-  //        including it risks infinite re-fetches if the useToast
-  //        implementation recreates the reference each render.
+  // 🎬 Page entrance animation
+  const { ref: contentRef, isInView: contentInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
+
   useEffect(() => {
     if (!id) {
       setNotFound(true);
@@ -503,7 +505,6 @@ const TrackOrderPage = () => {
       .getOrderById(id)
       .then((data) => {
         setOrder(data);
-        // ✂ "Order Found" toast removed — loading data is not a user-facing event.
       })
       .catch(() => {
         setNotFound(true);
@@ -514,7 +515,7 @@ const TrackOrderPage = () => {
         });
       })
       .finally(() => setIsLoading(false));
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps — toast intentionally excluded
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Fetch payment doc state once order is loaded
   useEffect(() => {
@@ -624,7 +625,11 @@ const TrackOrderPage = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-10">
+      {/* 🎬 Animated content */}
+      <div
+        ref={contentRef}
+        className={`max-w-6xl mx-auto px-4 sm:px-6 py-8 lg:py-10 ${fadeUp(contentInView)}`}
+      >
         {/* Payment banner */}
         {payLoaded && (
           <PaymentBanner

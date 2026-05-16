@@ -29,6 +29,7 @@ import {
 } from "@/services/Notification.service";
 import { useNotifications } from "@/contexts/Notificationcontext";
 import { useToast } from "@/hooks/use-toast";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 // ── Brand colour ──────────────────────────────────────────────────────────────
 const BRAND        = "#6426E1";
@@ -198,7 +199,6 @@ const NotificationCard = ({
         className="flex-shrink-0 w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center"
         style={notification.isRead ? { backgroundColor: "#f9fafb" } : { backgroundColor: BRAND_LIGHT }}
       >
-        {/* IconProps now includes style — no TS error */}
         <IconComponent
           className="w-5 h-5"
           style={notification.isRead ? { color: "#9ca3af" } : { color: BRAND }}
@@ -285,6 +285,12 @@ const NotificationsPage = () => {
   const { toast }                        = useToast();
   const { refreshCount, resetCount }     = useNotifications();
 
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
+
   const [notifications, setNotifications] = useState<NotificationDoc[]>([]);
   const [unreadCount, setUnreadCount]     = useState(0);
   const [filter, setFilter]               = useState<FilterType>("all");
@@ -353,7 +359,10 @@ const NotificationsPage = () => {
     notifications.filter((n) => n.type === type && !n.isRead).length;
 
   return (
-    <div className="min-h-screen bg-gray-50/60">
+    <div
+      ref={pageRef}
+      className={`min-h-screen bg-gray-50/60 ${fadeUp(pageInView)}`}
+    >
       {/* ── Page Header ── */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-2xl mx-auto px-4 pt-6 pb-5">

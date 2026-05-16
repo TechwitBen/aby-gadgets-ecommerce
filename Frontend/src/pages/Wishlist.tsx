@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
 import { formatPrice } from "@/services/Products.service";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 const Wishlist = () => {
   const { wishlistProducts, removeFromWishlist } = useWishlist();
@@ -23,6 +24,12 @@ const Wishlist = () => {
   const { toast } = useToast();
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
+
+  // 🎬 Page entrance animation
+  const { ref: contentRef, isInView: contentInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
 
   const removeItem = (id: string) => {
     removeFromWishlist(id);
@@ -295,7 +302,11 @@ const Wishlist = () => {
         </div>
       </div>
 
-      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+      {/* 🎬 Animated content */}
+      <div
+        ref={contentRef}
+        className={`container mx-auto px-3 sm:px-4 py-4 sm:py-6 ${fadeUp(contentInView)}`}
+      >
         {/* Bulk action bar */}
         {wishlistProducts.length > 0 && (
           <div className="flex items-center gap-2 sm:gap-3 mb-4 sm:mb-5 flex-wrap">

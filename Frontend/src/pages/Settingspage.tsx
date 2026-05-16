@@ -26,6 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 // ── Brand colour ──────────────────────────────────────────────────────────────
 const BRAND = "#6426E1";
@@ -254,6 +255,12 @@ const AddressModal = ({
 const UserSettingsPage = () => {
   const { toast } = useToast();
 
+  // 🎬 Page entrance animation
+  const { ref: pageRef, isInView: pageInView } = useInView({
+    once: true,
+    threshold: 0,
+  });
+
   const [tab, setTab] = useState<SettingsTab>("profile");
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -388,7 +395,10 @@ const UserSettingsPage = () => {
   const pwStrengthColor = ["", "bg-red-400", "bg-amber-400", "bg-blue-400", "bg-emerald-400"][pwStrength];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div
+      ref={pageRef}
+      className={`min-h-screen bg-gray-50 ${fadeUp(pageInView)}`}
+    >
       {/* ── Page Header ── */}
       <div className="bg-white border-b border-gray-100 shadow-sm">
         <div className="max-w-3xl mx-auto px-4 pt-6 pb-0">
