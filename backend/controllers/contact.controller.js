@@ -25,11 +25,18 @@ export const contactFormController = async (req, res) => {
       });
     }
 
-    await sendContactEmail({ name: name.trim(), email: email.trim(), phone, service, message: message.trim() });
+    await sendContactEmail({
+      name: name.trim(),
+      email: email.trim(),
+      phone,
+      service,
+      message: message.trim(),
+    });
 
     return res.status(200).json({
       success: true,
-      message: "Your message has been sent. We'll get back to you within 24 hours.",
+      message:
+        "Your message has been sent. We'll get back to you within 24 hours.",
     });
   } catch (error) {
     console.error("[contact]", error);
