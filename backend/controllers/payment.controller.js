@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Payment from "../models/payment.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
-import { generatePaymentNumber } from "../helpers/idgenerator.helper.js";
+import { generatePaymentNumber } from "../helpers/Idgenerator.helper.js";
 import { createPaymentNotification } from "../helpers/notification.helper.js";
 
 // ── Paystack axios instance ───────────────────────────────────────────────────
