@@ -35,8 +35,7 @@ export const getCart = async (req, res) => {
 
 export const addCartItem = async (req, res) => {
   try {
-    console.log("🔥 ADD CART ITEM REQUEST BODY:", req.body);
-    console.log("👤 USER:", req.user?._id);
+  
     const { product, variant, quantity = 1 } = req.body;
 
     if (!product || !variant) {
@@ -123,7 +122,7 @@ export const updateCartItem = async (req, res) => {
   try {
     const { variant, quantity } = req.body;
 
-    console.log("🔥 UPDATE CART ITEM REQUEST BODY:", req.body);
+    // console.log("🔥 UPDATE CART ITEM REQUEST BODY:", req.body);
 
     if (!variant || quantity === undefined) {
       return res.status(400).json({
@@ -182,7 +181,7 @@ export const updateCartItem = async (req, res) => {
 export const removeCartItem = async (req, res) => {
   try {
     const { variantId } = req.params;
- console.log("🔥 DELETE CART ITEM REQUEST BODY:", variantId);
+//  console.log("🔥 DELETE CART ITEM REQUEST BODY:", variantId);
 
     if (!mongoose.Types.ObjectId.isValid(variantId)) {
       return res.status(400).json({ message: "Invalid variant ID" });

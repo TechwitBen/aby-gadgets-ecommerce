@@ -1,6 +1,6 @@
 import { config } from "dotenv";
 config(); // ← just loads .env, no more .env.development.local nonsense
-console.log('GOOGLE_CLIENT_ID loaded?', !!process.env.GOOGLE_CLIENT_ID);
+
 export const {
   PORT,
   MONGODB_URI,

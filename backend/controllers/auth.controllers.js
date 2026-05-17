@@ -54,10 +54,6 @@ passport.use(
 export const loginController = (req, res, next) => {
   try {
     passport.authenticate("local", (err, user, info) => {
-
-      console.log("AUTH RESULT USER:", user); // 👈 log from passport
-      console.log("AUTH INFO:", info);
-
       if (err) {
         return res
           .status(500)
@@ -70,9 +66,6 @@ export const loginController = (req, res, next) => {
       }
 
       req.logIn(user, (err) => {
-
-        console.log("LOGGING IN USER:", user); // 👈 before session
-
         if (err) {
           return res
             .status(500)
@@ -80,20 +73,17 @@ export const loginController = (req, res, next) => {
         }
 
         req.session.save(() => {
-
-          console.log("SESSION USER:", req.user); // 👈 THIS IS THE IMPORTANT ONE
-
           return res.status(200).json({
             success: true,
             message: "Login successful",
             data: {
-    _id: user._id,
-    username: user.username,
-    email: user.email,
-    role: user.role,
-    staffStatus: user.staffStatus,
-    staffPermissions: user.staffPermissions,
-  },
+              _id: user._id,
+              username: user.username,
+              email: user.email,
+              role: user.role,
+              staffStatus: user.staffStatus,
+              staffPermissions: user.staffPermissions,
+            },
           });
         });
       });
@@ -315,9 +305,7 @@ export const promoteToAdmin = async (req, res) => {
     user.role = "admin";
     await user.save();
 
-    console.log(
-      `[promote] ${req.user.email} promoted ${email} to admin.`,
-    );
+    console.log(`[promote] ${req.user.email} promoted ${email} to admin.`);
 
     return res.status(200).json({
       success: true,
@@ -375,14 +363,12 @@ export const forgotPassword = async (req, res) => {
       .status(200)
       .json({ message: "If that email exists, a reset link has been sent." });
   } catch (error) {
-  console.error("FORGOT PASSWORD ERROR:");
-  console.error(error);
-
-  res.status(500).json({
-    message: "Failed to send reset email",
-    error: error.message,
-  });
-}
+    console.error("FORGOT PASSWORD ERROR:", error);
+    res.status(500).json({
+      message: "Failed to send reset email",
+      error: error.message,
+    });
+  }
 };
 
 // ─── Reset Password ───────────────────────────────────────────────────────────

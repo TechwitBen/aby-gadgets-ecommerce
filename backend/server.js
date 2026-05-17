@@ -1,5 +1,6 @@
 import "./configs/.env.configs.js";
 
+
 const required = [
   "MONGODB_URI",
   "SESSION_SECRET",
@@ -23,6 +24,7 @@ import cors from "cors";
 import session from "express-session";
 import passport from "passport";
 import helmet from "helmet";
+import MongoStore from "connect-mongo";
 import rateLimit from "express-rate-limit";
 
 import { authRouter } from "./routes/auth.routes.js";
@@ -100,18 +102,23 @@ const startServer = async () => {
   // 5. SESSION
   // =========================
   app.use(session({
-    secret: process.env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    name: "connect.sid",
-    cookie: {
-      maxAge: 60 * 60 * 1000,
-      sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
-      httpOnly: true,
-    },
-  }));
-
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  name: "connect.sid",
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI,
+    collectionName: "sessions",   // optional, defaults to "sessions"
+    ttl: 60 * 60,                 // matches your cookie maxAge (1 hour, in seconds)
+    autoRemove: "native",         // lets MongoDB TTL index handle cleanup
+  }),
+  cookie: {
+    maxAge: 60 * 60 * 1000,       // 1 hour in ms
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+  },
+}));
   // =========================
   // 6. PASSPORT
   // =========================
