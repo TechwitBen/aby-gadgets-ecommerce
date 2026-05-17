@@ -24,9 +24,13 @@ export const getNotifications = async (req, res) => {
       Notification.countDocuments({ user: req.user._id, isRead: false }),
     ]);
 
-    res.status(200).json({ notifications, total, unreadCount, page: Number(page) });
+    res
+      .status(200)
+      .json({ notifications, total, unreadCount, page: Number(page) });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch notifications", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch notifications", error: err.message });
   }
 };
 
@@ -36,10 +40,15 @@ export const getNotifications = async (req, res) => {
  */
 export const getUnreadCount = async (req, res) => {
   try {
-    const count = await Notification.countDocuments({ user: req.user._id, isRead: false });
+    const count = await Notification.countDocuments({
+      user: req.user._id,
+      isRead: false,
+    });
     res.status(200).json({ count });
   } catch (err) {
-    res.status(500).json({ message: "Failed to get count", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to get count", error: err.message });
   }
 };
 
@@ -54,10 +63,13 @@ export const markAsRead = async (req, res) => {
       { isRead: true },
       { new: true },
     );
-    if (!notification) return res.status(404).json({ message: "Notification not found" });
+    if (!notification)
+      return res.status(404).json({ message: "Notification not found" });
     res.status(200).json(notification);
   } catch (err) {
-    res.status(500).json({ message: "Failed to mark as read", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to mark as read", error: err.message });
   }
 };
 
@@ -67,10 +79,15 @@ export const markAsRead = async (req, res) => {
  */
 export const markAllAsRead = async (req, res) => {
   try {
-    await Notification.updateMany({ user: req.user._id, isRead: false }, { isRead: true });
+    await Notification.updateMany(
+      { user: req.user._id, isRead: false },
+      { isRead: true },
+    );
     res.status(200).json({ message: "All marked as read" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to mark all as read", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to mark all as read", error: err.message });
   }
 };
 
@@ -80,10 +97,15 @@ export const markAllAsRead = async (req, res) => {
  */
 export const deleteNotification = async (req, res) => {
   try {
-    await Notification.findOneAndDelete({ _id: req.params.id, user: req.user._id });
+    await Notification.findOneAndDelete({
+      _id: req.params.id,
+      user: req.user._id,
+    });
     res.status(200).json({ message: "Notification deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete notification", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete notification", error: err.message });
   }
 };
 
@@ -97,7 +119,9 @@ export const sendAdminMessage = async (req, res) => {
     const { userId, title, message, orderId, orderNumber } = req.body;
 
     if (!userId || !title?.trim() || !message?.trim()) {
-      return res.status(400).json({ message: "userId, title, and message are required" });
+      return res
+        .status(400)
+        .json({ message: "userId, title, and message are required" });
     }
 
     const user = await User.findById(userId).select("_id");
@@ -117,6 +141,8 @@ export const sendAdminMessage = async (req, res) => {
 
     res.status(200).json({ message: "Message sent to user" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to send admin message", error: err.message });
+    res
+      .status(500)
+      .json({ message: "Failed to send admin message", error: err.message });
   }
 };

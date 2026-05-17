@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import Payment from "../models/payment.model.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
-import { generatePaymentNumber } from "../helpers/Idgenerator.helper.js";
+import { generatePaymentNumber } from "../helpers/idgenerator.helper.js";
 import { createPaymentNotification } from "../helpers/notification.helper.js";
 
 // ── Paystack axios instance ───────────────────────────────────────────────────
@@ -116,7 +116,7 @@ export const initializePayment = async (req, res) => {
       if (existingPayment.status === "pending") {
         try {
           const psCheck = await paystack.get(
-            `/transaction/verify/${existingPayment.reference}`
+            `/transaction/verify/${existingPayment.reference}`,
           );
           const psStatus = psCheck.data?.data?.status;
 
@@ -151,7 +151,8 @@ export const initializePayment = async (req, res) => {
 
             return res.status(200).json({
               alreadyPaid: true,
-              message: "Payment was already confirmed. Your order is now active.",
+              message:
+                "Payment was already confirmed. Your order is now active.",
             });
           }
 
@@ -170,7 +171,6 @@ export const initializePayment = async (req, res) => {
           existingPayment.status =
             psStatus === "abandoned" ? "cancelled" : "failed";
           await existingPayment.save({ session });
-
         } catch (verifyErr) {
           // ── FIX: 503 loop prevention ─────────────────────────────────────
           // Previously: abort + return 503, leaving the pending doc untouched.
@@ -182,7 +182,7 @@ export const initializePayment = async (req, res) => {
           // payment attempt is created. User can retry immediately.
           console.error(
             "[initializePayment] Paystack verify error:",
-            verifyErr.message
+            verifyErr.message,
           );
 
           try {
@@ -192,7 +192,7 @@ export const initializePayment = async (req, res) => {
             // If even this save fails, abort cleanly
             console.error(
               "[initializePayment] Could not mark pending doc as cancelled:",
-              saveErr.message
+              saveErr.message,
             );
             await session.abortTransaction();
             session.endSession();
@@ -234,7 +234,7 @@ export const initializePayment = async (req, res) => {
           channel: null,
         },
       ],
-      { session }
+      { session },
     );
 
     const paystackResponse = await paystack.post("/transaction/initialize", {
@@ -252,7 +252,7 @@ export const initializePayment = async (req, res) => {
 
     if (!paystackResponse.data.status) {
       throw new Error(
-        "Paystack initialization failed: " + paystackResponse.data.message
+        "Paystack initialization failed: " + paystackResponse.data.message,
       );
     }
 
@@ -280,7 +280,6 @@ export const initializePayment = async (req, res) => {
       reference,
       payment_number,
     });
-
   } catch (error) {
     if (session.inTransaction()) await session.abortTransaction();
     session.endSession();
@@ -318,7 +317,10 @@ export const verifyPayment = async (req, res) => {
     const { reference } = req.params;
 
     const payment = await Payment.findOne({ reference })
-      .populate("order", "status payment_status order_number fulfillment_type total user")
+      .populate(
+        "order",
+        "status payment_status order_number fulfillment_type total user",
+      )
       .session(session);
 
     if (!payment) {
@@ -366,7 +368,7 @@ export const verifyPayment = async (req, res) => {
 
     // ── Still pending — ask Paystack ──────────────────────────────────────────
     const paystackResponse = await paystack.get(
-      `/transaction/verify/${reference}`
+      `/transaction/verify/${reference}`,
     );
 
     if (!paystackResponse.data.status) {
@@ -388,12 +390,11 @@ export const verifyPayment = async (req, res) => {
       payment.status = "success";
       payment.paystack_reference = paystackRef;
       // FIX: write to `channel`, not `payment_method`
-      payment.channel =
-        paystackResponse.data.data.channel ?? payment.channel;
+      payment.channel = paystackResponse.data.data.channel ?? payment.channel;
       await payment.save({ session });
 
       const orderDoc = await Order.findById(
-        payment.order._id ?? payment.order
+        payment.order._id ?? payment.order,
       ).session(session);
 
       if (orderDoc) {
@@ -452,7 +453,6 @@ export const verifyPayment = async (req, res) => {
           : "Payment failed. Please try again.",
       payment,
     });
-
   } catch (error) {
     if (session.inTransaction()) await session.abortTransaction();
     session.endSession();
@@ -477,7 +477,7 @@ export const getPaymentForOrder = async (req, res) => {
       .sort({ createdAt: -1 })
       .populate(
         "order",
-        "status payment_status order_number fulfillment_type total"
+        "status payment_status order_number fulfillment_type total",
       );
 
     if (!payment) {
@@ -517,7 +517,7 @@ export const handleWebhook = async (req, res) => {
   console.log(`🔔 [webhook] Headers:`, JSON.stringify(req.headers, null, 2));
   console.log(
     `🔔 [webhook] Raw body preview:`,
-    JSON.stringify(req.body)?.slice(0, 300)
+    JSON.stringify(req.body)?.slice(0, 300),
   );
 
   try {
@@ -537,7 +537,7 @@ export const handleWebhook = async (req, res) => {
 
     if (!req.rawBody) {
       console.error(
-        "❌ [webhook] req.rawBody is undefined — the express.json verify callback may not be running for this route. Check server.js middleware order."
+        "❌ [webhook] req.rawBody is undefined — the express.json verify callback may not be running for this route. Check server.js middleware order.",
       );
       return res.status(500).send("Server misconfiguration");
     }
@@ -550,7 +550,7 @@ export const handleWebhook = async (req, res) => {
     console.log(`🔐 [webhook] Computed hash:    ${hash}`);
     console.log(`🔐 [webhook] Received sig:     ${signature}`);
     console.log(
-      `🔐 [webhook] Signature match: ${hash === signature ? "✅ YES" : "❌ NO"}`
+      `🔐 [webhook] Signature match: ${hash === signature ? "✅ YES" : "❌ NO"}`,
     );
 
     if (hash !== signature) {
@@ -566,7 +566,7 @@ export const handleWebhook = async (req, res) => {
     console.log(`📦 [webhook] Event type: ${event.event}`);
     console.log(
       `📦 [webhook] Full event payload:`,
-      JSON.stringify(event, null, 2)
+      JSON.stringify(event, null, 2),
     );
 
     // ── charge.success ────────────────────────────────────────────────────────
@@ -576,24 +576,22 @@ export const handleWebhook = async (req, res) => {
 
       const payment = await Payment.findOne({ reference }).populate(
         "order",
-        "_id status payment_status fulfillment_type user order_number"
+        "_id status payment_status fulfillment_type user order_number",
       );
 
       if (!payment) {
         console.warn(
-          `⚠️ [webhook] No payment doc found for reference: ${reference}`
+          `⚠️ [webhook] No payment doc found for reference: ${reference}`,
         );
         return;
       }
 
       console.log(
-        `📄 [webhook] Payment doc found — ID: ${payment._id}, status: ${payment.status}`
+        `📄 [webhook] Payment doc found — ID: ${payment._id}, status: ${payment.status}`,
       );
 
       if (payment.status === "success") {
-        console.log(
-          `ℹ️ [webhook] Already confirmed, skipping: ${reference}`
-        );
+        console.log(`ℹ️ [webhook] Already confirmed, skipping: ${reference}`);
         return;
       }
 
@@ -603,20 +601,20 @@ export const handleWebhook = async (req, res) => {
       payment.channel = event.data.channel ?? payment.channel;
       await payment.save();
       console.log(
-        `💾 [webhook] Payment updated to success — ref: ${reference}`
+        `💾 [webhook] Payment updated to success — ref: ${reference}`,
       );
 
       const order = await Order.findById(payment.order._id ?? payment.order);
       if (order) {
         console.log(
-          `📦 [webhook] Order found — ID: ${order._id}, status: ${order.status}, payment_status: ${order.payment_status}`
+          `📦 [webhook] Order found — ID: ${order._id}, status: ${order.status}, payment_status: ${order.payment_status}`,
         );
         order.payment_status = "paid";
         order.payment_reference = reference;
         if (order.status === "pending") order.status = "confirmed";
         await order.save();
         console.log(
-          `💾 [webhook] Order updated — status: ${order.status}, payment_status: ${order.payment_status}`
+          `💾 [webhook] Order updated — status: ${order.status}, payment_status: ${order.payment_status}`,
         );
 
         const userId = order.user;
@@ -628,15 +626,15 @@ export const handleWebhook = async (req, res) => {
             orderId: order._id,
             orderNumber: order.order_number,
           }).catch((err) =>
-            console.error("❌ [webhook] Notification error:", err.message)
+            console.error("❌ [webhook] Notification error:", err.message),
           );
           console.log(
-            `🔔 [webhook] Success notification sent to user: ${userId}`
+            `🔔 [webhook] Success notification sent to user: ${userId}`,
           );
         }
       } else {
         console.warn(
-          `⚠️ [webhook] Order not found for payment: ${payment._id}`
+          `⚠️ [webhook] Order not found for payment: ${payment._id}`,
         );
       }
     }
@@ -648,24 +646,26 @@ export const handleWebhook = async (req, res) => {
 
       const payment = await Payment.findOne({ reference }).populate(
         "order",
-        "_id user order_number"
+        "_id user order_number",
       );
 
       if (!payment) {
         console.warn(
-          `⚠️ [webhook] No payment doc found for failed ref: ${reference}`
+          `⚠️ [webhook] No payment doc found for failed ref: ${reference}`,
         );
         return;
       }
 
       console.log(
-        `📄 [webhook] Payment doc — ID: ${payment._id}, status: ${payment.status}`
+        `📄 [webhook] Payment doc — ID: ${payment._id}, status: ${payment.status}`,
       );
 
       if (payment.status === "pending") {
         payment.status = "failed";
         await payment.save();
-        console.log(`💾 [webhook] Payment marked as failed — ref: ${reference}`);
+        console.log(
+          `💾 [webhook] Payment marked as failed — ref: ${reference}`,
+        );
 
         const userId = payment.order?.user;
         if (userId && (await userWantsPaymentAlerts(userId))) {
@@ -676,15 +676,15 @@ export const handleWebhook = async (req, res) => {
             orderId: payment.order?._id,
             orderNumber: payment.order?.order_number,
           }).catch((err) =>
-            console.error("❌ [webhook] Notification error:", err.message)
+            console.error("❌ [webhook] Notification error:", err.message),
           );
           console.log(
-            `🔔 [webhook] Failed notification sent to user: ${userId}`
+            `🔔 [webhook] Failed notification sent to user: ${userId}`,
           );
         }
       } else {
         console.log(
-          `ℹ️ [webhook] Payment not pending (status: ${payment.status}), skipping`
+          `ℹ️ [webhook] Payment not pending (status: ${payment.status}), skipping`,
         );
       }
     }
@@ -693,7 +693,7 @@ export const handleWebhook = async (req, res) => {
     else if (event.event === "refund.processed") {
       const { transaction_reference, amount } = event.data;
       console.log(
-        `💸 [webhook] refund.processed — ref: ${transaction_reference}, amount: ${amount / 100}`
+        `💸 [webhook] refund.processed — ref: ${transaction_reference}, amount: ${amount / 100}`,
       );
 
       const payment = await Payment.findOne({
@@ -702,13 +702,13 @@ export const handleWebhook = async (req, res) => {
 
       if (!payment) {
         console.warn(
-          `⚠️ [webhook] No payment doc for refund ref: ${transaction_reference}`
+          `⚠️ [webhook] No payment doc for refund ref: ${transaction_reference}`,
         );
         return;
       }
 
       console.log(
-        `📄 [webhook] Payment doc found for refund — ID: ${payment._id}`
+        `📄 [webhook] Payment doc found for refund — ID: ${payment._id}`,
       );
 
       const userId = payment.order?.user;
@@ -720,26 +720,23 @@ export const handleWebhook = async (req, res) => {
           orderId: payment.order?._id,
           orderNumber: payment.order?.order_number,
         }).catch((err) =>
-          console.error("❌ [webhook] Notification error:", err.message)
+          console.error("❌ [webhook] Notification error:", err.message),
         );
-        console.log(
-          `🔔 [webhook] Refund notification sent to user: ${userId}`
-        );
+        console.log(`🔔 [webhook] Refund notification sent to user: ${userId}`);
       }
     }
 
     // ── Unhandled event ───────────────────────────────────────────────────────
     else {
       console.log(
-        `🤷 [webhook] Unhandled event type: ${event.event} — ignoring`
+        `🤷 [webhook] Unhandled event type: ${event.event} — ignoring`,
       );
     }
 
     console.log(
-      `✅ [webhook] Done processing "${event.event}" in ${Date.now() - webhookStart}ms`
+      `✅ [webhook] Done processing "${event.event}" in ${Date.now() - webhookStart}ms`,
     );
     console.log("🔔 [webhook] ==========================================");
-
   } catch (error) {
     console.error("❌ [webhook] Processing error:", error.message);
     console.error("❌ [webhook] Stack:", error.stack);
@@ -760,14 +757,13 @@ export const getAllPayments = async (req, res) => {
       payment_method,
       channel,
       search,
-      page  = 1,
+      page = 1,
       limit = 50,
     } = req.query;
 
     const filter = {};
 
-    if (status && status !== "All")
-      filter.status = status;
+    if (status && status !== "All") filter.status = status;
 
     // payment_method = "paystack" | "pod" — permanent gateway identifier
     if (payment_method && payment_method !== "All")
@@ -775,12 +771,11 @@ export const getAllPayments = async (req, res) => {
 
     // channel = "card" | "bank" | "ussd" etc — how they paid through Paystack
     // FIX: now a separate field, safe to filter independently
-    if (channel && channel !== "All")
-      filter.channel = channel;
+    if (channel && channel !== "All") filter.channel = channel;
 
     if (search) {
       filter.$or = [
-        { reference:      { $regex: search, $options: "i" } },
+        { reference: { $regex: search, $options: "i" } },
         { payment_number: { $regex: search, $options: "i" } },
       ];
     }
@@ -791,7 +786,7 @@ export const getAllPayments = async (req, res) => {
       Payment.find(filter)
         .populate(
           "order",
-          "status payment_status order_number fulfillment_type delivery_city shipping_fee"
+          "status payment_status order_number fulfillment_type delivery_city shipping_fee",
         )
         .populate("user", "name email")
         .sort({ createdAt: -1 })
@@ -803,7 +798,7 @@ export const getAllPayments = async (req, res) => {
     res.status(200).json({
       payments,
       total,
-      page:  Number(page),
+      page: Number(page),
       limit: Number(limit),
     });
   } catch (error) {
@@ -825,11 +820,10 @@ export const getPaymentStatus = async (req, res) => {
 
     const payment = await Payment.findOne({ reference }).populate(
       "order",
-      "status payment_status order_number fulfillment_type"
+      "status payment_status order_number fulfillment_type",
     );
 
-    if (!payment)
-      return res.status(404).json({ message: "Payment not found" });
+    if (!payment) return res.status(404).json({ message: "Payment not found" });
 
     if (payment.user.toString() !== req.user._id.toString())
       return res.status(403).json({ message: "Unauthorized" });

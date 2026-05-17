@@ -12,12 +12,10 @@ import mongoose from "mongoose";
 import Order from "../models/order.model.js";
 import Variant from "../models/variant.model.js";
 import { createAuditLog } from "../middlewares/auth.middleware.js";
-import { generateOrderNumber } from "../helpers/Idgenerator.helper.js";
+import { generateOrderNumber } from "../helpers/idgenerator.helper.js";
 import { sendOrderConfirmationEmail } from "../Service/Email.service.js";
 import User from "../models/user.model.js";
-import {
-  createOrderNotification,
-} from "../helpers/notification.helper.js"; // ← NEW
+import { createOrderNotification } from "../helpers/notification.helper.js"; // ← NEW
 
 // ── Helper: generate a short pickup code ─────────────────────────────────────
 const makePickupCode = () =>
@@ -54,65 +52,68 @@ export const createOrder = async (req, res) => {
 
     for (const item of orderItems) {
       const variant = await Variant.findById(item.variant).session(session);
-      if (!variant)            throw new Error(`Variant not found for ID: ${item.variant}`);
-      if (!variant.is_active)  throw new Error(`Variant ${variant.sku} is currently unavailable`);
-      if (variant.stock < item.quantity) throw new Error(`Insufficient stock for SKU: ${variant.sku}`);
+      if (!variant)
+        throw new Error(`Variant not found for ID: ${item.variant}`);
+      if (!variant.is_active)
+        throw new Error(`Variant ${variant.sku} is currently unavailable`);
+      if (variant.stock < item.quantity)
+        throw new Error(`Insufficient stock for SKU: ${variant.sku}`);
 
       variant.stock -= item.quantity;
       await variant.save({ session });
       subtotal += variant.price * item.quantity;
 
       itemsToSave.push({
-        variant:    variant._id,
-        product:    variant.product,
-        quantity:   item.quantity,
+        variant: variant._id,
+        product: variant.product,
+        quantity: item.quantity,
         unit_price: variant.price,
       });
     }
 
-    const isPickup    = fulfillment_type === "pickup";
+    const isPickup = fulfillment_type === "pickup";
     const shippingFee = isPickup ? 0 : Number(reqShippingFee) || 0;
-    const total       = subtotal + shippingFee;
+    const total = subtotal + shippingFee;
     const pickup_code = isPickup ? makePickupCode() : undefined;
 
     const order_number = await generateOrderNumber(session);
 
     const orderData = {
       order_number,
-      user:            req.user._id,
-      items:           itemsToSave,
-      status:          "pending",
+      user: req.user._id,
+      items: itemsToSave,
+      status: "pending",
       fulfillment_type,
-      payment_status:  "unpaid",
-      payment_method:  paymentMethod,
+      payment_status: "unpaid",
+      payment_method: paymentMethod,
       subtotal,
-      shipping_fee:    shippingFee,
+      shipping_fee: shippingFee,
       total,
     };
 
     if (!isPickup) {
-      orderData.delivery_city    = delivery_city;
+      orderData.delivery_city = delivery_city;
       orderData.shipping_address = {
-        full_name:   shipping_address?.full_name,
-        phone:       shipping_address?.phone,
-        street:      shipping_address?.street,
-        city:        delivery_city || shipping_address?.city,
-        state:       shipping_address?.state,
-        country:     shipping_address?.country || "Nigeria",
+        full_name: shipping_address?.full_name,
+        phone: shipping_address?.phone,
+        street: shipping_address?.street,
+        city: delivery_city || shipping_address?.city,
+        state: shipping_address?.state,
+        country: shipping_address?.country || "Nigeria",
         postal_code: shipping_address?.postal_code,
       };
     }
 
     if (isPickup) {
-      orderData.pickup_code     = pickup_code;
+      orderData.pickup_code = pickup_code;
       orderData.pickup_location = pickup_location || "";
       orderData.shipping_address = {
         full_name: shipping_address?.full_name,
-        phone:     shipping_address?.phone,
-        street:    "",
-        city:      "Store Pickup",
-        state:     "Lagos",
-        country:   "Nigeria",
+        phone: shipping_address?.phone,
+        street: "",
+        city: "Store Pickup",
+        state: "Lagos",
+        country: "Nigeria",
       };
     }
 
@@ -123,26 +124,34 @@ export const createOrder = async (req, res) => {
     const createdOrder = order[0];
 
     // ── Non-blocking: email + "Order Placed" notification ─────────────────
-    const buyer = await User.findById(req.user._id).select("email username notificationPreferences").lean();
+    const buyer = await User.findById(req.user._id)
+      .select("email username notificationPreferences")
+      .lean();
 
     if (buyer?.email) {
       sendOrderConfirmationEmail({
-        to:       buyer.email,
+        to: buyer.email,
         username: buyer.username,
-        order:    createdOrder,
-      }).catch((err) => console.error("[email] Order confirmation failed:", err.message));
+        order: createdOrder,
+      }).catch((err) =>
+        console.error("[email] Order confirmation failed:", err.message),
+      );
     }
 
     // Only create notification if user has orderUpdates enabled (or prefs not set)
     if (buyer?.notificationPreferences?.orderUpdates !== false) {
-      createOrderNotification(req.user._id, createdOrder, "pending").catch(() => {});
+      createOrderNotification(req.user._id, createdOrder, "pending").catch(
+        () => {},
+      );
     }
 
     res.status(201).json(createdOrder);
   } catch (error) {
     await session.abortTransaction();
     session.endSession();
-    res.status(500).json({ message: error.message || "Failed to create order" });
+    res
+      .status(500)
+      .json({ message: error.message || "Failed to create order" });
   }
 };
 
@@ -160,7 +169,9 @@ export const getMyOrders = async (req, res) => {
 
     res.status(200).json(orders);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch orders", error: error.message });
   }
 };
 
@@ -181,12 +192,16 @@ export const getOrderById = async (req, res) => {
       order.user._id.toString() !== req.user._id.toString() &&
       req.user.role !== "admin"
     ) {
-      return res.status(403).json({ message: "Not authorized to view this order" });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view this order" });
     }
 
     res.status(200).json(order);
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch order", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch order", error: error.message });
   }
 };
 
@@ -218,7 +233,9 @@ export const getAllOrders = async (req, res) => {
       pages: Math.ceil(total / Number(limit)),
     });
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch orders", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to fetch orders", error: error.message });
   }
 };
 
@@ -237,7 +254,9 @@ export const updateOrderStatus = async (req, res) => {
     if (newStatus === "cancelled" && order.status !== "cancelled") {
       if (order.status !== "delivered" && order.status !== "collected") {
         for (const item of order.items) {
-          await Variant.findByIdAndUpdate(item.variant, { $inc: { stock: item.quantity } });
+          await Variant.findByIdAndUpdate(item.variant, {
+            $inc: { stock: item.quantity },
+          });
         }
         console.log(`Order ${order._id} cancelled: Stock returned.`);
       }
@@ -247,23 +266,29 @@ export const updateOrderStatus = async (req, res) => {
     const updatedOrder = await order.save();
 
     await createAuditLog({
-      action:      "UPDATE_ORDER_STATUS",
-      userId:      req.user._id,
-      targetId:    order._id,
+      action: "UPDATE_ORDER_STATUS",
+      userId: req.user._id,
+      targetId: order._id,
       targetModel: "Order",
-      details:     { from: order.status, to: newStatus },
+      details: { from: order.status, to: newStatus },
     });
 
     // ── Fire notification to the order owner ──────────────────────────────
     // Fetch user prefs to respect their orderUpdates preference
-    const orderUser = await User.findById(order.user).select("notificationPreferences").lean();
+    const orderUser = await User.findById(order.user)
+      .select("notificationPreferences")
+      .lean();
     if (orderUser?.notificationPreferences?.orderUpdates !== false) {
-      createOrderNotification(order.user, updatedOrder, newStatus).catch(() => {});
+      createOrderNotification(order.user, updatedOrder, newStatus).catch(
+        () => {},
+      );
     }
 
     res.status(200).json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update order status", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to update order status", error: error.message });
   }
 };
 
@@ -290,16 +315,19 @@ export const updateOrderPaymentStatus = async (req, res) => {
     const updatedOrder = await order.save();
 
     await createAuditLog({
-      action:      "UPDATE_PAYMENT_STATUS",
-      userId:      req.user._id,
-      targetId:    order._id,
+      action: "UPDATE_PAYMENT_STATUS",
+      userId: req.user._id,
+      targetId: order._id,
       targetModel: "Order",
-      details:     { payment_status },
+      details: { payment_status },
     });
 
     res.status(200).json(updatedOrder);
   } catch (error) {
-    res.status(500).json({ message: "Failed to update payment status", error: error.message });
+    res.status(500).json({
+      message: "Failed to update payment status",
+      error: error.message,
+    });
   }
 };
 
@@ -320,14 +348,21 @@ export const deleteOrder = async (req, res) => {
 
     if (shouldRestoreStock) {
       for (const item of order.items) {
-        await Variant.findByIdAndUpdate(item.variant, { $inc: { stock: item.quantity } });
+        await Variant.findByIdAndUpdate(item.variant, {
+          $inc: { stock: item.quantity },
+        });
       }
     }
 
     await Order.findByIdAndDelete(req.params.id);
 
-    res.status(200).json({ message: "Order deleted successfully", stockRestored: shouldRestoreStock });
+    res.status(200).json({
+      message: "Order deleted successfully",
+      stockRestored: shouldRestoreStock,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to delete order", error: error.message });
+    res
+      .status(500)
+      .json({ message: "Failed to delete order", error: error.message });
   }
 };
