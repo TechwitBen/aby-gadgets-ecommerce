@@ -60,9 +60,8 @@ const startServer = async () => {
   // 2. CORS
   // =========================
   const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",")
-    : ["http://localhost:5173", "http://localhost:8080"];
-
+  ? process.env.ALLOWED_ORIGINS.split(",").map(o => o.trim().replace(/\/$/, ""))
+  : ["http://localhost:5173", "http://localhost:8080"];
   app.use(cors({ origin: allowedOrigins, credentials: true }));
 
   // =========================
