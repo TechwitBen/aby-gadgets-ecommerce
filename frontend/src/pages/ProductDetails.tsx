@@ -22,8 +22,8 @@ import {
   formatPrice,
   type Product,
   type Variant,
-} from "@/services/Products.service";
-import { reviewService, type Review } from "@/services/Review.service";
+} from "@/services/products.service";
+import { reviewService, type Review } from "@/services/review.service";
 import { useCart } from "@/contexts/CartContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useToast } from "@/hooks/use-toast";

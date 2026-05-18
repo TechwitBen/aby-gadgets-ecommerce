@@ -25,7 +25,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
-import { orderService } from "@/services/Order.service";
+import { orderService } from "@/services/order.service";
 import { NotificationBell } from "@/components/Notificationbell";
 
 import blueLogoImg from "@/assets/blueLogo.png";

@@ -239,10 +239,7 @@ const SettingsPage = () => {
     );
 
   return (
-   <div
-  ref={pageRef}
-  className={`max-w-3xl mx-auto ${fadeUp(pageInView)}`}
->
+    <div ref={pageRef} className={`max-w-3xl mx-auto ${fadeUp(pageInView)}`}>
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>

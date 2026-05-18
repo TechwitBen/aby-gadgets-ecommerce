@@ -7,8 +7,8 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { wishlistService } from "@/services/Wishlist.service";
-import type { Product } from "@/services/Products.service";
+import { wishlistService } from "@/services/wishlist.service";
+import type { Product } from "@/services/products.service";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
@@ -120,14 +120,14 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
           setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
         }
       } catch (error) {
-  setWishlistIds((prev) => {
-    const next = new Set(prev);
-    wasInList ? next.add(productId) : next.delete(productId);
-    saveLocal(next);
-    return next;
-  });
-  toast.error("Could not update your wishlist. Please try again.");
-}
+        setWishlistIds((prev) => {
+          const next = new Set(prev);
+          wasInList ? next.add(productId) : next.delete(productId);
+          saveLocal(next);
+          return next;
+        });
+        toast.error("Could not update your wishlist. Please try again.");
+      }
     },
     [wishlistIds, refreshWishlist],
   );

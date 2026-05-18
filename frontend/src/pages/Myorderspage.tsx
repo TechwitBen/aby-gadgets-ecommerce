@@ -12,8 +12,8 @@ import {
   type OrderDoc,
   type OrderStatus,
   type FulfillmentType,
-} from "@/services/Order.service";
-import { paymentService } from "@/services/Payment.service";
+} from "@/services/order.service";
+import { paymentService } from "@/services/payment.service";
 import { useToast } from "@/hooks/use-toast";
 import { useInView, fadeUp } from "@/hooks/useInView";
 
@@ -229,22 +229,26 @@ const MyOrdersPage = () => {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    setError(null);
-    try {
-      setOrders(await orderService.getMyOrders());
-    } catch {
-      if (!silent) setError("Failed to load orders. Please check your connection.");
-      toast({
-        title: "Error",
-        description: "Failed to load orders. Please check your connection.",
-        variant: "destructive",
-      });
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [toast]);
+  const fetchOrders = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsLoading(true);
+      setError(null);
+      try {
+        setOrders(await orderService.getMyOrders());
+      } catch {
+        if (!silent)
+          setError("Failed to load orders. Please check your connection.");
+        toast({
+          title: "Error",
+          description: "Failed to load orders. Please check your connection.",
+          variant: "destructive",
+        });
+      } finally {
+        if (!silent) setIsLoading(false);
+      }
+    },
+    [toast],
+  );
 
   useEffect(() => {
     fetchOrders();
@@ -257,7 +261,8 @@ const MyOrdersPage = () => {
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () => document.removeEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
   }, [fetchOrders]);
 
   useEffect(() => {

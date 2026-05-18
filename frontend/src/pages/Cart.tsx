@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useInView, fadeUp } from "@/hooks/useInView";
-import { formatPrice } from "@/services/Products.service";
+import { formatPrice } from "@/services/products.service";
 
 const Cart = () => {
   const { items, updateQuantity, removeFromCart, subtotal } = useCart();

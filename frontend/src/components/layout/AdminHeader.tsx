@@ -19,7 +19,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { auditService } from "@/services/AuditLog.service";
+import { auditService } from "@/services/auditLog.service";
 
 interface AdminHeaderProps {
   onMobileMenuToggle: () => void;

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { MessageSquare, Send, Loader2, CheckCircle } from "lucide-react";
-import { notificationService } from "@/services/Notification.service";
+import { notificationService } from "@/services/notification.service";
 
 interface AdminMessagePanelProps {
   userId: string;

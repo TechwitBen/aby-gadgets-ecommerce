@@ -6,7 +6,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { notificationService } from "@/services/Notification.service";
+import { notificationService } from "@/services/notification.service";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface NotificationContextType {

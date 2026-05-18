@@ -22,7 +22,7 @@ import {
   getStockStatus,
   formatPrice,
   type Product,
-} from "@/services/Products.service";
+} from "@/services/products.service";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionBanner } from "@/components/ui/PermissionBanner";
 import { PermissionToast } from "@/components/ui/PermissionToast";
@@ -447,7 +447,11 @@ const ProductsPage = () => {
       setProducts(Array.isArray(data?.products) ? data.products : []);
     } catch {
       setFetchError("Failed to load products. Please try again.");
-      toast({ variant: "destructive", title: "Error", description: "Failed to load products." });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load products.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -634,10 +638,10 @@ const ProductsPage = () => {
 
   return (
     <div
-  onClick={() => setOpenDropdown(null)}
-  ref={pageRef}
-  className={`animate-in fade-in duration-500 ${fadeUp(pageInView)}`}
->
+      onClick={() => setOpenDropdown(null)}
+      ref={pageRef}
+      className={`animate-in fade-in duration-500 ${fadeUp(pageInView)}`}
+    >
       {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
 
       <h1 className="text-xl sm:text-2xl font-semibold text-foreground mb-5">

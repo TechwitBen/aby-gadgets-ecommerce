@@ -42,7 +42,11 @@ const StaffListPage = () => {
       setStaff(Array.isArray(data) ? data : []);
     } catch {
       setError("Failed to load staff. Please try again.");
-      toast({ variant: "destructive", title: "Error", description: "Failed to load staff." });
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load staff.",
+      });
     } finally {
       setIsLoading(false);
     }

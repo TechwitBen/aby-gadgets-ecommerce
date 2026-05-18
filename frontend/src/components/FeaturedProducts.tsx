@@ -15,7 +15,7 @@ import {
   productService,
   formatPrice,
   type Product,
-} from "@/services/Products.service";
+} from "@/services/products.service";
 import { getTypeIcon, getTypeColor, getTwoSpecs } from "@/utils/productUtils";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";

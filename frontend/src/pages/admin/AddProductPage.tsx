@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, X, ChevronDown, Check, ImageIcon } from "lucide-react";
 import { categories, brands, conditions } from "@/pages/admin/data/mockData";
-import { productService, variantService } from "@/services/Products.service";
+import { productService, variantService } from "@/services/products.service";
 import { authAPI } from "@/services/api";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionBanner } from "@/components/ui/PermissionBanner";
@@ -407,14 +407,22 @@ const AddProductPage = () => {
   const handleSubmit = async () => {
     if (!canAdd) {
       setSubmitError("You don't have permission to add products.");
-      toast({ variant: "destructive", title: "Permission Denied", description: "You don't have permission to add products." });
+      toast({
+        variant: "destructive",
+        title: "Permission Denied",
+        description: "You don't have permission to add products.",
+      });
       return;
     }
 
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
-      toast({ variant: "destructive", title: "Validation Error", description: "Please fix the highlighted fields." });
+      toast({
+        variant: "destructive",
+        title: "Validation Error",
+        description: "Please fix the highlighted fields.",
+      });
       return;
     }
     setErrors({});
@@ -463,7 +471,10 @@ const AddProductPage = () => {
         }),
       );
 
-      toast({ title: "Product Published", description: `${formData.name} has been added.` });
+      toast({
+        title: "Product Published",
+        description: `${formData.name} has been added.`,
+      });
       navigate("/admin/products");
     } catch (err: any) {
       if (newProduct?._id) {
@@ -471,9 +482,15 @@ const AddProductPage = () => {
           await productService.delete(newProduct._id);
         } catch {}
       }
-      const msg = err.response?.data?.message || "Something went wrong. Please try again.";
+      const msg =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
       setSubmitError(msg);
-      toast({ variant: "destructive", title: "Failed to Publish", description: msg });
+      toast({
+        variant: "destructive",
+        title: "Failed to Publish",
+        description: msg,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -664,7 +681,9 @@ const AddProductPage = () => {
 
         {/* Basic Info */}
         <div className="mb-8">
-          <h2 className="text-lg font-medium text-foreground mb-4">Basic Info</h2>
+          <h2 className="text-lg font-medium text-foreground mb-4">
+            Basic Info
+          </h2>
           <div className="grid grid-cols-3 gap-4 mb-4">
             <div>
               <label className="text-xs text-muted-foreground block mb-1">
@@ -808,7 +827,8 @@ const AddProductPage = () => {
         {/* Description */}
         <div className="mb-8">
           <label className="text-xs text-muted-foreground block mb-1">
-            Product Description <span className="text-destructive">Required</span>
+            Product Description{" "}
+            <span className="text-destructive">Required</span>
           </label>
           <textarea
             placeholder="Describe the product…"
@@ -822,14 +842,18 @@ const AddProductPage = () => {
             className={`w-full bg-lavender text-black rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary resize-none ${errors.description ? "ring-2 ring-destructive" : ""}`}
           />
           {errors.description && (
-            <p className="text-xs text-destructive mt-1">{errors.description}</p>
+            <p className="text-xs text-destructive mt-1">
+              {errors.description}
+            </p>
           )}
         </div>
 
         {/* Key Features */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-foreground">Key Features</h2>
+            <h2 className="text-lg font-medium text-foreground">
+              Key Features
+            </h2>
             <button
               type="button"
               onClick={addFeature}
@@ -995,7 +1019,9 @@ const AddProductPage = () => {
                       type="text"
                       placeholder="e.g. Black"
                       value={v.color}
-                      onChange={(e) => updateVariant(i, "color", e.target.value)}
+                      onChange={(e) =>
+                        updateVariant(i, "color", e.target.value)
+                      }
                       className={inputCls()}
                     />
                   </div>
@@ -1149,7 +1175,9 @@ const AddProductPage = () => {
                       min="0"
                       placeholder="0"
                       value={v.stock}
-                      onChange={(e) => updateVariant(i, "stock", e.target.value)}
+                      onChange={(e) =>
+                        updateVariant(i, "stock", e.target.value)
+                      }
                       className={mintCls}
                     />
                   </div>
@@ -1182,7 +1210,8 @@ const AddProductPage = () => {
             disabled={isSubmitting}
             className="gap-1 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-60"
           >
-            <Plus size={16} /> {isSubmitting ? "Publishing…" : "Publish Product"}
+            <Plus size={16} />{" "}
+            {isSubmitting ? "Publishing…" : "Publish Product"}
           </Button>
         </div>
       </div>

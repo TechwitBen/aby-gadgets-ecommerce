@@ -14,7 +14,7 @@ import {
   QrCode,
   Wallet,
 } from "lucide-react";
-import { paymentService } from "@/services/Payment.service";
+import { paymentService } from "@/services/payment.service";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type CallbackState = "verifying" | "success" | "failed" | "cancelled" | "error";
@@ -34,12 +34,24 @@ const CHANNEL_CFG: Record<
   string,
   { label: string; sublabel: string; Icon: React.FC<{ className?: string }> }
 > = {
-  card:          { label: "Card",           sublabel: "Debit / Credit card",  Icon: CreditCard  },
-  bank:          { label: "Bank Transfer",  sublabel: "Direct bank payment",  Icon: Banknote    },
-  bank_transfer: { label: "Bank Transfer",  sublabel: "Direct bank payment",  Icon: Banknote    },
-  ussd:          { label: "USSD",           sublabel: "Mobile dial code",     Icon: Smartphone  },
-  qr:            { label: "QR Code",        sublabel: "Scan to pay",          Icon: QrCode      },
-  mobile_money:  { label: "Mobile Money",   sublabel: "Mobile wallet",        Icon: Wallet      },
+  card: { label: "Card", sublabel: "Debit / Credit card", Icon: CreditCard },
+  bank: {
+    label: "Bank Transfer",
+    sublabel: "Direct bank payment",
+    Icon: Banknote,
+  },
+  bank_transfer: {
+    label: "Bank Transfer",
+    sublabel: "Direct bank payment",
+    Icon: Banknote,
+  },
+  ussd: { label: "USSD", sublabel: "Mobile dial code", Icon: Smartphone },
+  qr: { label: "QR Code", sublabel: "Scan to pay", Icon: QrCode },
+  mobile_money: {
+    label: "Mobile Money",
+    sublabel: "Mobile wallet",
+    Icon: Wallet,
+  },
 };
 
 const getChannelCfg = (channel: string | null | undefined) => {
@@ -77,21 +89,21 @@ const extractOrderNumber = (order: any): string | null => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 const PaymentCallback = () => {
-  const [searchParams]  = useSearchParams();
-  const navigate        = useNavigate();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   // Paystack sends both `reference` and `trxref` — handle either
   const reference = searchParams.get("reference") ?? searchParams.get("trxref");
 
-  const [state,      setState]      = useState<CallbackState>("verifying");
-  const [orderId,    setOrderId]    = useState<string | null>(null);
-  const [orderNum,   setOrderNum]   = useState<string | null>(null);
-  const [amount,     setAmount]     = useState<number | null>(null);
+  const [state, setState] = useState<CallbackState>("verifying");
+  const [orderId, setOrderId] = useState<string | null>(null);
+  const [orderNum, setOrderNum] = useState<string | null>(null);
+  const [amount, setAmount] = useState<number | null>(null);
   // channel: the Paystack channel value ("card", "bank", "ussd", etc.)
   // Populated from payment.channel after verify returns success.
-  const [channel,    setChannel]    = useState<string | null>(null);
-  const [errorMsg,   setErrorMsg]   = useState<string | null>(null);
-  const [retrying,   setRetrying]   = useState(false);
+  const [channel, setChannel] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [retryError, setRetryError] = useState<string | null>(null);
 
   // Guard against React StrictMode double-invocation
@@ -136,7 +148,8 @@ const PaymentCallback = () => {
         } else {
           setState("error");
           setErrorMsg(
-            res.message ?? "An unexpected error occurred verifying your payment.",
+            res.message ??
+              "An unexpected error occurred verifying your payment.",
           );
         }
       })
@@ -166,7 +179,8 @@ const PaymentCallback = () => {
         return;
       }
       setRetryError(
-        res.message ?? "Could not restart payment. Please try from your orders.",
+        res.message ??
+          "Could not restart payment. Please try from your orders.",
       );
     } catch (err: any) {
       setRetryError(
@@ -195,7 +209,9 @@ const PaymentCallback = () => {
           </p>
           <div className="flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 text-violet-500 animate-spin" />
-            <span className="text-xs text-gray-400">Checking with Paystack…</span>
+            <span className="text-xs text-gray-400">
+              Checking with Paystack…
+            </span>
           </div>
           {reference && (
             <p className="text-[11px] text-gray-400 font-mono mt-4 bg-gray-50 px-3 py-1.5 rounded-lg break-all">
@@ -289,7 +305,9 @@ const PaymentCallback = () => {
             Payment Failed
           </h2>
           {amount && (
-            <p className="text-2xl font-black text-red-500 mb-2">{fmt(amount)}</p>
+            <p className="text-2xl font-black text-red-500 mb-2">
+              {fmt(amount)}
+            </p>
           )}
           {orderNum && (
             <p className="text-sm text-gray-500 mb-4">

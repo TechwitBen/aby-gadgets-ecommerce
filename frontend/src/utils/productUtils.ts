@@ -16,7 +16,7 @@ import {
   Zap,
   type LucideIcon,
 } from "lucide-react";
-import type { Product } from "@/services/Products.service";
+import type { Product } from "@/services/products.service";
 
 // ─── Type icon ────────────────────────────────────────────────────────────────
 export const getTypeIcon = (type: string = "smartphone"): LucideIcon => {

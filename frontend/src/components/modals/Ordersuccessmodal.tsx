@@ -10,19 +10,19 @@ import {
   CreditCard,
   Loader2,
 } from "lucide-react";
-import type { FulfillmentType } from "@/services/Order.service";
-import { paymentService } from "@/services/Payment.service";
+import type { FulfillmentType } from "@/services/order.service";
+import { paymentService } from "@/services/payment.service";
 
 interface OrderSuccessModalProps {
-  open:               boolean;
-  orderId:            string;
-  orderNumber?:       string;
-  email:              string;
-  onClose:            () => void;
-  fulfillmentType?:   FulfillmentType;
-  pickupCode?:        string;
-  pickupAddress?:     string;
-  pickupHours?:       string;
+  open: boolean;
+  orderId: string;
+  orderNumber?: string;
+  email: string;
+  onClose: () => void;
+  fulfillmentType?: FulfillmentType;
+  pickupCode?: string;
+  pickupAddress?: string;
+  pickupHours?: string;
   paymentInitFailed?: boolean;
 }
 
@@ -32,14 +32,14 @@ const OrderSuccessModal = ({
   orderNumber,
   email,
   onClose,
-  fulfillmentType   = "delivery",
+  fulfillmentType = "delivery",
   pickupCode,
   pickupAddress,
   pickupHours,
   paymentInitFailed = false,
 }: OrderSuccessModalProps) => {
-  const navigate  = useNavigate();
-  const isPickup  = fulfillmentType === "pickup";
+  const navigate = useNavigate();
+  const isPickup = fulfillmentType === "pickup";
   const displayId = orderNumber ?? orderId.slice(-8).toUpperCase();
 
   const [isPaying, setIsPaying] = useState(false);
@@ -77,7 +77,9 @@ const OrderSuccessModal = ({
         return;
       }
 
-      setPayError("Could not open the payment page. Please try from your Orders page.");
+      setPayError(
+        "Could not open the payment page. Please try from your Orders page.",
+      );
     } catch (err: any) {
       setPayError(
         err?.response?.data?.message ??
@@ -103,7 +105,6 @@ const OrderSuccessModal = ({
         className="w-full max-w-sm rounded-2xl px-8 py-8 text-center shadow-2xl"
         style={{ backgroundColor: "#e9e0ff" }}
       >
-
         {/* ── Payment init failed banner ── */}
         {paymentInitFailed && (
           <div className="mb-5 flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-left">
@@ -138,7 +139,9 @@ const OrderSuccessModal = ({
         <div className="flex justify-center mb-5">
           <div
             className="w-14 h-14 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: paymentInitFailed ? "#D97706" : "#6426E1" }}
+            style={{
+              backgroundColor: paymentInitFailed ? "#D97706" : "#6426E1",
+            }}
           >
             {paymentInitFailed ? (
               <AlertTriangle className="w-7 h-7 text-white" strokeWidth={2.5} />
@@ -161,7 +164,7 @@ const OrderSuccessModal = ({
 
         <p className="text-sm text-gray-600 mb-5">
           {paymentInitFailed
-            ? "Your order is saved. Use \"Complete Payment\" on your Orders page whenever you're ready."
+            ? 'Your order is saved. Use "Complete Payment" on your Orders page whenever you\'re ready.'
             : isPickup
               ? "Your order is confirmed. Visit our store to collect it."
               : "Your order is saved. Complete your payment below to confirm it."}
@@ -178,16 +181,30 @@ const OrderSuccessModal = ({
           <span
             className="inline-flex items-center gap-1.5 text-sm font-semibold px-4 py-1.5 rounded-full"
             style={{
-              backgroundColor: paymentInitFailed ? "#FEF3C7" : isPickup ? "#dcfce7" : "#fef08a",
-              color:           paymentInitFailed ? "#92400e"  : isPickup ? "#166534" : "#713f12",
+              backgroundColor: paymentInitFailed
+                ? "#FEF3C7"
+                : isPickup
+                  ? "#dcfce7"
+                  : "#fef08a",
+              color: paymentInitFailed
+                ? "#92400e"
+                : isPickup
+                  ? "#166534"
+                  : "#713f12",
             }}
           >
             {paymentInitFailed ? (
-              <><AlertTriangle size={12} /> Payment Not Completed</>
+              <>
+                <AlertTriangle size={12} /> Payment Not Completed
+              </>
             ) : isPickup ? (
-              <><Store size={12} /> Ready for Pickup</>
+              <>
+                <Store size={12} /> Ready for Pickup
+              </>
             ) : (
-              <><Settings2 size={12} /> Awaiting Payment</>
+              <>
+                <Settings2 size={12} /> Awaiting Payment
+              </>
             )}
           </span>
         </div>
@@ -228,7 +245,11 @@ const OrderSuccessModal = ({
         {/* ── Email note ── */}
         <p className="text-xs text-gray-600 mb-6 leading-relaxed">
           We've sent your order details to{" "}
-          <a href={`mailto:${email}`} className="font-medium underline" style={{ color: "#6426E1" }}>
+          <a
+            href={`mailto:${email}`}
+            className="font-medium underline"
+            style={{ color: "#6426E1" }}
+          >
             {email}
           </a>
           .
@@ -244,7 +265,6 @@ const OrderSuccessModal = ({
 
         {/* ── Actions ── */}
         <div className="flex flex-col items-center gap-3">
-
           {/* Online delivery happy path — explicit Pay Now, no timer */}
           {showPayNow && (
             <button
@@ -254,9 +274,13 @@ const OrderSuccessModal = ({
               style={{ backgroundColor: "#6426E1" }}
             >
               {isPaying ? (
-                <><Loader2 className="w-4 h-4 animate-spin" /> Opening Paystack…</>
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Opening Paystack…
+                </>
               ) : (
-                <><CreditCard className="w-4 h-4" /> PAY NOW</>
+                <>
+                  <CreditCard className="w-4 h-4" /> PAY NOW
+                </>
               )}
             </button>
           )}
@@ -294,7 +318,6 @@ const OrderSuccessModal = ({
                 ? "Go to Dashboard"
                 : "Pay later from Orders"}
           </button>
-
         </div>
       </div>
     </div>

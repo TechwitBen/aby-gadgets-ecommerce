@@ -33,8 +33,8 @@ import {
   type OrderDoc,
   type OrderStatus,
   type FulfillmentType,
-} from "@/services/Order.service";
-import { paymentService, type PaymentDoc } from "@/services/Payment.service";
+} from "@/services/order.service";
+import { paymentService, type PaymentDoc } from "@/services/payment.service";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";
@@ -49,12 +49,20 @@ const CHANNEL_CFG: Record<
   string,
   { label: string; sublabel: string; Icon: React.FC<{ className?: string }> }
 > = {
-  card:          { label: "Card",          sublabel: "Debit / Credit",   Icon: CreditCard  },
-  bank:          { label: "Bank Transfer", sublabel: "Direct transfer",  Icon: Banknote    },
-  bank_transfer: { label: "Bank Transfer", sublabel: "Direct transfer",  Icon: Banknote    },
-  ussd:          { label: "USSD",          sublabel: "Mobile dial code", Icon: Smartphone  },
-  qr:            { label: "QR Code",       sublabel: "Scan to pay",      Icon: QrCode      },
-  mobile_money:  { label: "Mobile Money",  sublabel: "Mobile wallet",    Icon: Wallet      },
+  card: { label: "Card", sublabel: "Debit / Credit", Icon: CreditCard },
+  bank: { label: "Bank Transfer", sublabel: "Direct transfer", Icon: Banknote },
+  bank_transfer: {
+    label: "Bank Transfer",
+    sublabel: "Direct transfer",
+    Icon: Banknote,
+  },
+  ussd: { label: "USSD", sublabel: "Mobile dial code", Icon: Smartphone },
+  qr: { label: "QR Code", sublabel: "Scan to pay", Icon: QrCode },
+  mobile_money: {
+    label: "Mobile Money",
+    sublabel: "Mobile wallet",
+    Icon: Wallet,
+  },
 };
 
 const getChannelCfg = (channel: string | null | undefined) => {
@@ -75,13 +83,22 @@ const extractUserId = (
 
 // ── Status options split by fulfillment type ──────────────────────────────────
 const DELIVERY_STATUS_OPTIONS: OrderStatus[] = [
-  "pending", "confirmed", "shipped", "out_for_delivery",
-  "delivered", "cancelled", "refunded",
+  "pending",
+  "confirmed",
+  "shipped",
+  "out_for_delivery",
+  "delivered",
+  "cancelled",
+  "refunded",
 ];
 
 const PICKUP_STATUS_OPTIONS: OrderStatus[] = [
-  "pending", "confirmed", "ready_for_pickup",
-  "collected", "cancelled", "refunded",
+  "pending",
+  "confirmed",
+  "ready_for_pickup",
+  "collected",
+  "cancelled",
+  "refunded",
 ];
 
 const PAYMENT_STATUS_OPTIONS = [
@@ -138,13 +155,16 @@ const PaystackPaymentStatusPanel = ({
               {channelCfg.label}
             </span>
             <span className="text-xs text-emerald-500">·</span>
-            <span className="text-xs text-emerald-500">{channelCfg.sublabel}</span>
+            <span className="text-xs text-emerald-500">
+              {channelCfg.sublabel}
+            </span>
           </div>
         )}
 
         <p className="text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 flex items-start gap-2">
           <CreditCard size={12} className="mt-0.5 flex-shrink-0" />
-          Paystack payment confirmed via webhook. Status is locked automatically.
+          Paystack payment confirmed via webhook. Status is locked
+          automatically.
         </p>
       </div>
     );
@@ -301,38 +321,39 @@ export const OrderDetailModal = ({
   const { isAdmin, can } = usePermission();
   const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
 
-  const canUpdateStatus   = isAdmin || can("order", "updateOrderStatus");
-  const canAddNotes       = isAdmin || can("order", "addInternalNotes");
+  const canUpdateStatus = isAdmin || can("order", "updateOrderStatus");
+  const canAddNotes = isAdmin || can("order", "addInternalNotes");
   const canConfirmPayment = isAdmin || (can as any)("confirmPaymentStatus");
-  const canViewContact    = isAdmin || can("payments", "contactCustomers");
-  const canDeleteOrder    = isAdmin;
+  const canViewContact = isAdmin || can("payments", "contactCustomers");
+  const canDeleteOrder = isAdmin;
 
   const isPickup = order.fulfillment_type === "pickup";
 
   // ── Local state ────────────────────────────────────────────────────────────
-  const [orderStatus,         setOrderStatus]         = useState<OrderStatus>(order.status);
-  const [paymentStatusLabel,  setPaymentStatusLabel]  = useState<string>(
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>(order.status);
+  const [paymentStatusLabel, setPaymentStatusLabel] = useState<string>(
     PAYMENT_STATUS_LABELS[order.payment_status] ?? "Awaiting Confirmation",
   );
-  const [internalNote,        setInternalNote]        = useState("");
-  const [savedNote,           setSavedNote]           = useState("");
-  const [isSaving,            setIsSaving]            = useState(false);
-  const [saveSuccess,         setSaveSuccess]         = useState(false);
-  const [saveError,           setSaveError]           = useState<string | null>(null);
-  const [showDeleteConfirm,   setShowDeleteConfirm]   = useState(false);
-  const [orderDDOpen,         setOrderDDOpen]         = useState(false);
-  const [paymentDDOpen,       setPaymentDDOpen]       = useState(false);
+  const [internalNote, setInternalNote] = useState("");
+  const [savedNote, setSavedNote] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [orderDDOpen, setOrderDDOpen] = useState(false);
+  const [paymentDDOpen, setPaymentDDOpen] = useState(false);
 
   // ── Paystack payment doc state ─────────────────────────────────────────────
-  const [paymentDocStatus,    setPaymentDocStatus]    = useState<PaymentDocStatus>(null);
+  const [paymentDocStatus, setPaymentDocStatus] =
+    useState<PaymentDocStatus>(null);
   // The actual Paystack channel ("card", "bank", "ussd", etc.) — null until known
-  const [paymentChannel,      setPaymentChannel]      = useState<string | null>(null);
+  const [paymentChannel, setPaymentChannel] = useState<string | null>(null);
   const [isLoadingPaymentDoc, setIsLoadingPaymentDoc] = useState(false);
 
   useEffect(() => {
     if (!open) return;
-    const isPaystack     = order.payment_method === "paystack";
-    const alreadyPaid    = order.payment_status === "paid";
+    const isPaystack = order.payment_method === "paystack";
+    const alreadyPaid = order.payment_status === "paid";
     const orderCancelled = order.status === "cancelled";
 
     if (!isPaystack || orderCancelled) {
@@ -355,22 +376,31 @@ export const OrderDetailModal = ({
         setPaymentChannel(null);
       })
       .finally(() => setIsLoadingPaymentDoc(false));
-  }, [open, order._id, order.payment_method, order.payment_status, order.status]);
+  }, [
+    open,
+    order._id,
+    order.payment_method,
+    order.payment_status,
+    order.status,
+  ]);
 
   if (!open) return null;
 
-  const fmt  = (n: number) => `₦${n.toLocaleString()}`;
+  const fmt = (n: number) => `₦${n.toLocaleString()}`;
   const addr = order.shipping_address;
   const totalQty = order.items.reduce((s, i) => s + i.quantity, 0);
-  const orderStatusDisplay   = ORDER_STATUS_LABELS[orderStatus] ?? orderStatus;
-  const paymentMethodDisplay = PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method;
+  const orderStatusDisplay = ORDER_STATUS_LABELS[orderStatus] ?? orderStatus;
+  const paymentMethodDisplay =
+    PAYMENT_METHOD_LABELS[order.payment_method] ?? order.payment_method;
 
   const orderUserId = extractUserId(order.user as any);
 
   const isFullyCompleted =
     isTerminalStatus(order.status) && order.payment_status === "paid";
 
-  const statusOptions = isPickup ? PICKUP_STATUS_OPTIONS : DELIVERY_STATUS_OPTIONS;
+  const statusOptions = isPickup
+    ? PICKUP_STATUS_OPTIONS
+    : DELIVERY_STATUS_OPTIONS;
 
   // ── Derive the payment doc badge ───────────────────────────────────────────
   const channelCfg = getChannelCfg(paymentChannel);
@@ -383,21 +413,21 @@ export const OrderDetailModal = ({
         cls: "bg-emerald-100 text-emerald-700",
       };
     if (order.payment_status === "refunded")
-      return { label: "Refunded",          cls: "bg-gray-100 text-gray-600"     };
+      return { label: "Refunded", cls: "bg-gray-100 text-gray-600" };
     if (order.payment_method === "pod")
       return {
         label: isPickup ? "Pay at Pickup" : "Cash on Delivery",
         cls: "bg-amber-100 text-amber-700",
       };
     if (isLoadingPaymentDoc)
-      return { label: "Checking…",         cls: "bg-gray-100 text-gray-500"     };
+      return { label: "Checking…", cls: "bg-gray-100 text-gray-500" };
     if (paymentDocStatus === "failed")
-      return { label: "Payment Failed",    cls: "bg-red-100 text-red-700"       };
+      return { label: "Payment Failed", cls: "bg-red-100 text-red-700" };
     if (paymentDocStatus === "cancelled")
-      return { label: "Payment Abandoned", cls: "bg-amber-100 text-amber-700"   };
+      return { label: "Payment Abandoned", cls: "bg-amber-100 text-amber-700" };
     if (paymentDocStatus === "pending")
-      return { label: "Awaiting Webhook",  cls: "bg-blue-100 text-blue-700"     };
-    return   { label: "No Payment Record", cls: "bg-orange-100 text-orange-700" };
+      return { label: "Awaiting Webhook", cls: "bg-blue-100 text-blue-700" };
+    return { label: "No Payment Record", cls: "bg-orange-100 text-orange-700" };
   })();
 
   // ── Save handler ───────────────────────────────────────────────────────────
@@ -413,7 +443,9 @@ export const OrderDetailModal = ({
         PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
         order.payment_status === "paid";
       if (!paymentWillBePaid) {
-        setSaveError("⚠ Payment must be confirmed before marking this order as Delivered.");
+        setSaveError(
+          "⚠ Payment must be confirmed before marking this order as Delivered.",
+        );
         return;
       }
     }
@@ -423,7 +455,9 @@ export const OrderDetailModal = ({
         PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
         order.payment_status === "paid";
       if (!paymentWillBePaid) {
-        setSaveError("⚠ Payment must be confirmed before marking this order as Collected.");
+        setSaveError(
+          "⚠ Payment must be confirmed before marking this order as Collected.",
+        );
         return;
       }
     }
@@ -437,7 +471,10 @@ export const OrderDetailModal = ({
       if (canConfirmPayment && order.payment_method !== "paystack") {
         const newPaymentStatus = PAYMENT_LABEL_TO_STATUS[paymentStatusLabel];
         if (newPaymentStatus && newPaymentStatus !== order.payment_status) {
-          updated = await orderService.updatePaymentStatus(order._id, newPaymentStatus);
+          updated = await orderService.updatePaymentStatus(
+            order._id,
+            newPaymentStatus,
+          );
         }
       }
       if (canAddNotes && internalNote.trim()) setSavedNote(internalNote.trim());
@@ -501,26 +538,40 @@ export const OrderDetailModal = ({
             </span>
             <span
               className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 flex items-center gap-1 ${
-                isPickup ? "bg-teal-100 text-teal-700" : "bg-blue-100 text-blue-700"
+                isPickup
+                  ? "bg-teal-100 text-teal-700"
+                  : "bg-blue-100 text-blue-700"
               }`}
             >
-              {isPickup
-                ? <><Store size={9} /> Pickup</>
-                : <><Truck size={9} /> Delivery</>}
+              {isPickup ? (
+                <>
+                  <Store size={9} /> Pickup
+                </>
+              ) : (
+                <>
+                  <Truck size={9} /> Delivery
+                </>
+              )}
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-400 hidden sm:block">
               {new Date(order.createdAt).toLocaleString("en-GB", {
-                day: "2-digit", month: "2-digit", year: "2-digit",
-                hour: "2-digit", minute: "2-digit",
+                day: "2-digit",
+                month: "2-digit",
+                year: "2-digit",
+                hour: "2-digit",
+                minute: "2-digit",
               })}
             </span>
 
             {canDeleteOrder && (
               <button
-                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(true);
+                }}
                 className="flex items-center gap-1 text-xs font-medium px-2 sm:px-4 py-2 rounded-lg border border-red-400 text-red-500 hover:bg-red-50 transition-colors"
               >
                 <Trash2 size={13} />
@@ -530,7 +581,10 @@ export const OrderDetailModal = ({
 
             {!isFullyCompleted && (
               <button
-                onClick={(e) => { e.stopPropagation(); handleSave(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSave();
+                }}
                 disabled={isSaving}
                 className={`flex items-center gap-1 text-xs font-semibold px-2 sm:px-4 py-2 rounded-lg transition-colors disabled:opacity-60 ${
                   saveSuccess
@@ -538,9 +592,11 @@ export const OrderDetailModal = ({
                     : "bg-violet-600 text-white hover:bg-violet-700"
                 }`}
               >
-                {isSaving
-                  ? <Loader2 size={13} className="animate-spin" />
-                  : <Save size={13} />}
+                {isSaving ? (
+                  <Loader2 size={13} className="animate-spin" />
+                ) : (
+                  <Save size={13} />
+                )}
                 <span className="hidden sm:inline">
                   {isSaving ? "Saving…" : saveSuccess ? "Saved!" : "Save"}
                 </span>
@@ -570,12 +626,17 @@ export const OrderDetailModal = ({
           <div className="mx-4 sm:mx-6 mt-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
             <p className="text-sm text-red-700">
               Delete order{" "}
-              <span className="font-semibold font-mono">{displayOrderId(order)}</span>
+              <span className="font-semibold font-mono">
+                {displayOrderId(order)}
+              </span>
               ? This cannot be undone.
             </p>
             <div className="flex items-center gap-2 flex-shrink-0">
               <button
-                onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteConfirm(false);
+                }}
                 className="text-xs text-gray-500 px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors"
               >
                 Cancel
@@ -596,7 +657,6 @@ export const OrderDetailModal = ({
 
         {/* ── Body ──────────────────────────────────────────────────────────── */}
         <div className="px-4 sm:px-6 py-5 space-y-6">
-
           {/* ── Fulfillment Info Banner ── */}
           {isPickup ? (
             <div className="bg-teal-50 border border-teal-200 rounded-xl p-4 space-y-2">
@@ -612,7 +672,9 @@ export const OrderDetailModal = ({
               {order.pickup_location && (
                 <div className="flex items-center gap-1.5">
                   <MapPin size={11} className="text-teal-600 flex-shrink-0" />
-                  <p className="text-xs text-teal-700">{order.pickup_location}</p>
+                  <p className="text-xs text-teal-700">
+                    {order.pickup_location}
+                  </p>
                 </div>
               )}
               {order.pickup_code && (
@@ -626,11 +688,17 @@ export const OrderDetailModal = ({
             <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
               <MapPin size={15} className="text-blue-600 flex-shrink-0" />
               <div>
-                <p className="text-xs text-blue-500 font-semibold">Delivery Zone</p>
-                <p className="text-sm font-bold text-blue-800">{order.delivery_city}</p>
+                <p className="text-xs text-blue-500 font-semibold">
+                  Delivery Zone
+                </p>
+                <p className="text-sm font-bold text-blue-800">
+                  {order.delivery_city}
+                </p>
               </div>
               <div className="ml-auto text-right">
-                <p className="text-xs text-blue-500 font-semibold">Delivery Fee</p>
+                <p className="text-xs text-blue-500 font-semibold">
+                  Delivery Fee
+                </p>
                 <p className="text-sm font-bold text-blue-800">
                   {order.shipping_fee === 0 ? "Free" : fmt(order.shipping_fee)}
                 </p>
@@ -640,19 +708,25 @@ export const OrderDetailModal = ({
 
           {/* ── Customer Details ── */}
           <section>
-            <h3 className="text-sm font-bold text-gray-900 mb-3">Customer Details</h3>
+            <h3 className="text-sm font-bold text-gray-900 mb-3">
+              Customer Details
+            </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
               <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">Customer Name</label>
+                <label className="text-xs text-gray-400 mb-1.5 block">
+                  Customer Name
+                </label>
                 <div className="bg-violet-50 rounded-xl px-4 py-3 text-sm text-gray-800 font-medium">
                   {addr?.full_name ?? "—"}
                 </div>
               </div>
               <div>
-                <label className="text-xs text-gray-400 mb-1.5 block">Phone Number</label>
+                <label className="text-xs text-gray-400 mb-1.5 block">
+                  Phone Number
+                </label>
                 <div className="bg-violet-50 rounded-xl px-4 py-3 text-sm text-gray-800 font-medium">
                   {canViewContact ? (
-                    addr?.phone ?? "—"
+                    (addr?.phone ?? "—")
                   ) : (
                     <span className="italic text-gray-400 text-xs">
                       Hidden — contact info permission required
@@ -671,7 +745,9 @@ export const OrderDetailModal = ({
                     <Store size={13} /> Customer will collect in-store
                   </span>
                 ) : (
-                  [addr?.street, addr?.city, addr?.state].filter(Boolean).join(", ") || "—"
+                  [addr?.street, addr?.city, addr?.state]
+                    .filter(Boolean)
+                    .join(", ") || "—"
                 )}
               </div>
             </div>
@@ -681,19 +757,25 @@ export const OrderDetailModal = ({
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-bold text-gray-900">Order Details</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Order Details
+                </h3>
                 <span className="text-xs text-gray-400">
                   Total Items: {totalQty}
                 </span>
               </div>
               <div className="space-y-3">
                 {order.items.map((item, idx) => {
-                  const product     = isPopulatedProduct(item.product) ? item.product : null;
-                  const variant     = isPopulatedVariant(item.variant) ? item.variant : null;
+                  const product = isPopulatedProduct(item.product)
+                    ? item.product
+                    : null;
+                  const variant = isPopulatedVariant(item.variant)
+                    ? item.variant
+                    : null;
                   const productName = product?.name ?? `Product ${idx + 1}`;
-                  const productImage= product?.images?.[0];
-                  const condition   = product?.condition ?? null;
-                  const specParts   = [
+                  const productImage = product?.images?.[0];
+                  const condition = product?.condition ?? null;
+                  const specParts = [
                     variant?.storage,
                     variant?.ram,
                     condition ? `${condition.slice(0, 2)}…` : null,
@@ -782,10 +864,7 @@ export const OrderDetailModal = ({
                   </div>
                 </div>
               ) : (
-                <div
-                  className="relative"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="relative" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => {
                       setOrderDDOpen(!orderDDOpen);
@@ -800,8 +879,8 @@ export const OrderDetailModal = ({
                     <div className="absolute top-full left-0 right-0 bg-white border border-gray-100 rounded-xl mt-1 shadow-xl z-30 overflow-hidden">
                       {statusOptions.map((s) => {
                         const paymentWillBePaid =
-                          PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
-                          order.payment_status === "paid";
+                          PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] ===
+                            "paid" || order.payment_status === "paid";
                         const isBlocked =
                           (s === "delivered" || s === "collected") &&
                           !paymentWillBePaid;
@@ -814,7 +893,9 @@ export const OrderDetailModal = ({
                               setOrderStatus(s);
                               setOrderDDOpen(false);
                             }}
-                            title={isBlocked ? "Confirm payment first" : undefined}
+                            title={
+                              isBlocked ? "Confirm payment first" : undefined
+                            }
                             className={`w-full text-left px-4 py-2.5 text-sm transition-colors ${
                               isBlocked
                                 ? "opacity-40 cursor-not-allowed bg-gray-50"
@@ -854,8 +935,8 @@ export const OrderDetailModal = ({
                     <button
                       onClick={() => {
                         const paymentOk =
-                          PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] === "paid" ||
-                          order.payment_status === "paid";
+                          PAYMENT_LABEL_TO_STATUS[paymentStatusLabel] ===
+                            "paid" || order.payment_status === "paid";
                         if (!paymentOk) {
                           setSaveError(
                             "⚠ Confirm payment before marking as Collected.",
@@ -878,13 +959,17 @@ export const OrderDetailModal = ({
           <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             <div>
               <div className="flex items-center gap-3 mb-4 flex-wrap">
-                <h3 className="text-sm font-bold text-gray-900">Payment Info</h3>
+                <h3 className="text-sm font-bold text-gray-900">
+                  Payment Info
+                </h3>
                 {/* Gateway badge — always "Paystack" or "Pay on Delivery" */}
                 <span className="text-xs font-medium px-3 py-1 rounded-lg bg-gray-100 text-gray-600">
                   {paymentMethodDisplay}
                 </span>
                 {/* Dynamic payment doc status badge — now includes channel when known */}
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${paymentDocBadge.cls}`}>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${paymentDocBadge.cls}`}
+                >
                   {paymentDocBadge.label}
                 </span>
               </div>
@@ -978,7 +1063,9 @@ export const OrderDetailModal = ({
                       }}
                       className="w-full bg-violet-50 rounded-xl px-4 py-3 text-sm text-left flex justify-between items-center hover:bg-violet-100 transition-colors"
                     >
-                      <span className="text-gray-800">{paymentStatusLabel}</span>
+                      <span className="text-gray-800">
+                        {paymentStatusLabel}
+                      </span>
                       <span className="text-violet-500 text-xs">▼</span>
                     </button>
                     {paymentDDOpen && (

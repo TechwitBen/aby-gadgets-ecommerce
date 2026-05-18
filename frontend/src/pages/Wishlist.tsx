@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { useCart } from "@/contexts/CartContext";
-import { formatPrice } from "@/services/Products.service";
+import { formatPrice } from "@/services/products.service";
 import { useInView, fadeUp } from "@/hooks/useInView"; // ✅ added
 
 const Wishlist = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { productService, type Product } from "@/services/Products.service";
+import { productService, type Product } from "@/services/products.service";
 import { Link } from "react-router-dom";
 import gadgetImage from "@/assets/product-phone.png";
 import {
@@ -25,10 +25,10 @@ import { useInView } from "@/hooks/useInView";
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const stats = [
-  { value: "5+",  label: "Years Trusted",    suffix: "" },
+  { value: "5+", label: "Years Trusted", suffix: "" },
   { value: "500", label: "Premium Products", suffix: "+" },
-  { value: "830", label: "5-Star Reviews",   suffix: "+" },
-  { value: "50",  label: "Happy Customers",  suffix: "K+" },
+  { value: "830", label: "5-Star Reviews", suffix: "+" },
+  { value: "50", label: "Happy Customers", suffix: "K+" },
 ];
 
 const values = [
@@ -55,10 +55,10 @@ const values = [
 ];
 
 const guarantees = [
-  { icon: Package,  label: "Secure Packaging" },
+  { icon: Package, label: "Secure Packaging" },
   { icon: RotateCcw, label: "Easy Returns" },
-  { icon: Truck,    label: "Fast Nationwide" },
-  { icon: Shield,   label: "Warranty Covered" },
+  { icon: Truck, label: "Fast Nationwide" },
+  { icon: Shield, label: "Warranty Covered" },
 ];
 
 const reviews = [
@@ -82,35 +82,59 @@ const reviews = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const AboutPage = () => {
-  const [email, setEmail]           = useState("");
+  const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
-  const [categoryProducts, setCategoryProducts] = useState<Record<string, Product[]>>({});
+  const [categoryProducts, setCategoryProducts] = useState<
+    Record<string, Product[]>
+  >({});
 
   // ── Section refs ──────────────────────────────────────────────────────────
-  const { ref: heroTextRef,  isInView: heroTextInView  } = useInView({ threshold: 0 });
-  const { ref: heroImgRef,   isInView: heroImgInView   } = useInView({ threshold: 0 });
-  const { ref: statsRef,     isInView: statsInView     } = useInView({ threshold: 0.1 });
-  const { ref: catHeadRef,   isInView: catHeadInView   } = useInView({ threshold: 0.1 });
-  const { ref: catGridRef,   isInView: catGridInView   } = useInView({ threshold: 0.05 });
-  const { ref: whyLeftRef,   isInView: whyLeftInView   } = useInView({ threshold: 0.1 });
-  const { ref: whyRightRef,  isInView: whyRightInView  } = useInView({ threshold: 0.1 });
-  const { ref: revHeadRef,   isInView: revHeadInView   } = useInView({ threshold: 0.1 });
-  const { ref: revGridRef,   isInView: revGridInView   } = useInView({ threshold: 0.05 });
-  const { ref: vmLeftRef,    isInView: vmLeftInView    } = useInView({ threshold: 0.1 });
-  const { ref: vmRightRef,   isInView: vmRightInView   } = useInView({ threshold: 0.1 });
+  const { ref: heroTextRef, isInView: heroTextInView } = useInView({
+    threshold: 0,
+  });
+  const { ref: heroImgRef, isInView: heroImgInView } = useInView({
+    threshold: 0,
+  });
+  const { ref: statsRef, isInView: statsInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: catHeadRef, isInView: catHeadInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: catGridRef, isInView: catGridInView } = useInView({
+    threshold: 0.05,
+  });
+  const { ref: whyLeftRef, isInView: whyLeftInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: whyRightRef, isInView: whyRightInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: revHeadRef, isInView: revHeadInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: revGridRef, isInView: revGridInView } = useInView({
+    threshold: 0.05,
+  });
+  const { ref: vmLeftRef, isInView: vmLeftInView } = useInView({
+    threshold: 0.1,
+  });
+  const { ref: vmRightRef, isInView: vmRightInView } = useInView({
+    threshold: 0.1,
+  });
 
   useEffect(() => {
     const fetchByCategory = async () => {
       const [phones, laptops, tablets, watches] = await Promise.all([
-        productService.getAll({ category: "phones",  limit: 4 }),
+        productService.getAll({ category: "phones", limit: 4 }),
         productService.getAll({ category: "laptops", limit: 4 }),
         productService.getAll({ category: "tablets", limit: 4 }),
         productService.getAll({ category: "watches", limit: 4 }),
       ]);
       setCategoryProducts({
-        Smartphones:  phones.products,
-        Laptops:      laptops.products,
-        Tablets:      tablets.products,
+        Smartphones: phones.products,
+        Laptops: laptops.products,
+        Tablets: tablets.products,
         Smartwatches: watches.products,
       });
     };
@@ -128,11 +152,9 @@ const AboutPage = () => {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-
       {/* ══ HERO ════════════════════════════════════════════════════════════ */}
       <section className="pt-14 pb-20 sm:pt-16 sm:pb-24 bg-white">
         <div className="max-w-5xl mx-auto px-6 sm:px-10 lg:px-16">
-
           {/* Breadcrumb */}
           <p className="text-sm text-gray-400 mb-10 font-medium">
             [Home / <span style={{ color: "#6426E1" }}>About]</span>
@@ -140,26 +162,28 @@ const AboutPage = () => {
 
           {/* Two-column grid — bigger gap, better breathing room */}
           <div className="grid lg:grid-cols-2 gap-10 lg:gap-24 items-center">
-
             {/* Left — text */}
             <div
               ref={heroTextRef}
               className="transition-all duration-700 ease-out"
               style={{
                 opacity: heroTextInView ? 1 : 0,
-                transform: heroTextInView ? "translateX(0)" : "translateX(-32px)",
+                transform: heroTextInView
+                  ? "translateX(0)"
+                  : "translateX(-32px)",
               }}
             >
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-[1.1] tracking-tight mb-5">
-                Premium tech &amp; real value.<br />
+                Premium tech &amp; real value.
+                <br />
                 Built with real care.
               </h1>
               <p className="text-sm sm:text-base text-gray-500 leading-relaxed max-w-md">
                 At Aby Gadgets we believe every Nigerian deserves access to
                 world-class technology at honest prices. With a team dedicated
                 to quality and transparency, we work hand-in-hand with our
-                customers to bring the best gadgets to their hands — backed
-                by service that actually cares.
+                customers to bring the best gadgets to their hands — backed by
+                service that actually cares.
               </p>
             </div>
 
@@ -187,13 +211,27 @@ const AboutPage = () => {
                     style={{ animationDuration: "12s" }}
                   >
                     <defs>
-                      <path id="ring" d="M 44,44 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0" />
+                      <path
+                        id="ring"
+                        d="M 44,44 m -30,0 a 30,30 0 1,1 60,0 a 30,30 0 1,1 -60,0"
+                      />
                     </defs>
-                    <text fontSize="8.5" fontFamily="inherit" fill="#6426E1" fontWeight="500" letterSpacing="2">
-                      <textPath href="#ring">Aby Gadgets * Trusted * Since 2019 *</textPath>
+                    <text
+                      fontSize="8.5"
+                      fontFamily="inherit"
+                      fill="#6426E1"
+                      fontWeight="500"
+                      letterSpacing="2"
+                    >
+                      <textPath href="#ring">
+                        Aby Gadgets * Trusted * Since 2019 *
+                      </textPath>
                     </text>
                   </svg>
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: "#6426E1" }}>
+                  <div
+                    className="w-10 h-10 rounded-full flex items-center justify-center"
+                    style={{ background: "#6426E1" }}
+                  >
                     <ArrowRight className="w-5 h-5 text-white" />
                   </div>
                 </div>
@@ -217,10 +255,16 @@ const AboutPage = () => {
                   transform: statsInView ? "translateY(0)" : "translateY(20px)",
                 }}
               >
-                <p className="text-5xl sm:text-6xl font-black tracking-tight" style={{ color: "#6426E1" }}>
-                  {s.value}<span className="text-3xl">{s.suffix}</span>
+                <p
+                  className="text-5xl sm:text-6xl font-black tracking-tight"
+                  style={{ color: "#6426E1" }}
+                >
+                  {s.value}
+                  <span className="text-3xl">{s.suffix}</span>
                 </p>
-                <p className="text-sm text-gray-500 mt-2 font-medium">{s.label}</p>
+                <p className="text-sm text-gray-500 mt-2 font-medium">
+                  {s.label}
+                </p>
               </div>
             ))}
           </div>
@@ -230,7 +274,6 @@ const AboutPage = () => {
       {/* ══ GADGET CATEGORIES ════════════════════════════════════════════════ */}
       <section className="py-20 sm:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-
           {/* Header */}
           <div
             ref={catHeadRef}
@@ -240,23 +283,30 @@ const AboutPage = () => {
               transform: catHeadInView ? "translateY(0)" : "translateY(20px)",
             }}
           >
-            <p className="text-xs font-bold tracking-[0.2em] uppercase mb-4" style={{ color: "#6426E1" }}>
+            <p
+              className="text-xs font-bold tracking-[0.2em] uppercase mb-4"
+              style={{ color: "#6426E1" }}
+            >
               What We Carry
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight">
               Every Gadget You Love
             </h2>
             <p className="text-gray-500 mt-4 max-w-md mx-auto text-sm sm:text-base">
-              From the latest iPhones to high-performance laptops — all genuine, all ready to ship.
+              From the latest iPhones to high-performance laptops — all genuine,
+              all ready to ship.
             </p>
           </div>
 
           {/* Grid */}
-          <div ref={catGridRef} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            ref={catGridRef}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
             {[
               { name: "Smartphones", category: "phones" },
-              { name: "Laptops",     category: "laptops" },
-              { name: "Tablets",     category: "tablets" },
+              { name: "Laptops", category: "laptops" },
+              { name: "Tablets", category: "tablets" },
               { name: "Smartwatches", category: "watches" },
             ].map((g, i) => {
               const products = categoryProducts[g.name] ?? [];
@@ -269,7 +319,9 @@ const AboutPage = () => {
                   style={{
                     transitionDelay: `${i * 80}ms`,
                     opacity: catGridInView ? 1 : 0,
-                    transform: catGridInView ? "translateY(0)" : "translateY(28px)",
+                    transform: catGridInView
+                      ? "translateY(0)"
+                      : "translateY(28px)",
                   }}
                 >
                   <div className="grid grid-cols-2 gap-0.5 bg-gray-100 aspect-square overflow-hidden">
@@ -294,13 +346,20 @@ const AboutPage = () => {
                             />
                           </div>
                         ))
-                      : Array(4).fill(null).map((_, idx) => (
-                          <div key={idx} className="bg-gray-200 animate-pulse aspect-square" />
-                        ))}
+                      : Array(4)
+                          .fill(null)
+                          .map((_, idx) => (
+                            <div
+                              key={idx}
+                              className="bg-gray-200 animate-pulse aspect-square"
+                            />
+                          ))}
                   </div>
                   <div className="px-5 py-4 flex items-center justify-between bg-white">
                     <div>
-                      <p className="text-gray-900 font-black text-base">{g.name}</p>
+                      <p className="text-gray-900 font-black text-base">
+                        {g.name}
+                      </p>
                       <p className="text-gray-500 text-xs mt-0.5">
                         {count > 0 ? `${count}+ models in stock` : "Loading…"}
                       </p>
@@ -320,25 +379,32 @@ const AboutPage = () => {
       <section className="py-20 sm:py-24 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-
             {/* Left */}
             <div
               ref={whyLeftRef}
               className="transition-all duration-700 ease-out"
               style={{
                 opacity: whyLeftInView ? 1 : 0,
-                transform: whyLeftInView ? "translateX(0)" : "translateX(-28px)",
+                transform: whyLeftInView
+                  ? "translateX(0)"
+                  : "translateX(-28px)",
               }}
             >
-              <p className="text-xs font-bold tracking-widest uppercase mb-5" style={{ color: "#6426E1" }}>
+              <p
+                className="text-xs font-bold tracking-widest uppercase mb-5"
+                style={{ color: "#6426E1" }}
+              >
                 Why Aby Gadgets
               </p>
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900 leading-tight mb-6">
-                The Standard<br />Others Aim For
+                The Standard
+                <br />
+                Others Aim For
               </h2>
               <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-8">
                 We didn't just open a gadget store — we set a new bar for what
-                buying tech in Nigeria should feel like. Transparent. Fast. Trustworthy.
+                buying tech in Nigeria should feel like. Transparent. Fast.
+                Trustworthy.
               </p>
               <Link
                 to="/products"
@@ -361,14 +427,21 @@ const AboutPage = () => {
                   style={{
                     transitionDelay: `${i * 80}ms`,
                     opacity: whyRightInView ? 1 : 0,
-                    transform: whyRightInView ? "translateY(0)" : "translateY(20px)",
+                    transform: whyRightInView
+                      ? "translateY(0)"
+                      : "translateY(20px)",
                   }}
                 >
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-4" style={{ backgroundColor: "rgba(100,38,225,0.08)" }}>
+                  <div
+                    className="w-11 h-11 rounded-xl flex items-center justify-center mb-4"
+                    style={{ backgroundColor: "rgba(100,38,225,0.08)" }}
+                  >
                     <v.icon className="w-5 h-5" style={{ color: "#6426E1" }} />
                   </div>
                   <h3 className="font-bold text-gray-900 mb-2">{v.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{v.body}</p>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    {v.body}
+                  </p>
                 </div>
               ))}
             </div>
@@ -379,7 +452,6 @@ const AboutPage = () => {
       {/* ══ REVIEWS ══════════════════════════════════════════════════════════ */}
       <section className="py-20 sm:py-24 bg-white border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
-
           <div
             ref={revHeadRef}
             className="text-center mb-12 transition-all duration-700 ease-out"
@@ -388,7 +460,10 @@ const AboutPage = () => {
               transform: revHeadInView ? "translateY(0)" : "translateY(16px)",
             }}
           >
-            <p className="text-xs font-bold tracking-widest uppercase mb-4" style={{ color: "#6426E1" }}>
+            <p
+              className="text-xs font-bold tracking-widest uppercase mb-4"
+              style={{ color: "#6426E1" }}
+            >
               Customer Love
             </p>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black text-gray-900">
@@ -404,15 +479,22 @@ const AboutPage = () => {
                 style={{
                   transitionDelay: `${i * 100}ms`,
                   opacity: revGridInView ? 1 : 0,
-                  transform: revGridInView ? "translateY(0)" : "translateY(24px)",
+                  transform: revGridInView
+                    ? "translateY(0)"
+                    : "translateY(24px)",
                 }}
               >
                 <div className="flex items-center gap-1 mb-5">
                   {[1, 2, 3, 4, 5].map((s) => (
-                    <Star key={s} className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <Star
+                      key={s}
+                      className="w-4 h-4 fill-amber-400 text-amber-400"
+                    />
                   ))}
                 </div>
-                <p className="text-gray-700 text-sm leading-relaxed mb-6">"{r.text}"</p>
+                <p className="text-gray-700 text-sm leading-relaxed mb-6">
+                  "{r.text}"
+                </p>
                 <div className="flex items-center gap-3">
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
@@ -435,7 +517,6 @@ const AboutPage = () => {
       <section className="py-20 sm:py-24 bg-gray-50 border-t border-gray-100">
         <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16">
           <div className="grid lg:grid-cols-2 gap-10">
-
             {/* Vision */}
             <div
               ref={vmLeftRef}
@@ -445,12 +526,22 @@ const AboutPage = () => {
                 transform: vmLeftInView ? "translateX(0)" : "translateX(-28px)",
               }}
             >
-              <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center" style={{ backgroundColor: "rgba(100,38,225,0.08)" }}>
+              <div
+                className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center"
+                style={{ backgroundColor: "rgba(100,38,225,0.08)" }}
+              >
                 <Zap className="w-6 h-6" style={{ color: "#6426E1" }} />
               </div>
-              <p className="text-xs font-bold tracking-widest uppercase mb-3" style={{ color: "#6426E1" }}>Our Vision</p>
+              <p
+                className="text-xs font-bold tracking-widest uppercase mb-3"
+                style={{ color: "#6426E1" }}
+              >
+                Our Vision
+              </p>
               <h3 className="text-2xl sm:text-3xl font-black text-gray-900 mb-5 leading-tight">
-                Tech for Every<br />Nigerian Home
+                Tech for Every
+                <br />
+                Nigerian Home
               </h3>
               <p className="text-gray-500 leading-relaxed text-sm">
                 We see a Nigeria where every student, professional, and family
@@ -476,21 +567,25 @@ const AboutPage = () => {
                 <div className="w-12 h-12 rounded-2xl mb-6 flex items-center justify-center bg-white/15">
                   <Award className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-xs font-bold tracking-widest uppercase mb-3 text-purple-300">Our Mission</p>
+                <p className="text-xs font-bold tracking-widest uppercase mb-3 text-purple-300">
+                  Our Mission
+                </p>
                 <h3 className="text-2xl sm:text-3xl font-black mb-5 leading-tight">
-                  Quality Tech,<br />Everywhere
+                  Quality Tech,
+                  <br />
+                  Everywhere
                 </h3>
                 <p className="text-purple-200 leading-relaxed text-sm">
                   Deliver top-tier electronics with speed, transparency, and
                   exceptional after-sales service. We're redefining what
-                  e-commerce feels like in Nigeria — one genuine gadget at a time.
+                  e-commerce feels like in Nigeria — one genuine gadget at a
+                  time.
                 </p>
               </div>
             </div>
           </div>
         </div>
       </section>
-
     </div>
   );
 };

@@ -18,7 +18,7 @@ import {
   variantService,
   type Product,
   type Variant,
-} from "@/services/Products.service";
+} from "@/services/products.service";
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";
@@ -260,7 +260,11 @@ const ProductDetailPage = () => {
       })
       .catch(() => {
         setFetchError("Could not load product. Please try again.");
-        toast({ variant: "destructive", title: "Error", description: "Could not load product." });
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not load product.",
+        });
       })
       .finally(() => setIsLoading(false));
   }, [slug]);
@@ -500,12 +504,19 @@ const ProductDetailPage = () => {
         setIsEditing(false);
         setDeletedVariantIds([]);
       }, 1500);
-      toast({ title: "Product Updated", description: "Changes saved successfully." });
+      toast({
+        title: "Product Updated",
+        description: "Changes saved successfully.",
+      });
     } catch (err: any) {
       setSaveError(
         err.response?.data?.message || "Failed to save. Please try again.",
       );
-      toast({ variant: "destructive", title: "Save Failed", description: "Failed to save changes." });
+      toast({
+        variant: "destructive",
+        title: "Save Failed",
+        description: "Failed to save changes.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -664,7 +675,11 @@ const ProductDetailPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div onClick={closeAllDropdowns} ref={pageRef} className={fadeUp(pageInView)}>
+    <div
+      onClick={closeAllDropdowns}
+      ref={pageRef}
+      className={fadeUp(pageInView)}
+    >
       {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
 
       {/* ── Header ─────────────────────────────────────────────────── */}

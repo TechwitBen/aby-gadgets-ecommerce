@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { Product } from "./Products.service";
+import type { Product } from "./products.service";
 
 // Re-use the same axios instance pattern
 const api = axios.create({
