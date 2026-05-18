@@ -4,7 +4,7 @@ import { AuthLayout } from "@/components/layout/AuthLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, CheckCircle } from "lucide-react";
-import { authAPI } from "@/services/Api";
+import { authAPI } from "@/services/api";
 
 // ── ResetPasswordPage ─────────────────────────────────────────────────────────
 
