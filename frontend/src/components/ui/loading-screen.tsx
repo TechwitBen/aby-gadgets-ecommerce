@@ -1,5 +1,5 @@
 // src/components/ui/loading-screen.tsx
-import { Spinner } from "@/components/ui/Spinner";
+import { Spinner } from "@/components/ui/spinner";
 
 export const LoadingScreen = ({ message = "Loading..." }: { message?: string }) => {
   return (

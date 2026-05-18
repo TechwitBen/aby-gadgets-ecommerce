@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { User, Mail, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { oauthHelpers } from "@/utils/oauth";
-import { Spinner } from "@/components/ui/Spinner";
+import { Spinner } from "@/components/ui/spinner";
 
 // ── Shared UI helpers ─────────────────────────────────────────────────────────
 
