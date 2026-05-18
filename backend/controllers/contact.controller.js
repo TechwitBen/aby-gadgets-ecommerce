@@ -1,4 +1,4 @@
-import { sendContactEmail } from "../Service/Email.service.js";
+import { sendContactEmail } from "../Service/email.service.js";
 
 /**
  * @desc    Handle contact form submission

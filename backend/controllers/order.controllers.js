@@ -13,7 +13,7 @@ import Order from "../models/order.model.js";
 import Variant from "../models/variant.model.js";
 import { createAuditLog } from "../middlewares/auth.middleware.js";
 import { generateOrderNumber } from "../helpers/idgenerator.helper.js";
-import { sendOrderConfirmationEmail } from "../Service/Email.service.js";
+import { sendOrderConfirmationEmail } from "../Service/email.service.js";
 import User from "../models/user.model.js";
 import { createOrderNotification } from "../helpers/notification.helper.js"; // ← NEW
 
