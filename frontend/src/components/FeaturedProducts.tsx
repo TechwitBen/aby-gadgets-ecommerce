@@ -9,6 +9,7 @@ import {
   ShoppingBag,
   TrendingUp,
   Tag,
+  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -275,37 +276,32 @@ const FeaturedProducts = ({ showViewAll = true }: FeaturedProductsProps) => {
           </div>
 
           {!isOutOfStock ? (
-            <div className="flex gap-1.5 sm:hidden">
-              <button
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleAddToCart(product);
-                }}
-                className="flex-1 py-2 bg-[#6426E1] hover:bg-[#5420c4] text-white text-[11px] font-semibold rounded-xl flex items-center justify-center gap-1 active:scale-95 transition-all"
-              >
-                <ShoppingCart className="w-3 h-3" />
-                Add to Cart
-              </button>
-              <Link
-                to={`/products/${product.slug}`}
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center justify-center gap-1 px-3 py-2 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 text-[11px] font-semibold transition-colors flex-shrink-0 whitespace-nowrap"
-              >
-                View Details
-              </Link>
-            </div>
-          ) : (
-            <div className="py-1.5 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl sm:hidden">
-              Sold out
-            </div>
-          )}
-
-          {isOutOfStock && (
-            <div className="hidden sm:block py-2 text-center text-xs text-gray-400 font-medium border border-gray-200 rounded-xl">
-              Sold out
-            </div>
-          )}
+  <div className="flex gap-1.5 sm:hidden">
+    {/* Mobile: icon-only cart button so it never wraps */}
+    <button
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        handleAddToCart(product); 
+      }}
+      aria-label="Add to cart"
+      className="w-9 h-9 min-w-[36px] bg-[#6426E1] hover:bg-[#5420c4] text-white rounded-xl flex items-center justify-center active:scale-95 transition-all flex-shrink-0"
+    >
+      <ShoppingCart className="w-4 h-4" />
+    </button>
+    <Link
+      to={`/products/${product.slug}`}
+      onClick={(e) => e.stopPropagation()}
+      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 text-[11px] font-semibold transition-colors whitespace-nowrap"
+    >
+      <Eye className="w-3 h-3" /> View Details
+    </Link>
+  </div>
+) : (
+  <div className="py-2 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl sm:hidden">
+    Sold out
+  </div>
+)}
         </div>
       </div>
     );

@@ -10,10 +10,10 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Loader2, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInView, fadeUp } from "@/hooks/useInView";
 
 type PermissionCategory = keyof StaffPermissions;
 
+// One reusable toggle row
 const PermissionRow = ({
   label,
   checked,
@@ -40,12 +40,6 @@ const StaffDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // 🎬 Page entrance animation
-  const { ref: pageRef, isInView: pageInView } = useInView({
-    once: true,
-    threshold: 0,
-  });
 
   const [staff, setStaff] = useState<StaffMember | null>(null);
   const [permissions, setPermissions] =
@@ -163,7 +157,7 @@ const StaffDetailsPage = () => {
   const p = permissions;
 
   return (
-    <div ref={pageRef} className={fadeUp(pageInView)}>
+    <div>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">

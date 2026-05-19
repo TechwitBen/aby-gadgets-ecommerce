@@ -22,8 +22,13 @@ import {
 import { usePermission } from "@/contexts/PermissionContext";
 import { PermissionToast } from "@/components/ui/PermissionToast";
 import { usePermissionToast } from "@/hooks/usePermissionToast";
-import { useToast } from "@/hooks/use-toast";
-import { useInView, fadeUp } from "@/hooks/useInView";
+
+const sectionOptions = [
+  "New Arrivals",
+  "Popular Products",
+  "Sweet Deals",
+] as const;
+type SectionOption = "" | (typeof sectionOptions)[number];
 
 // ── Delete Confirm Modals ─────────────────────────────────────────────────────
 const DeleteConfirmModal = ({
@@ -180,7 +185,7 @@ const toVariantDraft = (v: Variant): VariantDraft => ({
   stock: String(v.stock),
   is_active: v.is_active,
   isNew: false,
-  image: v.image ?? "",
+  image: v.image ?? "", // ← reads existing image from backend
 });
 
 const emptyVariantDraft = (productId: string): VariantDraft => ({
@@ -195,7 +200,7 @@ const emptyVariantDraft = (productId: string): VariantDraft => ({
   stock: "",
   is_active: true,
   isNew: true,
-  image: "",
+  image: "", // ← just empty, no v to read from
 });
 
 const buildForm = (product: Product) => ({
@@ -213,13 +218,7 @@ const buildForm = (product: Product) => ({
   specScreenSize: product.specs?.screenSize ?? "",
 });
 
-const sectionOptions = [
-  "New Arrivals",
-  "Popular Products",
-  "Sweet Deals",
-] as const;
-type SectionOption = "" | (typeof sectionOptions)[number];
-
+// ── 6-image builder: reads product.images[0..5] ───────────────────────────────
 const buildImages = (product: Product): (string | null)[] =>
   Array(4)
     .fill(null)
@@ -231,13 +230,6 @@ const ProductDetailPage = () => {
   const navigate = useNavigate();
   const { isAdmin, can } = usePermission();
   const { message: permMsg, deny, clear: clearPerm } = usePermissionToast();
-  const { toast } = useToast();
-
-  // 🎬 Page entrance animation
-  const { ref: pageRef, isInView: pageInView } = useInView({
-    once: true,
-    threshold: 0,
-  });
 
   const canEdit = isAdmin || can("products", "editProducts");
   const canDelete = isAdmin || can("products", "deleteProducts");
@@ -258,14 +250,7 @@ const ProductDetailPage = () => {
         setFeatures(data.features?.length ? data.features : [""]);
         setVariants(data.variants?.map(toVariantDraft) ?? []);
       })
-      .catch(() => {
-        setFetchError("Could not load product. Please try again.");
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Could not load product.",
-        });
-      })
+      .catch(() => setFetchError("Could not load product. Please try again."))
       .finally(() => setIsLoading(false));
   }, [slug]);
 
@@ -504,19 +489,10 @@ const ProductDetailPage = () => {
         setIsEditing(false);
         setDeletedVariantIds([]);
       }, 1500);
-      toast({
-        title: "Product Updated",
-        description: "Changes saved successfully.",
-      });
     } catch (err: any) {
       setSaveError(
         err.response?.data?.message || "Failed to save. Please try again.",
       );
-      toast({
-        variant: "destructive",
-        title: "Save Failed",
-        description: "Failed to save changes.",
-      });
     } finally {
       setIsSaving(false);
     }
@@ -675,11 +651,7 @@ const ProductDetailPage = () => {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div
-      onClick={closeAllDropdowns}
-      ref={pageRef}
-      className={fadeUp(pageInView)}
-    >
+    <div onClick={closeAllDropdowns}>
       {permMsg && <PermissionToast message={permMsg} onClose={clearPerm} />}
 
       {/* ── Header ─────────────────────────────────────────────────── */}

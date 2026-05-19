@@ -15,7 +15,6 @@ import {
 } from "@/services/order.service";
 import { paymentService } from "@/services/payment.service";
 import { useToast } from "@/hooks/use-toast";
-import { useInView, fadeUp } from "@/hooks/useInView";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const COMPLETED_STATUSES = new Set([
@@ -214,12 +213,6 @@ const MyOrdersPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // 🎬 Page entrance animation
-  const { ref: pageRef, isInView: pageInView } = useInView({
-    once: true,
-    threshold: 0,
-  });
-
   const [orders, setOrders] = useState<OrderDoc[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -229,31 +222,29 @@ const MyOrdersPage = () => {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   const [retryError, setRetryError] = useState<string | null>(null);
 
-  const fetchOrders = useCallback(
-    async (silent = false) => {
-      if (!silent) setIsLoading(true);
-      setError(null);
-      try {
-        setOrders(await orderService.getMyOrders());
-      } catch {
-        if (!silent)
-          setError("Failed to load orders. Please check your connection.");
-        toast({
-          title: "Error",
-          description: "Failed to load orders. Please check your connection.",
-          variant: "destructive",
-        });
-      } finally {
-        if (!silent) setIsLoading(false);
-      }
-    },
-    [toast],
-  );
+  // FIX: added `silent` flag — background re-fetches skip the loading spinner
+  // so the UI doesn't flash while the user is looking at their orders.
+  const fetchOrders = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    setError(null);
+    try {
+      setOrders(await orderService.getMyOrders());
+    } catch {
+      if (!silent) setError("Failed to load orders. Please check your connection.");
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, []);
 
+  // Initial load
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
+  // FIX: re-fetch silently whenever the tab becomes visible again.
+  // When the user returns from Paystack the webhook has already updated
+  // payment_status → "paid", so this single listener replaces the need
+  // for polling or manual refresh.
   useEffect(() => {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
@@ -261,10 +252,12 @@ const MyOrdersPage = () => {
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
   }, [fetchOrders]);
 
+  // FIX: detect Paystack callback URL (?reference=xxx or ?trxref=xxx) and
+  // show a single informational toast so the user knows payment was received.
+  // Runs once on mount; cleans the URL so it never fires again on refresh.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("reference") || params.get("trxref");
@@ -277,6 +270,7 @@ const MyOrdersPage = () => {
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Retry payment handler ─────────────────────────────────────────────────
   const handleRetryPayment = async (orderId: string) => {
     setRetryingId(orderId);
     setRetryError(null);
@@ -286,15 +280,10 @@ const MyOrdersPage = () => {
       });
       window.location.href = authorization_url;
     } catch (err: any) {
-      const msg =
+      setRetryError(
         err?.response?.data?.message ??
-        "Could not start payment. Please try again or contact support.";
-      setRetryError(msg);
-      toast({
-        title: "Payment Error",
-        description: msg,
-        variant: "destructive",
-      });
+          "Could not start payment. Please try again or contact support.",
+      );
       setRetryingId(null);
     }
   };
@@ -347,10 +336,7 @@ const MyOrdersPage = () => {
     );
 
   return (
-    <div
-      ref={pageRef}
-      className={`min-h-screen bg-gray-50 ${fadeUp(pageInView)}`}
-    >
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-5">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

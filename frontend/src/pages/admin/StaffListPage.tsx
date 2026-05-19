@@ -4,7 +4,6 @@ import { staffService, type StaffMember } from "@/services/staff.service";
 import { Button } from "@/components/ui/button";
 import { UserPlus, ChevronRight, Loader2, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useInView, fadeUp } from "@/hooks/useInView";
 
 const roleColor = (role: string) => {
   const map: Record<string, string> = {
@@ -19,13 +18,6 @@ const roleColor = (role: string) => {
 const StaffListPage = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-
-  // 🎬 Page entrance animation
-  const { ref: pageRef, isInView: pageInView } = useInView({
-    once: true,
-    threshold: 0,
-  });
-
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,11 +34,6 @@ const StaffListPage = () => {
       setStaff(Array.isArray(data) ? data : []);
     } catch {
       setError("Failed to load staff. Please try again.");
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load staff.",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +58,7 @@ const StaffListPage = () => {
     );
 
   return (
-    <div ref={pageRef} className={fadeUp(pageInView)}>
+    <div>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Staff</h1>
