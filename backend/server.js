@@ -113,7 +113,8 @@ const startServer = async () => {
   }),
   cookie: {
     maxAge: 60 * 60 * 1000,       // 1 hour in ms
-    sameSite: "lax",
+   sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+    // sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     httpOnly: true,
   },
