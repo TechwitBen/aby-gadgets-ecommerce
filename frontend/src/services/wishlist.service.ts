@@ -3,7 +3,7 @@ import type { Product } from "./products.service";
 
 // Re-use the same axios instance pattern
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1`,
+  baseURL: `${import.meta.env.VITE_API_URL}`,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });

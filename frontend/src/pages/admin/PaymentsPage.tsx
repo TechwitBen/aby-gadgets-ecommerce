@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { SearchInput } from "@/components/ui/search-input";
 import { Button } from "@/components/ui/button";
 import {
@@ -32,31 +32,48 @@ const fmt = (n: number) => `₦${(n || 0).toLocaleString()}`;
 const fmtDateTime = (iso: string) => {
   const d = new Date(iso);
   return {
-    date: d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }),
+    date: d.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }),
     time: d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }),
   };
 };
 
-// ── Channel config ─────────────────────────────────────────────────────────────
-// payment_method stores Paystack channel values: "card", "bank", "bank_transfer",
-// "ussd", "qr", "mobile_money" — or "pod" for pay-on-delivery.
-// "paystack" is the fallback for pending payments where channel isn't known yet.
+// ── Channel config ────────────────────────────────────────────────────────────
 const CHANNEL_CFG: Record<
   string,
   { label: string; sublabel: string; Icon: React.FC<{ className?: string }> }
 > = {
-  card:          { label: "Card",          sublabel: "Debit / Credit",    Icon: CreditCard  },
-  bank:          { label: "Bank Transfer", sublabel: "Direct transfer",   Icon: Banknote    },
-  bank_transfer: { label: "Bank Transfer", sublabel: "Direct transfer",   Icon: Banknote    },
-  ussd:          { label: "USSD",          sublabel: "Mobile dial code",  Icon: Smartphone  },
-  qr:            { label: "QR Code",       sublabel: "Scan to pay",       Icon: QrCode      },
-  mobile_money:  { label: "Mobile Money",  sublabel: "Mobile wallet",     Icon: Wallet      },
-  pod:           { label: "Pay on Delivery", sublabel: "Cash on arrival", Icon: Banknote    },
-  paystack:      { label: "Paystack",      sublabel: "Method pending",    Icon: CreditCard  },
+  card: { label: "Card", sublabel: "Debit / Credit", Icon: CreditCard },
+  bank: { label: "Bank Transfer", sublabel: "Direct transfer", Icon: Banknote },
+  bank_transfer: {
+    label: "Bank Transfer",
+    sublabel: "Direct transfer",
+    Icon: Banknote,
+  },
+  ussd: { label: "USSD", sublabel: "Mobile dial code", Icon: Smartphone },
+  qr: { label: "QR Code", sublabel: "Scan to pay", Icon: QrCode },
+  mobile_money: {
+    label: "Mobile Money",
+    sublabel: "Mobile wallet",
+    Icon: Wallet,
+  },
+  pod: {
+    label: "Pay on Delivery",
+    sublabel: "Cash on arrival",
+    Icon: Banknote,
+  },
+  paystack: { label: "Paystack", sublabel: "Method pending", Icon: CreditCard },
 };
 
 const getChannelCfg = (method: string) =>
-  CHANNEL_CFG[method?.toLowerCase()] ?? { label: method ?? "Paystack", sublabel: "Online", Icon: CreditCard };
+  CHANNEL_CFG[method?.toLowerCase()] ?? {
+    label: method ?? "Paystack",
+    sublabel: "Online",
+    Icon: CreditCard,
+  };
 
 // ── Display status ────────────────────────────────────────────────────────────
 type DisplayStatus = "success" | "pending" | "failed" | "cancelled" | "no_doc";
@@ -124,122 +141,120 @@ const STATUS_CFG: Record<
   },
 };
 
-// ── Tab config ─────────────────────────────────────────────────────────────────
+// ── Tab config ────────────────────────────────────────────────────────────────
 type TabKey = "all" | DisplayStatus;
 
-const TABS: { key: TabKey; label: string; Icon: React.FC<{ className?: string }> }[] = [
-  { key: "all",       label: "All",       Icon: TrendingUp   },
-  { key: "success",   label: "Confirmed", Icon: CheckCircle2 },
-  { key: "pending",   label: "Pending",   Icon: Clock        },
-  { key: "failed",    label: "Failed",    Icon: XCircle      },
-  { key: "cancelled", label: "Cancelled", Icon: RotateCcw    },
-  { key: "no_doc",    label: "No Record", Icon: AlertCircle  },
+const TABS: {
+  key: TabKey;
+  label: string;
+  Icon: React.FC<{ className?: string }>;
+}[] = [
+  { key: "all", label: "All", Icon: TrendingUp },
+  { key: "success", label: "Confirmed", Icon: CheckCircle2 },
+  { key: "pending", label: "Pending", Icon: Clock },
+  { key: "failed", label: "Failed", Icon: XCircle },
+  { key: "cancelled", label: "Cancelled", Icon: RotateCcw },
+  { key: "no_doc", label: "No Record", Icon: AlertCircle },
 ];
 
-// ── Method filter options ──────────────────────────────────────────────────────
-// IMPORTANT: payment_method is now always "paystack" or "pod" (permanent gateway field).
-// channel holds the actual payment method once Paystack confirms (card, bank, ussd, etc.).
-// The filter uses payment_method for gateway (online vs POD), not channel.
+// ── Method filter options ─────────────────────────────────────────────────────
 const METHOD_OPTIONS = [
-  { value: "All",      label: "All Methods"      },
-  { value: "online",   label: "Online (Paystack)" },
-  { value: "pod",      label: "Pay on Delivery"  },
+  { value: "All", label: "All Methods" },
+  { value: "online", label: "Online (Paystack)" },
+  { value: "pod", label: "Pay on Delivery" },
 ];
 
 // ── Display item ──────────────────────────────────────────────────────────────
 interface PaymentDisplayItem {
-  _id:              string;
-  payment_number:   string | undefined;
-  reference:        string;
-  orderId:          string;
-  order_number:     string | undefined;
+  _id: string;
+  payment_number: string | undefined;
+  reference: string;
+  orderId: string;
+  order_number: string | undefined;
   fulfillment_type: "delivery" | "pickup" | undefined;
-  amount:           number;
-  delivery_fee:     number;
-  // Raw channel value from Paystack: "card" | "bank" | "ussd" | "pod" | "paystack" | etc.
-  channel:          string;
-  displayStatus:    DisplayStatus;
-  createdAt:        string;
-  isPOD:            boolean;
-  rawPayment?:      PaymentDoc;
+  amount: number;
+  delivery_fee: number;
+  channel: string;
+  displayStatus: DisplayStatus;
+  createdAt: string;
+  isPOD: boolean;
+  rawPayment?: PaymentDoc;
 }
 
-// ── Safely extract the order's ObjectId string whether populated or not ───────
+// ── Safely extract the order's ObjectId string ────────────────────────────────
 const extractOrderId = (order: PaymentDoc["order"]): string => {
   if (!order) return "";
   if (typeof order === "string") return order;
-  if (typeof order === "object" && "_id" in order) return String((order as any)._id);
+  if (typeof order === "object" && "_id" in order)
+    return String((order as any)._id);
   return String(order);
 };
 
 const paymentDocToItem = (p: PaymentDoc): PaymentDisplayItem => {
-  const o = typeof p.order === "object" && p.order !== null ? (p.order as any) : null;
-
-  // ── Channel resolution ─────────────────────────────────────────────────────
-  // payment_method is now always "paystack" or "pod" — it never holds the
-  // channel value anymore. The actual channel ("card", "bank", "ussd", etc.)
-  // lives in p.channel (null until Paystack confirms the transaction).
-  //
-  // Display logic:
-  //   POD order          → show "pod"      (no Paystack channel exists)
-  //   Paystack + channel → show the channel ("card", "ussd", etc.)
-  //   Paystack + pending → show "paystack" fallback (channel not yet known)
+  const o =
+    typeof p.order === "object" && p.order !== null ? (p.order as any) : null;
   const isPOD = (p as any).payment_method === "pod";
-  const resolvedChannel = isPOD
-    ? "pod"
-    : ((p as any).channel ?? "paystack");
+  const resolvedChannel = isPOD ? "pod" : ((p as any).channel ?? "paystack");
 
   return {
-    _id:              p._id,
-    payment_number:   p.payment_number,
-    reference:        p.reference,
-    orderId:          extractOrderId(p.order),
-    order_number:     o?.order_number,
+    _id: p._id,
+    payment_number: p.payment_number,
+    reference: p.reference,
+    orderId: extractOrderId(p.order),
+    order_number: o?.order_number,
     fulfillment_type: o?.fulfillment_type,
-    amount:           p.amount,
-    delivery_fee:     o?.shipping_fee ?? 0,
-    channel:          resolvedChannel,
+    amount: p.amount,
+    delivery_fee: o?.shipping_fee ?? 0,
+    channel: resolvedChannel,
     displayStatus:
-      p.status === "success"     ? "success"
-      : p.status === "failed"    ? "failed"
-      : p.status === "cancelled" ? "cancelled"
-      : "pending",
-    createdAt:  p.createdAt,
+      p.status === "success"
+        ? "success"
+        : p.status === "failed"
+          ? "failed"
+          : p.status === "cancelled"
+            ? "cancelled"
+            : "pending",
+    createdAt: p.createdAt,
     isPOD,
     rawPayment: p,
   };
 };
 
 const podOrderToItem = (o: OrderDoc): PaymentDisplayItem => ({
-  _id:              `pod-${o._id}`,
-  payment_number:   undefined,
-  // POD has no Paystack reference — use a human-readable pseudo-ref
-  reference:        o.order_number ? `POD-${o.order_number}` : `POD-${o._id.slice(-8).toUpperCase()}`,
-  orderId:          o._id,
-  order_number:     o.order_number,
+  _id: `pod-${o._id}`,
+  payment_number: undefined,
+  reference: o.order_number
+    ? `POD-${o.order_number}`
+    : `POD-${o._id.slice(-8).toUpperCase()}`,
+  orderId: o._id,
+  order_number: o.order_number,
   fulfillment_type: o.fulfillment_type,
-  amount:           o.total,
-  delivery_fee:     o.shipping_fee ?? 0,
-  // POD orders have no Paystack channel — "pod" is the display sentinel value
-  channel:          "pod",
-  displayStatus:    o.payment_status === "paid" ? "success" : o.payment_status === "refunded" ? "cancelled" : "pending",
-  createdAt:        o.createdAt,
-  isPOD:            true,
+  amount: o.total,
+  delivery_fee: o.shipping_fee ?? 0,
+  channel: "pod",
+  displayStatus:
+    o.payment_status === "paid"
+      ? "success"
+      : o.payment_status === "refunded"
+        ? "cancelled"
+        : "pending",
+  createdAt: o.createdAt,
+  isPOD: true,
 });
 
 const noDocOrderToItem = (o: OrderDoc): PaymentDisplayItem => ({
-  _id:              `nodoc-${o._id}`,
-  payment_number:   undefined,
-  reference:        `NOPAY-${o._id.slice(-8).toUpperCase()}`,
-  orderId:          o._id,
-  order_number:     o.order_number,
+  _id: `nodoc-${o._id}`,
+  payment_number: undefined,
+  reference: `NOPAY-${o._id.slice(-8).toUpperCase()}`,
+  orderId: o._id,
+  order_number: o.order_number,
   fulfillment_type: o.fulfillment_type,
-  amount:           o.total,
-  delivery_fee:     o.shipping_fee ?? 0,
-  channel:          "paystack",
-  displayStatus:    "no_doc",
-  createdAt:        o.createdAt,
-  isPOD:            false,
+  amount: o.total,
+  delivery_fee: o.shipping_fee ?? 0,
+  channel: "paystack",
+  displayStatus: "no_doc",
+  createdAt: o.createdAt,
+  isPOD: false,
 });
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -257,14 +272,22 @@ const FulfillmentChip = ({ type }: { type?: string }) =>
 const StatusBadge = ({ status }: { status: DisplayStatus }) => {
   const cfg = STATUS_CFG[status];
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${cfg.badgeCls}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold whitespace-nowrap ${cfg.badgeCls}`}
+    >
       <cfg.Icon className="w-3 h-3" />
       {cfg.label}
     </span>
   );
 };
 
-const ChannelBadge = ({ channel, size = "sm" }: { channel: string; size?: "sm" | "xs" }) => {
+const ChannelBadge = ({
+  channel,
+  size = "sm",
+}: {
+  channel: string;
+  size?: "sm" | "xs";
+}) => {
   const cfg = getChannelCfg(channel);
   const Icon = cfg.Icon;
   if (size === "xs") {
@@ -280,14 +303,21 @@ const ChannelBadge = ({ channel, size = "sm" }: { channel: string; size?: "sm" |
       <Icon className="w-3.5 h-3.5 flex-shrink-0" />
       <span>{cfg.label}</span>
       {channel === "paystack" && (
-        <span className="text-[10px] text-muted-foreground/60 italic">pending</span>
+        <span className="text-[10px] text-muted-foreground/60 italic">
+          pending
+        </span>
       )}
     </span>
   );
 };
 
-// ── DateTime cell ──────────────────────────────────────────────────────────────
-const DateTimeCell = ({ iso, className = "" }: { iso: string; className?: string }) => {
+const DateTimeCell = ({
+  iso,
+  className = "",
+}: {
+  iso: string;
+  className?: string;
+}) => {
   const { date, time } = fmtDateTime(iso);
   return (
     <div className={className}>
@@ -297,35 +327,55 @@ const DateTimeCell = ({ iso, className = "" }: { iso: string; className?: string
   );
 };
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
 const StatCard = ({
-  label, value, accentBg, accentText, Icon,
+  label,
+  value,
+  accentBg,
+  accentText,
+  Icon,
 }: {
-  label: string; value: string; accentBg: string; accentText: string;
+  label: string;
+  value: string;
+  accentBg: string;
+  accentText: string;
   Icon: React.FC<{ className?: string }>;
 }) => (
   <div className="bg-card border border-border rounded-2xl p-4 flex items-start gap-3">
-    <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${accentBg}`}>
+    <div
+      className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${accentBg}`}
+    >
       <Icon className={`w-5 h-5 ${accentText}`} />
     </div>
     <div className="min-w-0">
       <p className="text-xs text-muted-foreground font-medium">{label}</p>
-      <p className="text-lg font-bold text-foreground leading-tight truncate">{value}</p>
+      <p className="text-lg font-bold text-foreground leading-tight truncate">
+        {value}
+      </p>
     </div>
   </div>
 );
 
-// ── Mobile card ───────────────────────────────────────────────────────────────
-const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () => void }) => {
+const MobileCard = ({
+  item,
+  onClick,
+}: {
+  item: PaymentDisplayItem;
+  onClick: () => void;
+}) => {
   const { date, time } = fmtDateTime(item.createdAt);
   return (
     <div
       onClick={onClick}
       className={`bg-card border border-border rounded-xl p-4 cursor-pointer active:bg-secondary/30 transition-colors ${
-        item.displayStatus === "failed"    ? "border-l-4 border-l-red-400"    :
-        item.displayStatus === "cancelled" ? "border-l-4 border-l-gray-300"   :
-        item.displayStatus === "no_doc"    ? "border-l-4 border-l-orange-400" :
-        item.displayStatus === "success"   ? "border-l-4 border-l-emerald-400": ""
+        item.displayStatus === "failed"
+          ? "border-l-4 border-l-red-400"
+          : item.displayStatus === "cancelled"
+            ? "border-l-4 border-l-gray-300"
+            : item.displayStatus === "no_doc"
+              ? "border-l-4 border-l-orange-400"
+              : item.displayStatus === "success"
+                ? "border-l-4 border-l-emerald-400"
+                : ""
       }`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -335,10 +385,14 @@ const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () =
               {item.payment_number ?? item.reference}
             </p>
             {item.isPOD && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">POD</span>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                POD
+              </span>
             )}
             {item.displayStatus === "no_doc" && (
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">NO DOC</span>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-orange-100 text-orange-700">
+                NO DOC
+              </span>
             )}
           </div>
           <p className="text-xs text-muted-foreground">
@@ -347,7 +401,9 @@ const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () =
         </div>
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <StatusBadge status={item.displayStatus} />
-          <p className="text-sm font-bold text-foreground">{fmt(item.amount)}</p>
+          <p className="text-sm font-bold text-foreground">
+            {fmt(item.amount)}
+          </p>
         </div>
       </div>
       <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border">
@@ -364,25 +420,36 @@ const MobileCard = ({ item, onClick }: { item: PaymentDisplayItem; onClick: () =
   );
 };
 
-// ── Filter sheet (mobile) ─────────────────────────────────────────────────────
 const FilterSheet = ({
-  open, onClose, methodFilter, onMethodChange,
+  open,
+  onClose,
+  methodFilter,
+  onMethodChange,
 }: {
-  open: boolean; onClose: () => void; methodFilter: string; onMethodChange: (v: string) => void;
+  open: boolean;
+  onClose: () => void;
+  methodFilter: string;
+  onMethodChange: (v: string) => void;
 }) => {
   if (!open) return null;
   return (
     <div
       className="fixed inset-0 bg-black/50 z-50 flex items-end sm:hidden"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
       <div className="bg-popover w-full rounded-t-2xl p-6 shadow-2xl">
         <div className="flex justify-center mb-4">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
         <div className="flex items-center justify-between mb-5">
-          <p className="text-base font-semibold text-foreground">Filter by Method</p>
-          <button onClick={onClose}><X size={18} className="text-muted-foreground" /></button>
+          <p className="text-base font-semibold text-foreground">
+            Filter by Method
+          </p>
+          <button onClick={onClose}>
+            <X size={18} className="text-muted-foreground" />
+          </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {METHOD_OPTIONS.map((opt) => (
@@ -399,54 +466,57 @@ const FilterSheet = ({
             </button>
           ))}
         </div>
-        <Button className="w-full mt-6" onClick={onClose}>Apply</Button>
+        <Button className="w-full mt-6" onClick={onClose}>
+          Apply
+        </Button>
       </div>
     </div>
   );
 };
 
-// ── Detail Modal ───────────────────────────────────────────────────────────────
-const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClose: () => void }) => {
+const DetailModal = ({
+  item,
+  onClose,
+}: {
+  item: PaymentDisplayItem | null;
+  onClose: () => void;
+}) => {
   if (!item) return null;
   const cfg = STATUS_CFG[item.displayStatus];
-  // channelCfg is null for pending payments (channel not yet known)
   const channelCfg = getChannelCfg(item.channel);
   const ChannelIcon = channelCfg?.Icon ?? CreditCard;
 
   const accentBar: Record<DisplayStatus, string> = {
-    success:   "bg-emerald-500",
-    pending:   "bg-amber-400",
-    failed:    "bg-red-500",
+    success: "bg-emerald-500",
+    pending: "bg-amber-400",
+    failed: "bg-red-500",
     cancelled: "bg-gray-400",
-    no_doc:    "bg-orange-500",
+    no_doc: "bg-orange-500",
   };
   const ringCls: Record<DisplayStatus, string> = {
-    success:   "border-emerald-400 bg-emerald-50",
-    pending:   "border-amber-400 bg-amber-50",
-    failed:    "border-red-400 bg-red-50",
+    success: "border-emerald-400 bg-emerald-50",
+    pending: "border-amber-400 bg-amber-50",
+    failed: "border-red-400 bg-red-50",
     cancelled: "border-gray-300 bg-gray-50",
-    no_doc:    "border-orange-400 bg-orange-50",
+    no_doc: "border-orange-400 bg-orange-50",
   };
   const iconCls: Record<DisplayStatus, string> = {
-    success:   "text-emerald-600",
-    pending:   "text-amber-600",
-    failed:    "text-red-500",
+    success: "text-emerald-600",
+    pending: "text-amber-600",
+    failed: "text-red-500",
     cancelled: "text-gray-500",
-    no_doc:    "text-orange-500",
+    no_doc: "text-orange-500",
   };
   const noteCls: Record<DisplayStatus, string> = {
-    success:   "bg-emerald-50 border-emerald-100 text-emerald-800",
-    pending:   "bg-amber-50 border-amber-100 text-amber-800",
-    failed:    "bg-red-50 border-red-100 text-red-800",
+    success: "bg-emerald-50 border-emerald-100 text-emerald-800",
+    pending: "bg-amber-50 border-amber-100 text-amber-800",
+    failed: "bg-red-50 border-red-100 text-red-800",
     cancelled: "bg-gray-50 border-gray-200 text-gray-700",
-    no_doc:    "bg-orange-50 border-orange-100 text-orange-800",
+    no_doc: "bg-orange-50 border-orange-100 text-orange-800",
   };
 
   const { date, time } = fmtDateTime(item.createdAt);
-
-  // Gateway = which service processed the payment (permanent)
   const gatewayLabel = item.isPOD ? "Pay on Delivery" : "Paystack";
-  // Channel = how the customer actually paid (null until Paystack confirms)
   const channelLabel = channelCfg
     ? channelCfg.label
     : item.channel === "paystack"
@@ -454,20 +524,26 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
       : null;
 
   const rows = [
-    { label: "Payment ID",   value: item.payment_number ?? item.reference },
-    ...(item.payment_number ? [{ label: "Gateway Ref", value: item.reference }] : []),
-    { label: "Order",        value: item.order_number ?? `#${item.orderId.slice(-8).toUpperCase()}` },
-    { label: "Amount",       value: fmt(item.amount) },
+    { label: "Payment ID", value: item.payment_number ?? item.reference },
+    ...(item.payment_number
+      ? [{ label: "Gateway Ref", value: item.reference }]
+      : []),
+    {
+      label: "Order",
+      value: item.order_number ?? `#${item.orderId.slice(-8).toUpperCase()}`,
+    },
+    { label: "Amount", value: fmt(item.amount) },
     {
       label: "Delivery Fee",
-      value: item.delivery_fee === 0 || item.fulfillment_type === "pickup" ? "Free" : fmt(item.delivery_fee),
+      value:
+        item.delivery_fee === 0 || item.fulfillment_type === "pickup"
+          ? "Free"
+          : fmt(item.delivery_fee),
     },
-    // Gateway — always shown ("Paystack" or "Pay on Delivery")
-    { label: "Gateway",      value: gatewayLabel },
-    // Channel — shown when known ("Card", "USSD", etc.) or "Pending" for online awaiting
-    ...(channelLabel ? [{ label: "Channel",  value: channelLabel }] : []),
-    { label: "Date",  value: date },
-    { label: "Time",  value: time },
+    { label: "Gateway", value: gatewayLabel },
+    ...(channelLabel ? [{ label: "Channel", value: channelLabel }] : []),
+    { label: "Date", value: date },
+    { label: "Time", value: time },
   ];
 
   return (
@@ -481,7 +557,9 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
             >
               <cfg.Icon className={`w-7 h-7 ${iconCls[item.displayStatus]}`} />
             </div>
-            <h2 className="text-lg font-bold text-foreground">{cfg.tabLabel} Payment</h2>
+            <h2 className="text-lg font-bold text-foreground">
+              {cfg.tabLabel} Payment
+            </h2>
             <div className="flex items-center gap-2 mt-2 flex-wrap justify-center">
               {item.isPOD && (
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
@@ -489,38 +567,48 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
                 </span>
               )}
               <FulfillmentChip type={item.fulfillment_type} />
-              {/* Channel chip — only shown when channel is known */}
               {channelCfg ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground">
                   <ChannelIcon className="w-2.5 h-2.5" />
                   {channelCfg.sublabel}
                 </span>
-              ) : !item.isPOD && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground/60">
-                  <CreditCard className="w-2.5 h-2.5" />
-                  Method pending
-                </span>
+              ) : (
+                !item.isPOD && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-secondary text-muted-foreground/60">
+                    <CreditCard className="w-2.5 h-2.5" />
+                    Method pending
+                  </span>
+                )
               )}
             </div>
           </div>
 
-          {/* Admin note */}
-          <div className={`rounded-xl px-3 py-2.5 mb-4 text-xs leading-relaxed border ${noteCls[item.displayStatus]}`}>
+          <div
+            className={`rounded-xl px-3 py-2.5 mb-4 text-xs leading-relaxed border ${noteCls[item.displayStatus]}`}
+          >
             <p className="font-semibold mb-0.5">{cfg.label}</p>
             <p>{cfg.adminNote}</p>
           </div>
 
-          {/* Details */}
           <div className="space-y-2.5 mb-5">
             {rows.map(({ label, value }) => (
-              <div key={label} className="flex items-start justify-between gap-4 text-sm">
-                <span className="text-muted-foreground flex-shrink-0">{label}</span>
-                <span className="font-medium text-foreground text-right font-mono text-xs break-all">{value}</span>
+              <div
+                key={label}
+                className="flex items-start justify-between gap-4 text-sm"
+              >
+                <span className="text-muted-foreground flex-shrink-0">
+                  {label}
+                </span>
+                <span className="font-medium text-foreground text-right font-mono text-xs break-all">
+                  {value}
+                </span>
               </div>
             ))}
           </div>
 
-          <Button className="w-full" onClick={onClose}>Close</Button>
+          <Button className="w-full" onClick={onClose}>
+            Close
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -528,98 +616,132 @@ const DetailModal = ({ item, onClose }: { item: PaymentDisplayItem | null; onClo
 };
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
+const PAYMENT_LIMIT = 50;
 const REFRESH_INTERVAL_MS = 30_000;
 
 const PaymentsPage = () => {
   const { toast } = useToast();
 
-  const [allItems,        setAllItems]        = useState<PaymentDisplayItem[]>([]);
-  const [isLoading,       setIsLoading]       = useState(true);
-  const [fetchError,      setFetchError]      = useState<string | null>(null);
-  const [searchTerm,      setSearchTerm]      = useState("");
-  const [activeTab,       setActiveTab]       = useState<TabKey>("all");
-  const [methodFilter,    setMethodFilter]    = useState("All");
-  const [showMethodDD,    setShowMethodDD]    = useState(false);
+  // Raw server data — payments accumulate across "Load More" clicks
+  const [allPayments, setAllPayments] = useState<PaymentDoc[]>([]);
+  const [allOrders, setAllOrders] = useState<OrderDoc[]>([]);
+  const [paymentsTotal, setPaymentsTotal] = useState(0); // total in DB
+  const [currentPage, setCurrentPage] = useState(1); // last fetched page
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [methodFilter, setMethodFilter] = useState("All");
+  const [showMethodDD, setShowMethodDD] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
-  const [selectedItem,    setSelectedItem]    = useState<PaymentDisplayItem | null>(null);
-  const [lastRefreshed,   setLastRefreshed]   = useState<Date | null>(null);
+  const [selectedItem, setSelectedItem] = useState<PaymentDisplayItem | null>(
+    null,
+  );
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
-  // ── Fix 1: Scroll to top on tab or method change ──────────────────────────
-  const prevTabRef = useRef<TabKey>("all");
-  const prevMethodFilterRef = useRef("All");
+  // ── Derived: merge payments + orders into display items ───────────────────
+  // useMemo so we only recompute when raw data changes, not on every render
+  const allItems = useMemo<PaymentDisplayItem[]>(() => {
+    const paystackOrderIds = new Set(
+      allPayments.map((p) => extractOrderId(p.order)),
+    );
+    const paystackItems = allPayments.map(paymentDocToItem);
 
-  useEffect(() => {
-    if (
-      prevTabRef.current !== activeTab || 
-      prevMethodFilterRef.current !== methodFilter
-    ) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      prevTabRef.current = activeTab;
-      prevMethodFilterRef.current = methodFilter;
-    }
-  }, [activeTab, methodFilter]);
+    const podItems = allOrders
+      .filter((o) => o.payment_method === "pod" && !paystackOrderIds.has(o._id))
+      .map(podOrderToItem);
+
+    const noDocItems = allOrders
+      .filter(
+        (o) =>
+          o.payment_method === "paystack" &&
+          o.payment_status === "unpaid" &&
+          o.status !== "cancelled" &&
+          !paystackOrderIds.has(o._id),
+      )
+      .map(noDocOrderToItem);
+
+    return [...paystackItems, ...podItems, ...noDocItems].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [allPayments, allOrders]);
+
+  // hasMore is true while we have loaded fewer payment docs than the DB total
+  const hasMore = allPayments.length < paymentsTotal;
 
   const activeTabRef = useRef(activeTab);
-  useEffect(() => { activeTabRef.current = activeTab; }, [activeTab]);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
 
-  // ── Load All ──────────────────────────────────────────────────────────────
-  const loadAll = useCallback(async (silent = false) => {
-    if (!silent) setIsLoading(true);
-    setFetchError(null);
-    try {
-      const [paymentsRaw, ordersRaw] = await Promise.all([
-        paymentService.getAllPayments().catch(() => ({ payments: [] as PaymentDoc[], total: 0 })),
-        orderService.getAllOrders().catch(() => [] as OrderDoc[]),
-      ]);
+  // ── Initial load — page 1 + all orders ───────────────────────────────────
+  const loadAll = useCallback(
+    async (silent = false) => {
+      if (!silent) setIsLoading(true);
+      setFetchError(null);
 
-      const payments: PaymentDoc[] = Array.isArray(paymentsRaw)
-        ? paymentsRaw
-        : ((paymentsRaw as any)?.payments ?? []);
-      const orders: OrderDoc[] = Array.isArray(ordersRaw) ? ordersRaw : [];
+      try {
+        const [paymentsRaw, ordersRaw] = await Promise.all([
+          paymentService
+            .getAllPayments({ page: 1, limit: PAYMENT_LIMIT })
+            .catch(() => ({ payments: [] as PaymentDoc[], total: 0 })),
+          orderService.getAllOrders().catch(() => [] as OrderDoc[]),
+        ]);
 
-      const paystackOrderIds = new Set(payments.map((p) => extractOrderId(p.order)));
+        const freshPayments: PaymentDoc[] = Array.isArray(paymentsRaw)
+          ? paymentsRaw
+          : ((paymentsRaw as any)?.payments ?? []);
+        const total: number =
+          (paymentsRaw as any)?.total ?? freshPayments.length;
+        const orders: OrderDoc[] = Array.isArray(ordersRaw) ? ordersRaw : [];
 
-      const paystackItems = payments.map(paymentDocToItem);
+        if (silent) {
+          // Merge: update existing items' statuses + prepend brand-new payments.
+          // Items on pages > 1 that were already loaded stay in the list untouched.
+          setAllPayments((prev) => {
+            const existingIds = new Set(prev.map((p) => p._id));
+            const updated = prev.map(
+              (p) => freshPayments.find((fp) => fp._id === p._id) ?? p,
+            );
+            const brandNew = freshPayments.filter(
+              (fp) => !existingIds.has(fp._id),
+            );
+            return [...brandNew, ...updated];
+          });
+        } else {
+          // Full reset — wipe any previously loaded pages
+          setAllPayments(freshPayments);
+          setCurrentPage(1);
+        }
 
-      const podItems = orders
-        .filter((o) => o.payment_method === "pod" && !paystackOrderIds.has(o._id))
-        .map(podOrderToItem);
-
-      const noDocItems = orders
-        .filter(
-          (o) =>
-            o.payment_method === "paystack" &&
-            o.payment_status === "unpaid" &&
-            o.status !== "cancelled" &&
-            !paystackOrderIds.has(o._id),
-        )
-        .map(noDocOrderToItem);
-
-      const merged = [...paystackItems, ...podItems, ...noDocItems].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-      );
-
-      setAllItems(merged);
-      setLastRefreshed(new Date());
-    } catch (err) {
-      // ── Fix 2: Silent refresh failure notification ────────────────────────
-      if (!silent) {
-        setFetchError("Failed to load payments. Please try again.");
-      } else {
-        toast({
-          title: "Auto-refresh failed",
-          description: "Unable to update payments. Please pull-to-refresh manually.",
-          variant: "destructive",
-        });
+        setPaymentsTotal(total);
+        setAllOrders(orders);
+        setLastRefreshed(new Date());
+      } catch {
+        if (!silent) {
+          setFetchError("Failed to load payments. Please try again.");
+        } else {
+          toast({
+            title: "Auto-refresh failed",
+            description: "Unable to update payments. Please refresh manually.",
+            variant: "destructive",
+          });
+        }
+      } finally {
+        if (!silent) setIsLoading(false);
       }
-    } finally {
-      if (!silent) setIsLoading(false);
-    }
-  }, [toast]);
+    },
+    [toast],
+  );
 
-  useEffect(() => { loadAll(); }, [loadAll]);
+  useEffect(() => {
+    loadAll();
+  }, [loadAll]);
 
-  // Auto-refresh every 30s, skip on confirmed tab
+  // Auto-refresh every 30 s (silent merge), skipped on the Confirmed tab
   useEffect(() => {
     const id = setInterval(() => {
       if (activeTabRef.current !== "success") loadAll(true);
@@ -627,7 +749,48 @@ const PaymentsPage = () => {
     return () => clearInterval(id);
   }, [loadAll]);
 
-  const countOf = (s: DisplayStatus) => allItems.filter((i) => i.displayStatus === s).length;
+  // ── Load More — append the next page of payments ─────────────────────────
+  const loadMore = useCallback(async () => {
+    if (isLoadingMore || !hasMore) return;
+    setIsLoadingMore(true);
+
+    try {
+      const nextPage = currentPage + 1;
+      const paymentsRaw = await paymentService.getAllPayments({
+        page: nextPage,
+        limit: PAYMENT_LIMIT,
+      });
+
+      const newPayments: PaymentDoc[] = Array.isArray(paymentsRaw)
+        ? paymentsRaw
+        : ((paymentsRaw as any)?.payments ?? []);
+
+      // Deduplicate — in case a new payment slipped into a previous page
+      // while we were browsing (server data shifted by one).
+      setAllPayments((prev) => {
+        const existingIds = new Set(prev.map((p) => p._id));
+        const unique = newPayments.filter((p) => !existingIds.has(p._id));
+        return [...prev, ...unique];
+      });
+
+      setCurrentPage(nextPage);
+      // Update total in case new payments arrived since first load
+      const freshTotal: number = (paymentsRaw as any)?.total ?? paymentsTotal;
+      setPaymentsTotal(freshTotal);
+    } catch {
+      toast({
+        title: "Failed to load more payments",
+        description: "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [isLoadingMore, hasMore, currentPage, paymentsTotal, toast]);
+
+  // ── Filtering (all client-side on currently loaded items) ─────────────────
+  const countOf = (s: DisplayStatus) =>
+    allItems.filter((i) => i.displayStatus === s).length;
   const totalRevenue = allItems
     .filter((i) => i.displayStatus === "success")
     .reduce((s, i) => s + i.amount, 0);
@@ -635,7 +798,9 @@ const PaymentsPage = () => {
     key === "all" ? allItems.length : countOf(key as DisplayStatus);
 
   const tabFiltered =
-    activeTab === "all" ? allItems : allItems.filter((i) => i.displayStatus === activeTab);
+    activeTab === "all"
+      ? allItems
+      : allItems.filter((i) => i.displayStatus === activeTab);
 
   const filtered = tabFiltered.filter((item) => {
     const q = searchTerm.toLowerCase();
@@ -645,19 +810,15 @@ const PaymentsPage = () => {
       item.orderId.toLowerCase().includes(q) ||
       (item.order_number ?? "").toLowerCase().includes(q);
 
-    // Method filter:
-    // "online" = any non-POD payment (card, bank, ussd, paystack fallback, etc.)
-    // "pod"    = pay on delivery
-    // "All"    = everything
     const matchMethod =
       methodFilter === "All" ||
-      (methodFilter === "pod"    && item.channel === "pod") ||
+      (methodFilter === "pod" && item.channel === "pod") ||
       (methodFilter === "online" && item.channel !== "pod");
 
     return matchSearch && matchMethod;
   });
 
-  // ── Loading state ──────────────────────────────────────────────────────────
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (isLoading)
     return (
       <div className="flex items-center justify-center py-32 gap-3 text-muted-foreground">
@@ -666,7 +827,7 @@ const PaymentsPage = () => {
       </div>
     );
 
-  // ── Error state ────────────────────────────────────────────────────────────
+  // ── Error state ───────────────────────────────────────────────────────────
   if (fetchError)
     return (
       <div className="flex flex-col items-center justify-center py-32 gap-4">
@@ -678,7 +839,7 @@ const PaymentsPage = () => {
       </div>
     );
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div
       className="space-y-5 animate-in fade-in duration-500"
@@ -686,11 +847,17 @@ const PaymentsPage = () => {
     >
       {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl sm:text-2xl font-semibold text-foreground">Payments</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-foreground">
+          Payments
+        </h1>
         <div className="flex items-center gap-2">
           {lastRefreshed && (
             <span className="text-xs text-muted-foreground hidden sm:block">
-              Updated {lastRefreshed.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+              Updated{" "}
+              {lastRefreshed.toLocaleTimeString("en-GB", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
             </span>
           )}
           <button
@@ -706,7 +873,8 @@ const PaymentsPage = () => {
       {activeTab !== "success" && (
         <div className="px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-2 text-xs text-blue-700">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse flex-shrink-0" />
-          Auto-refreshing every 30 s — Paystack webhook confirmations appear automatically.
+          Auto-refreshing every 30 s — Paystack webhook confirmations appear
+          automatically.
         </div>
       )}
 
@@ -716,10 +884,12 @@ const PaymentsPage = () => {
           <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-red-800">
-              {countOf("failed")} payment{countOf("failed") > 1 ? "s" : ""} failed
+              {countOf("failed")} payment{countOf("failed") > 1 ? "s" : ""}{" "}
+              failed
             </p>
             <p className="text-xs text-red-700 mt-0.5">
-              Bank or card declined. Customer needs to retry with a different payment method.
+              Bank or card declined. Customer needs to retry with a different
+              payment method.
             </p>
           </div>
         </div>
@@ -729,11 +899,12 @@ const PaymentsPage = () => {
           <AlertCircle className="w-4 h-4 text-orange-500 mt-0.5 flex-shrink-0" />
           <div>
             <p className="text-sm font-semibold text-orange-800">
-              {countOf("no_doc")} order{countOf("no_doc") > 1 ? "s have" : " has"} no payment record
+              {countOf("no_doc")} order
+              {countOf("no_doc") > 1 ? "s have" : " has"} no payment record
             </p>
             <p className="text-xs text-orange-700 mt-0.5">
-              Initialisation crashed before a Payment document was saved. Customer must retry from
-              their Orders page.
+              Initialisation crashed before a Payment document was saved.
+              Customer must retry from their Orders page.
             </p>
           </div>
         </div>
@@ -741,10 +912,34 @@ const PaymentsPage = () => {
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard label="Total Revenue" value={fmt(totalRevenue)}          accentBg="bg-emerald-100" accentText="text-emerald-600" Icon={TrendingUp}  />
-        <StatCard label="Confirmed"     value={String(countOf("success"))} accentBg="bg-emerald-100" accentText="text-emerald-600" Icon={CheckCircle2} />
-        <StatCard label="Pending"       value={String(countOf("pending"))} accentBg="bg-amber-100"   accentText="text-amber-600"   Icon={Clock}        />
-        <StatCard label="Failed"        value={String(countOf("failed"))}  accentBg="bg-red-100"     accentText="text-red-600"     Icon={XCircle}      />
+        <StatCard
+          label="Total Revenue"
+          value={fmt(totalRevenue)}
+          accentBg="bg-emerald-100"
+          accentText="text-emerald-600"
+          Icon={TrendingUp}
+        />
+        <StatCard
+          label="Confirmed"
+          value={String(countOf("success"))}
+          accentBg="bg-emerald-100"
+          accentText="text-emerald-600"
+          Icon={CheckCircle2}
+        />
+        <StatCard
+          label="Pending"
+          value={String(countOf("pending"))}
+          accentBg="bg-amber-100"
+          accentText="text-amber-600"
+          Icon={Clock}
+        />
+        <StatCard
+          label="Failed"
+          value={String(countOf("failed"))}
+          accentBg="bg-red-100"
+          accentText="text-red-600"
+          Icon={XCircle}
+        />
         <StatCard
           label="Cancelled"
           value={String(countOf("cancelled") + countOf("no_doc"))}
@@ -759,7 +954,10 @@ const PaymentsPage = () => {
         {/* Mobile filter button */}
         <button
           className="sm:hidden inline-flex items-center gap-2 bg-secondary text-secondary-foreground rounded-lg px-3 py-2 relative"
-          onClick={(e) => { e.stopPropagation(); setShowFilterSheet(true); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowFilterSheet(true);
+          }}
         >
           <Filter size={14} className="text-muted-foreground" />
           <span className="text-sm">Method</span>
@@ -775,10 +973,14 @@ const PaymentsPage = () => {
           <span className="text-xs text-muted-foreground">Method</span>
           <div className="relative">
             <button
-              onClick={(e) => { e.stopPropagation(); setShowMethodDD(!showMethodDD); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMethodDD(!showMethodDD);
+              }}
               className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground rounded-lg px-3 py-2 hover:bg-secondary/80 text-sm"
             >
-              {METHOD_OPTIONS.find((o) => o.value === methodFilter)?.label ?? "All Methods"}
+              {METHOD_OPTIONS.find((o) => o.value === methodFilter)?.label ??
+                "All Methods"}
               <ChevronDown size={14} className="text-muted-foreground" />
             </button>
             {showMethodDD && (
@@ -789,9 +991,14 @@ const PaymentsPage = () => {
                 {METHOD_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => { setMethodFilter(opt.value); setShowMethodDD(false); }}
+                    onClick={() => {
+                      setMethodFilter(opt.value);
+                      setShowMethodDD(false);
+                    }}
                     className={`w-full text-left px-4 py-2.5 text-sm hover:bg-secondary/70 transition-colors ${
-                      methodFilter === opt.value ? "text-primary font-semibold" : "text-popover-foreground"
+                      methodFilter === opt.value
+                        ? "text-primary font-semibold"
+                        : "text-popover-foreground"
                     }`}
                   >
                     {opt.label}
@@ -850,28 +1057,40 @@ const PaymentsPage = () => {
           <table className="w-full text-sm text-left">
             <thead>
               <tr className="border-b border-border bg-muted/30">
-                {["Payment ID", "Order", "Type", "Amount", "Delivery Fee", "Method", "Status", "Date & Time"].map(
-                  (h) => (
-                    <th
-                      key={h}
-                      className="p-4 text-muted-foreground font-semibold whitespace-nowrap text-xs uppercase tracking-wide"
-                    >
-                      {h}
-                    </th>
-                  ),
-                )}
+                {[
+                  "Payment ID",
+                  "Order",
+                  "Type",
+                  "Amount",
+                  "Delivery Fee",
+                  "Method",
+                  "Status",
+                  "Date & Time",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="p-4 text-muted-foreground font-semibold whitespace-nowrap text-xs uppercase tracking-wide"
+                  >
+                    {h}
+                  </th>
+                ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-12 text-center text-muted-foreground italic text-sm">
+                  <td
+                    colSpan={8}
+                    className="p-12 text-center text-muted-foreground italic text-sm"
+                  >
                     {searchTerm
                       ? "No payments match your search."
                       : `No ${
                           activeTab === "all"
                             ? ""
-                            : (STATUS_CFG[activeTab as DisplayStatus]?.label.toLowerCase() ?? "") + " "
+                            : (STATUS_CFG[
+                                activeTab as DisplayStatus
+                              ]?.label.toLowerCase() ?? "") + " "
                         }payments found.`}
                   </td>
                 </tr>
@@ -899,58 +1118,61 @@ const PaymentsPage = () => {
                           </span>
                         )}
                       </div>
-                      {item.payment_number && !item.isPOD && item.displayStatus !== "no_doc" && (
-                        <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
-                          ref: {item.reference}
+                      {item.payment_number &&
+                        !item.isPOD &&
+                        item.displayStatus !== "no_doc" && (
+                          <p className="text-[10px] text-muted-foreground font-mono mt-0.5">
+                            ref: {item.reference}
+                          </p>
+                        )}
+                      {item.displayStatus === "no_doc" && (
+                        <p className="text-[10px] text-orange-600 mt-0.5">
+                          No payment document exists
                         </p>
                       )}
-                      {item.displayStatus === "no_doc" && (
-                        <p className="text-[10px] text-orange-600 mt-0.5">No payment document exists</p>
-                      )}
                       {item.displayStatus === "failed" && (
-                        <p className="text-[10px] text-red-600 mt-0.5">Declined by bank or card issuer</p>
+                        <p className="text-[10px] text-red-600 mt-0.5">
+                          Declined by bank or card issuer
+                        </p>
                       )}
                       {item.displayStatus === "cancelled" && !item.isPOD && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Customer abandoned payment flow</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          Customer abandoned payment flow
+                        </p>
                       )}
                       {item.displayStatus === "pending" && !item.isPOD && (
-                        <p className="text-[10px] text-amber-600 mt-0.5">Awaiting Paystack webhook</p>
+                        <p className="text-[10px] text-amber-600 mt-0.5">
+                          Awaiting Paystack webhook
+                        </p>
                       )}
                     </td>
 
-                    {/* Order */}
                     <td className="p-4 font-mono font-medium text-foreground">
-                      {item.order_number ?? `#${item.orderId.slice(-8).toUpperCase()}`}
+                      {item.order_number ??
+                        `#${item.orderId.slice(-8).toUpperCase()}`}
                     </td>
-
-                    {/* Type */}
                     <td className="p-4">
                       <FulfillmentChip type={item.fulfillment_type} />
                     </td>
-
-                    {/* Amount */}
-                    <td className="p-4 font-bold text-foreground">{fmt(item.amount)}</td>
-
-                    {/* Delivery Fee */}
+                    <td className="p-4 font-bold text-foreground">
+                      {fmt(item.amount)}
+                    </td>
                     <td className="p-4 text-muted-foreground">
-                      {item.delivery_fee === 0 || item.fulfillment_type === "pickup" ? (
-                        <span className="text-emerald-600 font-medium">Free</span>
+                      {item.delivery_fee === 0 ||
+                      item.fulfillment_type === "pickup" ? (
+                        <span className="text-emerald-600 font-medium">
+                          Free
+                        </span>
                       ) : (
                         fmt(item.delivery_fee)
                       )}
                     </td>
-
-                    {/* Method — channel-aware */}
                     <td className="p-4">
                       <ChannelBadge channel={item.channel} size="sm" />
                     </td>
-
-                    {/* Status */}
                     <td className="p-4">
                       <StatusBadge status={item.displayStatus} />
                     </td>
-
-                    {/* Date & Time */}
                     <td className="p-4">
                       <DateTimeCell iso={item.createdAt} />
                     </td>
@@ -966,14 +1188,52 @@ const PaymentsPage = () => {
       <div className="md:hidden space-y-2">
         {filtered.length === 0 ? (
           <p className="text-center text-muted-foreground text-sm py-12 italic">
-            {searchTerm ? "No payments match your search." : "No payments found."}
+            {searchTerm
+              ? "No payments match your search."
+              : "No payments found."}
           </p>
         ) : (
           filtered.map((item) => (
-            <MobileCard key={item._id} item={item} onClick={() => setSelectedItem(item)} />
+            <MobileCard
+              key={item._id}
+              item={item}
+              onClick={() => setSelectedItem(item)}
+            />
           ))
         )}
       </div>
+
+      {/* ── Load More button ──────────────────────────────────────────────────
+           Shown only when the DB has more payment docs than we've loaded.
+           Clicking fires a server request for the next page (50 items) and
+           appends them to the existing list — no page reset, no scroll jump.
+      ─────────────────────────────────────────────────────────────────────── */}
+      {hasMore && (
+        <div className="flex flex-col items-center gap-2 pt-2 pb-4">
+          <p className="text-xs text-muted-foreground">
+            Showing {allPayments.length} of {paymentsTotal} payments
+          </p>
+          <button
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-card text-sm font-semibold text-foreground hover:bg-secondary/60 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                Loading…
+              </>
+            ) : (
+              <>
+                Load more
+                <span className="ml-1 px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-[11px] font-bold">
+                  {paymentsTotal - allPayments.length} remaining
+                </span>
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       <FilterSheet
         open={showFilterSheet}
@@ -986,4 +1246,4 @@ const PaymentsPage = () => {
   );
 };
 
-export default PaymentsPage; 
+export default PaymentsPage;

@@ -4,7 +4,7 @@ import axios from "axios";
 // Authentication is handled automatically by the session cookie — no token
 // reading from storage needed.
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1`,
+  baseURL: `${import.meta.env.VITE_API_URL}`,
   withCredentials: true,
 });
 

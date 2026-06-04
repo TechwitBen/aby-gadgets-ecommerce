@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL:  `${import.meta.env.VITE_BACKEND_URL}/payment`,
+  baseURL: `${import.meta.env.VITE_API_URL}/payment`,
   withCredentials: true,
 });
 
@@ -50,9 +50,20 @@ export interface VerifyPaymentResponse {
   alreadyPaid?: boolean;
 }
 
+export interface GetAllPaymentsResponse {
+  payments: PaymentDoc[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export const paymentService = {
-  initializePayment: (payload: { orderId: string }): Promise<InitializePaymentResponse> =>
-    api.post<InitializePaymentResponse>("/initialize", payload).then((r) => r.data),
+  initializePayment: (payload: {
+    orderId: string;
+  }): Promise<InitializePaymentResponse> =>
+    api
+      .post<InitializePaymentResponse>("/initialize", payload)
+      .then((r) => r.data),
 
   verifyPayment: (reference: string): Promise<VerifyPaymentResponse> =>
     api.get<VerifyPaymentResponse>(`/verify/${reference}`).then((r) => r.data),
@@ -63,6 +74,13 @@ export const paymentService = {
   getPaymentStatus: (reference: string): Promise<PaymentDoc> =>
     api.get<PaymentDoc>(`/status/${reference}`).then((r) => r.data),
 
-  getAllPayments: (): Promise<{ payments: PaymentDoc[]; total: number }> =>
-    api.get("/all").then((r) => r.data),
+  // ── getAllPayments ────────────────────────────────────────────────────────
+  // The `params` object (e.g. { page: 1, limit: 50 }) is forwarded as
+  // query strings: GET /payment/all?page=1&limit=50
+  getAllPayments: (
+    params: { page?: number; limit?: number } = {},
+  ): Promise<GetAllPaymentsResponse> =>
+    api
+      .get<GetAllPaymentsResponse>("/all", { params })
+      .then((r) => r.data),
 };

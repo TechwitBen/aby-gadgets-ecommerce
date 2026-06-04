@@ -14,7 +14,7 @@ const paystack = axios.create({
     Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
     "Content-Type": "application/json",
   },
-});
+})  
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -544,7 +544,9 @@ export const handleWebhook = async (req, res) => {
       );
 
       if (!payment) {
-        console.warn(`[webhook] No payment doc found for reference: ${reference}`);
+        console.warn(
+          `[webhook] No payment doc found for reference: ${reference}`,
+        );
         return;
       }
 
@@ -589,7 +591,9 @@ export const handleWebhook = async (req, res) => {
       );
 
       if (!payment) {
-        console.warn(`[webhook] No payment doc found for failed ref: ${reference}`);
+        console.warn(
+          `[webhook] No payment doc found for failed ref: ${reference}`,
+        );
         return;
       }
 

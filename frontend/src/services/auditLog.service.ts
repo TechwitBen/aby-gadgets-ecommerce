@@ -27,7 +27,7 @@ export const getActionLabel = (action: string) =>
 
 // ── Axios instance with credentials ──────────────────────────────────────────
 const auditApi = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1`,
+  baseURL: `${import.meta.env.VITE_API_URL}`,
   withCredentials: true,
 });
 

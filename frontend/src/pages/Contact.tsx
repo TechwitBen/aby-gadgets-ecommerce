@@ -99,7 +99,7 @@ const Contact = () => {
     setIsSubmitting(true);
     setSubmitStatus('idle');
     try {
-      const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/v1/contact`, formData, {
+      const response = await axios.post(`${import.meta.env.VITE_API_URL}/contact`, formData, {
         headers: { 'Content-Type': 'application/json' },
       });
       if (response.data.success) {

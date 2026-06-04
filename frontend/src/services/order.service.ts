@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1/orders`,
+  baseURL: `${import.meta.env.VITE_API_URL}/orders`,
   withCredentials: true,
 });
 
@@ -156,7 +156,7 @@ getAllOrders: async (params?: { page?: number; limit?: number }) => {
   const query = new URLSearchParams();
   if (params?.page) query.set("page", String(params.page));
   if (params?.limit) query.set("limit", String(params.limit));
-  const res = await api.get(`/orders?${query.toString()}`);
+  const res = await api.get(`/?${query.toString()}`);
   return res.data;
 },
 

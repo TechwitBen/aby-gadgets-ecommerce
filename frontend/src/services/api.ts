@@ -2,7 +2,7 @@ import axios from "axios";
 import type { StaffPermissions } from "@/services/staff.service";
 
 const api = axios.create({
-  baseURL: `${import.meta.env.VITE_BACKEND_URL}/api/v1`,
+  baseURL: `${import.meta.env.VITE_API_URL}`,
   withCredentials: true,
 });
 
@@ -133,19 +133,24 @@ export const authAPI = {
 
 // ── Users API ─────────────────────────────────────────────────────────────────
 export const usersAPI = {
-  getAll: async (params?: { page?: number; limit?: number }) => {
+  getAll: async (params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<UsersResponse> => {
     const query = new URLSearchParams();
+
     if (params?.page) query.set("page", String(params.page));
     if (params?.limit) query.set("limit", String(params.limit));
-    const res = await api.get(`/auth/users?${query.toString()}`);
+
+    const res = await api.get<UsersResponse>(`/auth/users?${query.toString()}`);
+
     return res.data;
   },
 
   getAdmins: async (): Promise<BackendUser[]> => {
-    const all = await usersAPI.getAll();
-    return all.filter((u: BackendUser) => u.role === "admin");
+    const res = await usersAPI.getAll();
+    return res.users.filter((u: BackendUser) => u.role === "admin");
   },
-
   deleteUser: async (id: string): Promise<ApiResponse> => {
     const res = await api.delete<ApiResponse>(`/auth/users/${id}`);
     return res.data;

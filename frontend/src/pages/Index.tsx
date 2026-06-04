@@ -18,10 +18,10 @@ const Index = () => {
       <ProductCategories />
       <FeaturedProducts />
       <ServicesSection />
-      <GadgetGuide />
+      {/* <GadgetGuide />
       <Testimonials />
       <WhyChooseUs />
-      <FAQ />
+      <FAQ /> */}
     </div>
   );
 };
