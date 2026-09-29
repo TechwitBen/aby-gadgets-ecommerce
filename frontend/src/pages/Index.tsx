@@ -5,7 +5,9 @@ import GadgetGuide from "@/components/GadgetGuide";
 import Testimonials from "@/components/Testimonials";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import FAQ from "@/components/FAQ";
-import FeaturedProducts from "@/components/FeaturedProducts";
+import NewArrivals from "@/components/NewArrivals";
+import PromoBanner from "@/components/PromoBanner";
+import SweetDeals from "@/components/SweetDeals";
 
 // Header, TrustBadges and Footer are provided by PublicLayout — do not import here.
 const Index = () => {
@@ -16,15 +18,16 @@ const Index = () => {
         <HeroSection />
       </div>
       <ProductCategories />
-      <FeaturedProducts />
-      <ServicesSection />
+      <NewArrivals />
+      <PromoBanner />
+      <SweetDeals />
+      {/* <ServicesSection /> */}
       {/* <GadgetGuide />
       <Testimonials />
-      <WhyChooseUs />
-      <FAQ /> */}
+      <WhyChooseUs /> */}
+      <FAQ /> 
     </div>
   );
 };
 
 export default Index;
-
