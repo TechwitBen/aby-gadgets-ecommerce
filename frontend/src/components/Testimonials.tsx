@@ -25,7 +25,7 @@ const Testimonials = () => {
   const visibleTestimonials = testimonials4.slice(currentIndex * 3, currentIndex * 3 + 3);
 
   return (
-    <section className="py-10 sm:py-16 md:py-20 bg-[#F5F5F5]">
+    <section className="bg-white pt-6 pb-10 sm:pt-8 sm:pb-16 md:pt-10 md:pb-20">
       <div className="container mx-auto px-4 sm:px-6">
 
         {/* Heading */}
@@ -46,7 +46,8 @@ const Testimonials = () => {
           {visibleTestimonials.map((testimonial, index) => (
             <div
               key={index}
-              className="bg-white border border-gray-200 rounded-2xl p-5 sm:p-6 shadow-sm hover:shadow-md
+              className="bg-[#F6F4FB] border border-[#6426E1]/10 rounded-2xl p-5 sm:p-6
+                         hover:bg-white hover:border-gray-200 hover:shadow-md
                          transition-all duration-500 ease-out hover:-translate-y-1"
               style={{
                 transitionDelay: `${index * 100}ms`,
