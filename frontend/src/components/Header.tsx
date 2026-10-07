@@ -18,6 +18,7 @@ import {
   Grid,
   Phone,
   Info,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -27,21 +28,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useWishlist } from "@/contexts/WishlistContext";
 import { orderService } from "@/services/order.service";
 import { NotificationBell } from "@/components/Notificationbell";
-
-import blueLogoImg from "@/assets/blueLogo.png";
-import whiteLogoImg from "@/assets/whiteLogo.png";
+import AnnouncementBar from "@/components/AnnouncementBar";
+import BrandLogo from "@/components/BrandLogo";
 
 interface HeaderProps {
-  variant?: "default" | "transparent";
+  variant?: "default" | "transparent"; // kept for API compatibility; header is now always solid
   showBackButton?: boolean;
   title?: string;
 }
 
-const Header = ({
-  variant = "default",
-  showBackButton = false,
-  title,
-}: HeaderProps) => {
+const Header = ({ showBackButton = false, title }: HeaderProps) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
@@ -79,7 +75,8 @@ const Header = ({
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 10);
-    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -103,41 +100,30 @@ const Header = ({
     };
   }, [mobileMenuOpen]);
 
+  // Close the account dropdown on route change
+  useEffect(() => {
+    setUserDropdownOpen(false);
+  }, [location.pathname]);
+
   const navLinks = [
-    { name: "Home", path: "/", icon: Home },
-    { name: "All Products", path: "/products", icon: Grid },
-    { name: "Categories", path: "/categories", icon: Grid },
-    { name: "About", path: "/about", icon: Info },
-    { name: "Contact", path: "/contact", icon: Phone },
+    { name: "Home", path: "/", icon: Home, chevron: false },
+    { name: "All Products", path: "/products", icon: Grid, chevron: false },
+    { name: "Categories", path: "/categories", icon: Grid, chevron: false },
+    { name: "About", path: "/about", icon: Info, chevron: false },
+    { name: "Contact", path: "/contact", icon: Phone, chevron: false },
   ];
 
-  // ── Scroll-aware style helpers ─────────────────────────────────────────────
-  // When at top: fully transparent regardless of variant
-  // When scrolled: crisp white with shadow
-  const isHomePage = location.pathname === "/";
-  const isAtTop = isHomePage ? !isScrolled : false;
-
-  const headerBg = isAtTop
-    ? "bg-transparent"
-    : "bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm";
-
-  const headerBorder = isAtTop ? "border-transparent" : "border-gray-200";
-
-  // Text is white on the transparent hero, dark after scroll
-  const textColor = isAtTop ? "text-white" : "text-gray-800";
-  const subtextColor = isAtTop ? "text-white/70" : "text-gray-500";
-  const iconColor = isAtTop ? "text-white" : "text-gray-600";
-  const iconHoverBg = isAtTop ? "hover:bg-white/15" : "hover:bg-gray-100";
-
-  // Logo: white version on transparent, coloured on white
-  const logoSrc = isAtTop ? whiteLogoImg : blueLogoImg;
+  const isLinkActive = (path: string) =>
+    path === "/" ? location.pathname === "/" : location.pathname.startsWith(path);
 
   const handleLogin = () => {
     navigate("/login");
+    setUserDropdownOpen(false);
     setMobileMenuOpen(false);
   };
   const handleSignup = () => {
     navigate("/signup");
+    setUserDropdownOpen(false);
     setMobileMenuOpen(false);
   };
   const handleLogout = async () => {
@@ -147,19 +133,29 @@ const Header = ({
     navigate("/");
   };
 
+  const iconBtn =
+    "relative w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-gray-900 hover:bg-gray-100 transition-colors";
+
+  const drawerRow =
+    "flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all";
+
   return (
     <>
+      <AnnouncementBar />
+
       <header
-        className={`sticky top-0 z-50 w-full border-b transition-all duration-300 ${headerBg} ${headerBorder}`}
+        className={`sticky top-0 z-50 w-full bg-white border-b transition-shadow duration-300 ${
+          isScrolled ? "border-gray-200 shadow-sm" : "border-transparent"
+        }`}
       >
         <div className="container mx-auto px-4 sm:px-6">
-          <div className="flex items-center justify-between h-14 sm:h-16">
-            {/* ── Left — Logo / Back ─────────────────────────────────────── */}
+          <div className="flex items-center justify-between h-16 lg:h-[68px]">
+            {/* ── Left — Logo / Back ─────────────────────────────────── */}
             <div className="flex items-center gap-3">
               {showBackButton ? (
                 <button
                   onClick={() => navigate(-1)}
-                  className={`flex items-center gap-2 transition-colors ${iconColor} ${iconHoverBg} rounded-lg px-2 py-1`}
+                  className="flex items-center gap-2 text-gray-800 hover:bg-gray-100 rounded-lg px-2 py-1 transition-colors"
                 >
                   <ArrowLeft className="h-5 w-5" />
                   <span className="hidden sm:inline text-sm font-medium">
@@ -167,159 +163,85 @@ const Header = ({
                   </span>
                 </button>
               ) : (
-                <Link to="/" className="flex items-center gap-2.5 group">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform duration-200">
-                    <img
-                      src={logoSrc}
-                      alt="Aby Gadgets logo"
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span
-                      className={`font-bold text-base sm:text-lg leading-tight transition-colors ${textColor}`}
-                    >
-                      Aby Gadgets
-                    </span>
-                    <span
-                      className={`text-[10px] sm:text-xs hidden sm:block ${subtextColor}`}
-                    >
-                      Premium Tech Store
-                    </span>
-                  </div>
-                </Link>
+                <BrandLogo />
               )}
 
               {title && (
                 <div className="hidden md:flex items-center ml-2">
-                  <span
-                    className={`text-lg font-bold ${textColor} border-l border-current/30 pl-4`}
-                  >
+                  <span className="text-lg font-bold text-gray-800 border-l border-gray-300 pl-4">
                     {title}
                   </span>
                 </div>
               )}
             </div>
 
-            {/* ── Center — Desktop Nav ───────────────────────────────────── */}
+            {/* ── Center — Desktop Nav ───────────────────────────────── */}
             <nav className="hidden lg:flex items-center justify-center flex-1">
-              <div className="flex items-center gap-0.5">
+              <ul className="flex items-center gap-8">
                 {navLinks.map((link) => {
-                  const isActive = location.pathname === link.path;
+                  const active = isLinkActive(link.path);
                   return (
-                    <Link
-                      key={link.name}
-                      to={link.path}
-                      className={`text-sm font-medium px-3.5 py-2 rounded-lg transition-all duration-200 relative group ${
-                        isActive
-                          ? isAtTop
-                            ? "bg-white/20 text-white"
-                            : "bg-[#6426E1]/10 text-[#6426E1]"
-                          : isAtTop
-                            ? "text-white/85 hover:text-white hover:bg-white/15"
-                            : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-                      }`}
-                    >
-                      {link.name}
-                      {!isActive && (
-                        <span
-                          className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 w-0 h-0.5 rounded-full transition-all duration-300 group-hover:w-3/4 ${
-                            isAtTop ? "bg-white" : "bg-[#6426E1]"
-                          }`}
-                        />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </nav>
-
-            {/* ── Right — Icons ─────────────────────────────────────────── */}
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              {/* Desktop search bar */}
-              <div
-                className="hidden md:flex items-center relative group cursor-pointer"
-                onClick={() => navigate("/search")}
-              >
-                <Search
-                  className={`absolute left-3.5 h-4 w-4 pointer-events-none transition-colors ${
-                    isAtTop
-                      ? "text-white/60 group-hover:text-white"
-                      : "text-gray-400 group-hover:text-[#6426E1]"
-                  }`}
-                />
-                <div
-                  className={`pl-10 pr-4 py-2 text-sm rounded-xl w-40 cursor-pointer select-none border transition-all duration-300 ${
-                    isAtTop
-                      ? "bg-white/15 text-white border-white/25 hover:bg-white/20"
-                      : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
-                  }`}
-                >
-                  <span className="text-sm">Search...</span>
-                </div>
-              </div>
-
-              {/* Mobile search icon */}
-              <button
-                className={`md:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
-                onClick={() => navigate("/search")}
-              >
-                <Search className="h-5 w-5" />
-              </button>
-
-              {/* Cart */}
-              <button
-                className={`relative w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
-                onClick={() => navigate("/cart")}
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
-                  <span
-                    className={`absolute -top-0.5 -right-0.5 w-4 h-4 text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm ${
-                      isAtTop
-                        ? "bg-yellow-400 text-gray-900"
-                        : "bg-[#6426E1] text-white"
-                    }`}
-                  >
-                    {totalItems}
-                  </span>
-                )}
-              </button>
-
-              {/* Notification Bell — desktop only */}
-              <div className="hidden md:flex">
-                <NotificationBell isLight={isAtTop} />
-              </div>
-
-              {/* User dropdown — desktop only */}
-              <div className="hidden md:block relative" ref={userDropdownRef}>
-                {isAuthenticated ? (
-                  <>
-                    <button
-                      className={`relative flex items-center justify-center w-9 h-9 rounded-xl transition-colors ${iconHoverBg}`}
-                      onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    >
-                      {/* Avatar circle */}
-                      <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold text-sm transition-all ${
-                          isAtTop
-                            ? "bg-white/25 text-white border border-white/40"
-                            : "bg-[#6426E1] text-white"
+                    <li key={link.name}>
+                      <Link
+                        to={link.path}
+                        aria-current={active ? "page" : undefined}
+                        className={`relative inline-flex items-center gap-1 py-2 text-[15px] font-medium transition-colors ${
+                          active
+                            ? "text-[#6426E1]"
+                            : "text-gray-800 hover:text-[#6426E1]"
                         }`}
                       >
-                        {getUserInitials()}
-                      </div>
-                      {/* Chevron badge */}
-                      <ChevronDown
-                        className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-white rounded-full border border-gray-200 text-gray-600 transition-transform duration-200 ${
-                          userDropdownOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
+                        {link.name}
+                        {link.chevron && (
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        )}
+                        {active && (
+                          <span className="absolute -bottom-0.5 left-0 right-0 h-0.5 rounded-full bg-[#6426E1]" />
+                        )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </nav>
 
-                    {/* Dropdown */}
-                    {userDropdownOpen && (
-                      <div className="absolute right-0 mt-2 w-72 rounded-2xl shadow-xl border border-gray-100 bg-white overflow-hidden">
+            {/* ── Right — Icons ──────────────────────────────────────── */}
+            <div className="flex items-center gap-0.5 sm:gap-1.5">
+              {/* Search */}
+              <button
+                className={iconBtn}
+                onClick={() => navigate("/search")}
+                aria-label="Search"
+              >
+                <Search className="h-[22px] w-[22px]" />
+              </button>
+
+              {/* Notification bell — desktop only (existing behaviour) */}
+              <div className="hidden md:flex">
+                <NotificationBell isLight={false} />
+              </div>
+
+              {/* Account — desktop only */}
+              <div className="hidden md:block relative" ref={userDropdownRef}>
+                <button
+                  className={iconBtn}
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  aria-label="Account"
+                  aria-expanded={userDropdownOpen}
+                >
+                  {isAuthenticated ? (
+                    <span className="w-8 h-8 rounded-full bg-[#6426E1] text-white text-xs font-semibold flex items-center justify-center">
+                      {getUserInitials()}
+                    </span>
+                  ) : (
+                    <User className="h-[22px] w-[22px]" />
+                  )}
+                </button>
+
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-72 rounded-2xl shadow-xl border border-gray-100 bg-white overflow-hidden">
+                    {isAuthenticated ? (
+                      <>
                         {/* User info */}
                         <div className="px-4 pt-4 pb-3 border-b border-gray-100">
                           <div className="flex items-center gap-3">
@@ -362,11 +284,7 @@ const Header = ({
                         {/* Menu rows */}
                         <div className="p-2">
                           {[
-                            {
-                              icon: Package,
-                              label: "My Orders",
-                              path: "/orders",
-                            },
+                            { icon: Package, label: "My Orders", path: "/orders" },
                             {
                               icon: Heart,
                               label: "Wishlist",
@@ -378,11 +296,7 @@ const Header = ({
                               label: "Notifications",
                               path: "/notifications",
                             },
-                            {
-                              icon: Settings,
-                              label: "Settings",
-                              path: "/settings",
-                            },
+                            { icon: Settings, label: "Settings", path: "/settings" },
                             {
                               icon: HelpCircle,
                               label: "Help Centre",
@@ -395,7 +309,7 @@ const Header = ({
                                 navigate(item.path);
                                 setUserDropdownOpen(false);
                               }}
-                              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl text-gray-700 hover:bg-[#6426E1]/8 hover:text-[#6426E1] transition-all duration-150 group"
+                              className="flex items-center gap-3 w-full px-3 py-2.5 text-sm rounded-xl text-gray-700 hover:bg-[#6426E1]/10 hover:text-[#6426E1] transition-all duration-150 group"
                             >
                               <item.icon className="h-4 w-4 flex-shrink-0 text-gray-400 group-hover:text-[#6426E1] transition-colors" />
                               <span className="flex-1 text-left">
@@ -420,42 +334,53 @@ const Header = ({
                             <span className="flex-1 text-left">Logout</span>
                           </button>
                         </div>
+                      </>
+                    ) : (
+                      <div className="p-4 space-y-2">
+                        <p className="text-sm font-semibold text-gray-900">
+                          Welcome to Gadget Plug
+                        </p>
+                        <p className="text-xs text-gray-500 pb-1">
+                          Log in to track orders and manage your wishlist.
+                        </p>
+                        <Button
+                          className="w-full rounded-xl bg-[#6426E1] text-white hover:bg-[#5220c4]"
+                          onClick={handleLogin}
+                        >
+                          <LogIn className="h-4 w-4 mr-1.5" />
+                          Login
+                        </Button>
+                        <Button
+                          variant="outline"
+                          className="w-full rounded-xl"
+                          onClick={handleSignup}
+                        >
+                          <UserPlus className="h-4 w-4 mr-1.5" />
+                          Sign Up
+                        </Button>
                       </div>
                     )}
-                  </>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      className={`rounded-xl px-3.5 text-sm font-medium transition-all ${
-                        isAtTop
-                          ? "text-white hover:text-white hover:bg-white/15"
-                          : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                      }`}
-                      onClick={handleLogin}
-                    >
-                      <LogIn className="h-4 w-4 mr-1.5" />
-                      Login
-                    </Button>
-                    <Button
-                      className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
-                        isAtTop
-                          ? "bg-white text-[#6426E1] hover:bg-white/90"
-                          : "bg-[#6426E1] text-white hover:bg-[#5220c4]"
-                      }`}
-                      onClick={handleSignup}
-                    >
-                      <UserPlus className="h-4 w-4 mr-1.5" />
-                      Sign Up
-                    </Button>
                   </div>
                 )}
               </div>
 
+              {/* Cart */}
+              <button
+                className={iconBtn}
+                onClick={() => navigate("/cart")}
+                aria-label={`Cart, ${totalItems} items`}
+              >
+                <ShoppingCart className="h-[22px] w-[22px]" />
+                <span className="absolute top-0 right-0 min-w-[16px] h-4 px-1 text-[10px] font-bold rounded-full bg-[#6426E1] text-white flex items-center justify-center">
+                  {totalItems}
+                </span>
+              </button>
+
               {/* Mobile hamburger */}
               <button
-                className={`lg:hidden w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${iconColor} ${iconHoverBg}`}
+                className={`lg:hidden ${iconBtn}`}
                 onClick={() => setMobileMenuOpen(true)}
+                aria-label="Open menu"
               >
                 <Menu className="h-5 w-5" />
               </button>
@@ -464,7 +389,7 @@ const Header = ({
         </div>
       </header>
 
-      {/* ── Mobile Drawer ─────────────────────────────────────────────────── */}
+      {/* ── Mobile Drawer ─────────────────────────────────────────────── */}
       <div
         className={`fixed inset-0 z-[60] lg:hidden transition-all duration-300 ${
           mobileMenuOpen
@@ -486,21 +411,11 @@ const Header = ({
         >
           {/* Drawer header */}
           <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-xl overflow-hidden shadow">
-                <img
-                  src={blueLogoImg}
-                  alt="logo"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <span className="font-bold text-gray-900 text-base">
-                Aby Gadgets
-              </span>
-            </div>
+            <BrandLogo size="sm" onClick={() => setMobileMenuOpen(false)} />
             <button
               onClick={() => setMobileMenuOpen(false)}
               className="w-8 h-8 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label="Close menu"
             >
               <X className="h-4 w-4 text-gray-600" />
             </button>
@@ -517,9 +432,7 @@ const Header = ({
                   <p className="font-bold text-gray-900 text-sm truncate">
                     {user?.username}
                   </p>
-                  <p className="text-xs text-gray-500 truncate">
-                    {user?.email}
-                  </p>
+                  <p className="text-xs text-gray-500 truncate">{user?.email}</p>
                 </div>
                 <div className="text-right flex-shrink-0">
                   <p className="text-[10px] text-gray-400 uppercase tracking-wide">
@@ -556,7 +469,7 @@ const Header = ({
             </p>
 
             {navLinks.map((link) => {
-              const isActive = location.pathname === link.path;
+              const isActive = isLinkActive(link.path);
               return (
                 <Link
                   key={link.name}
@@ -569,7 +482,9 @@ const Header = ({
                   }`}
                 >
                   <link.icon
-                    className={`h-4 w-4 flex-shrink-0 ${isActive ? "text-white" : "text-gray-400"}`}
+                    className={`h-4 w-4 flex-shrink-0 ${
+                      isActive ? "text-white" : "text-gray-400"
+                    }`}
                   />
                   {link.name}
                 </Link>
@@ -587,7 +502,7 @@ const Header = ({
                 navigate("/wishlist");
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+              className={drawerRow}
             >
               <Heart className="h-4 w-4 text-pink-500 flex-shrink-0" />
               Wishlist
@@ -603,7 +518,7 @@ const Header = ({
                 navigate("/cart");
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+              className={drawerRow}
             >
               <ShoppingCart className="h-4 w-4 text-blue-500 flex-shrink-0" />
               Cart
@@ -621,7 +536,7 @@ const Header = ({
                     navigate("/orders");
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+                  className={drawerRow}
                 >
                   <Package className="h-4 w-4 text-[#6426E1] flex-shrink-0" />
                   My Orders
@@ -637,7 +552,7 @@ const Header = ({
                     navigate("/notifications");
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+                  className={drawerRow}
                 >
                   <Bell className="h-4 w-4 text-amber-500 flex-shrink-0" />
                   Notifications
@@ -648,7 +563,7 @@ const Header = ({
                     navigate("/settings");
                     setMobileMenuOpen(false);
                   }}
-                  className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+                  className={drawerRow}
                 >
                   <Settings className="h-4 w-4 text-gray-400 flex-shrink-0" />
                   Settings
@@ -661,7 +576,7 @@ const Header = ({
                 navigate("/help");
                 setMobileMenuOpen(false);
               }}
-              className="flex items-center gap-3 w-full px-3.5 py-3 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all"
+              className={drawerRow}
             >
               <HelpCircle className="h-4 w-4 text-gray-400 flex-shrink-0" />
               Help Center

@@ -1,102 +1,74 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import newsletterBg from "@/assets/newsletter-bg.jpg";
-import { CheckCircle2 } from "lucide-react";
-import { useState } from "react";
-import { useInView } from "@/hooks/useInView";
+import { BadgeCheck, Headset, ShieldCheck, Truck, type LucideIcon } from "lucide-react";
 
-const benefits5 = [
-  "Every gadget inspected & verified before sale.",
-  "Fair stress free device swaps.",
-  "Reliable delivery for gifting orders.",
-  "Customer first service with honesty and support.",
+interface Reason {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+// ── Edit the content here ──
+const reasons: Reason[] = [
+  {
+    icon: ShieldCheck,
+    title: "Genuine Products",
+    description:
+      "Every device is authentic and carefully checked before it reaches you.",
+  },
+  {
+    icon: BadgeCheck,
+    title: "Backed by Warranty",
+    description:
+      "Shop with confidence. Your purchase comes with warranty cover.",
+  },
+  {
+    icon: Truck,
+    title: "Fast Delivery",
+    description:
+      "Express shipping across Nigeria, free on orders over ₦50,000.",
+  },
+  {
+    icon: Headset,
+    title: "Reliable Support",
+    description:
+      "Real people ready to help you before and after you buy.",
+  },
 ];
 
-const WhyChooseUs = () => {
-  const [email5, setEmail5] = useState("");
-  const { ref: leftRef,  isInView: leftInView  } = useInView({ threshold: 0.1 });
-  const { ref: rightRef, isInView: rightInView } = useInView({ threshold: 0.1 });
-
-  return (
-    <section className="py-10 sm:py-16 md:py-20" style={{ backgroundColor: "#F5F5F5" }}>
-      <div className="container mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6 items-stretch">
-
-          {/* Why Choose */}
-          <div
-            ref={leftRef}
-            className="bg-white border-2 border-primary rounded-2xl p-6 sm:p-8 md:p-10 flex flex-col justify-between
-                       transition-all duration-700 ease-out"
-            style={{
-              opacity: leftInView ? 1 : 0,
-              transform: leftInView ? "translateX(0)" : "translateX(-32px)",
-            }}
-          >
-            <div>
-              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground mb-6 sm:mb-8">
-                Why Choose Aby Gadgets?
-              </h2>
-              <ul className="space-y-3 sm:space-y-4 mb-6 sm:mb-8">
-                {benefits5.map((benefit, i) => (
-                  <li
-                    key={benefit}
-                    className="flex items-start gap-3 transition-all duration-500 ease-out"
-                    style={{
-                      transitionDelay: `${leftInView ? i * 80 + 200 : 0}ms`,
-                      opacity: leftInView ? 1 : 0,
-                      transform: leftInView ? "translateX(0)" : "translateX(-12px)",
-                    }}
-                  >
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary mt-0.5 flex-shrink-0" />
-                    <span className="text-muted-foreground text-sm sm:text-base">{benefit}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 sm:px-8 py-5 sm:py-6 rounded-full w-full sm:w-fit text-sm sm:text-base transition-transform duration-200 hover:scale-105 active:scale-95">
-              SHOP NOW
-            </Button>
-          </div>
-
-          {/* Newsletter */}
-          <div
-            ref={rightRef}
-            className="rounded-2xl p-6 sm:p-8 md:p-10 relative overflow-hidden flex flex-col justify-center min-h-[280px] sm:min-h-[320px]
-                       transition-all duration-700 ease-out"
-            style={{
-              backgroundImage: `url(${newsletterBg})`,
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-              opacity: rightInView ? 1 : 0,
-              transform: rightInView ? "translateX(0)" : "translateX(32px)",
-            }}
-          >
-            <div className="absolute inset-0 bg-black/55" />
-            <div className="relative z-10 text-white">
-              <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 sm:mb-3">
-                Get 20% Off Your Next Delivery
-              </h3>
-              <p className="text-white/75 text-xs sm:text-sm mb-5 sm:mb-6 max-w-sm leading-relaxed">
-                Subscribe for exclusive deals, gadget tips, and early access to new arrivals.
-              </p>
-              <div className="flex flex-col xs:flex-row gap-2.5 sm:gap-3">
-                <Input
-                  placeholder="you@example.com"
-                  value={email5}
-                  onChange={(e) => setEmail5(e.target.value)}
-                  className="bg-white/90 text-foreground placeholder:text-muted-foreground border-0 h-11 sm:h-12 flex-1 rounded-xl text-sm"
-                />
-                <Button className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-5 sm:px-6 h-11 sm:h-12 whitespace-nowrap text-xs sm:text-sm rounded-xl transition-transform duration-200 hover:scale-105 active:scale-95">
-                  SUBSCRIBE & SAVE
-                </Button>
-              </div>
-            </div>
-          </div>
-
-        </div>
+const WhyChooseUs = () => (
+  // Same outer/inner padding as Shop By Category so the edges line up
+  <section className="w-full bg-[#F6F4FB] px-3 py-12 sm:px-5 md:py-16 lg:px-6">
+    <div className="px-4 sm:px-6 lg:px-8">
+      {/* Heading */}
+      <div className="mb-8 md:mb-10">
+        <h2 className="text-xl font-bold tracking-tight text-foreground md:text-2xl lg:text-[28px]">
+          Why Choose Gadget Plug
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground sm:text-sm">
+          Great gadgets, backed by service you can rely on
+        </p>
       </div>
-    </section>
-  );
-};
+
+      {/* Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-4 lg:gap-6">
+        {reasons.map(({ icon: Icon, title, description }) => (
+          <div
+            key={title}
+            className="rounded-2xl border border-gray-200/80 bg-white p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg lg:p-7"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#6426E1]/10 text-[#6426E1]">
+              <Icon className="h-6 w-6" aria-hidden />
+            </div>
+            <h3 className="mt-5 text-base font-semibold text-gray-900 sm:text-lg">
+              {title}
+            </h3>
+            <p className="mt-2 text-sm leading-relaxed text-gray-600">
+              {description}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);
 
 export default WhyChooseUs;

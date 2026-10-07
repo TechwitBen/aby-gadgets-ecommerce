@@ -1,132 +1,76 @@
-import { Button } from "@/components/ui/button";
-import heroBackground from "@/assets/heroBackgroundimage-black22.png";
+import { ArrowRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import trioPhones from "@/assets/GadgetPlugHero-removebg-preview.png"; // adjust extension if needed
 
 const HeroSection = () => {
   const navigate = useNavigate();
 
   return (
-    <section className="relative w-full min-h-[580px] sm:min-h-[640px] md:min-h-[700px] lg:min-h-[760px] overflow-hidden">
+    <section className="w-full px-3 sm:px-5 lg:px-6 pt-3 pb-4">
+      <div className="relative isolate overflow-hidden rounded-2xl bg-gradient-to-br from-[#2d1278] via-[#3b1c9b] to-[#4a24b3] lg:min-h-[480px] xl:min-h-[520px]">
+        {/* Ambient glows behind the phones */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute right-[4%] top-1/2 -z-10 hidden lg:block h-[85%] aspect-square -translate-y-1/2 rounded-full bg-[#7c4dff]/25 blur-3xl"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute bottom-0 right-[6%] -z-10 hidden lg:block h-24 w-[46%] rounded-full bg-[#8b5cf6]/30 blur-2xl"
+        />
 
-      {/* ── Background Image ─────────────────────────────────────────── */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat animate-[heroZoom_8s_ease-out_forwards]"
-        style={{ backgroundImage: `url(${heroBackground})` }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/30 md:from-black/70 md:via-black/50 md:to-transparent" />
-      </div>
-
-      {/* ── Main Content ─────────────────────────────────────────────── */}
-      <div className="relative z-10 h-full px-5 sm:px-6 md:px-8 lg:px-12
-                      pt-28 pb-36
-                      sm:pt-32 sm:pb-32
-                      md:pt-40 md:pb-32
-                      lg:pt-48 lg:pb-36">
-
-        <div className="w-full max-w-[90%] sm:max-w-md md:max-w-xl lg:max-w-2xl">
-          <div className="text-white">
-
-            {/* Heading — slides up on load */}
-            <h1
-              className="font-bold leading-tight mb-4 sm:mb-5 md:mb-6
-                         text-2xl sm:text-4xl md:text-5xl lg:text-6xl
-                         animate-[fadeSlideUp_0.8s_ease-out_0.2s_both]"
-            >
-              Real Gadgets. Smooth Delivery. Zero Stress.
+        <div className="relative flex flex-col lg:min-h-[inherit] lg:justify-center">
+          {/* ── Left content ───────────────────────────────── */}
+          <div className="px-6 pt-10 pb-6 sm:px-10 sm:pt-14 lg:px-14 lg:py-16 lg:max-w-[56%]">
+            <h1 className="font-bold tracking-tight leading-[1.05] text-white text-[32px] sm:text-5xl xl:text-[64px] animate-[fadeSlideUp_0.8s_ease-out_0.2s_both]">
+              <span className="block">Everything tech.</span>
+              <span className="block">one plug.</span>
             </h1>
 
-            {/* Sub-text */}
-            <p
-              className="opacity-90 mb-7 sm:mb-8 md:mb-10
-                          text-sm sm:text-lg md:text-xl
-                          max-w-[85%] sm:max-w-sm md:max-w-lg
-                          leading-relaxed
-                          animate-[fadeSlideUp_0.8s_ease-out_0.45s_both]"
-            >
-              Serving students, professionals, and gadget lovers who want
-              authentic gadgets and stress-free delivery — right to your door.
+            <p className="mt-5 sm:mt-6 max-w-md text-sm sm:text-lg leading-relaxed text-white/90 animate-[fadeSlideUp_0.8s_ease-out_0.4s_both]">
+              Discover new and quality preowned phones, gadgets and accessories,
+              carefully checked and backed with warranty.
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row flex-wrap gap-3 animate-[fadeSlideUp_0.8s_ease-out_0.65s_both]">
+            <div className="mt-7 sm:mt-8 flex flex-col sm:flex-row gap-3 animate-[fadeSlideUp_0.8s_ease-out_0.6s_both]">
               <Button
                 onClick={() => navigate("/products")}
-                className="btn-teal w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6
-                           text-sm sm:text-base font-semibold rounded-xl
-                           shadow-lg hover:scale-105 transition-transform duration-200"
+                className="h-12 rounded-full bg-white px-6 text-sm sm:text-[15px] font-semibold text-gray-900 hover:bg-white/90 hover:scale-[1.03] transition-all duration-200"
               >
-                Shop Original Gadgets
+                Shop Smartphones
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-
               <Button
                 onClick={() => navigate("/categories")}
                 variant="ghost"
-                className="w-full sm:w-auto px-6 sm:px-8 py-5 sm:py-6
-                           text-sm sm:text-base font-semibold rounded-xl
-                           border border-white/30 text-white
-                           hover:bg-white/10 hover:text-white
-                           transition-all duration-200"
+                className="h-12 rounded-full border border-white/40 px-6 text-sm sm:text-[15px] font-semibold text-white hover:bg-white/10 hover:text-white transition-all duration-200"
               >
-                Browse Categories
+                Explore Gadgets
               </Button>
             </div>
 
+            <ul className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-white/70 animate-[fadeSlideUp_0.8s_ease-out_0.8s_both]">
+              <li>Latest devices</li>
+              <li aria-hidden>•</li>
+              <li>Genuine products</li>
+              <li aria-hidden>•</li>
+              <li>Reliable service</li>
+            </ul>
           </div>
+
+          {/* ── Product image ──────────────────────────────── */}
+          {/* The file has transparent padding, so the box is taller than the banner (105%+)
+              and the extra transparent area is clipped. That makes the phones themselves large. */}
+          <img
+            src={trioPhones}
+            alt="Three smartphones on display"
+            draggable={false}
+            className="relative mx-auto mb-6 w-full max-w-[460px] object-contain drop-shadow-2xl sm:max-w-[560px]
+                       lg:pointer-events-none lg:absolute lg:right-[3%] lg:top-1/2 lg:mx-0 lg:mb-0 lg:h-[105%] lg:w-auto lg:max-w-[50%] lg:-translate-y-1/2
+                       xl:h-[110%] xl:max-w-[54%]"
+          />
         </div>
       </div>
-
-      {/* ── Bottom Stats Bar ─────────────────────────────────────────── */}
-      <div
-        className="absolute bottom-0 left-0 right-0
-                    bg-black/60 backdrop-blur-sm border-t border-white/10
-                    animate-[fadeSlideUp_0.8s_ease-out_0.9s_both]"
-      >
-        <div className="w-full px-5 sm:px-6 md:px-8 lg:px-12 py-3 sm:py-4">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center
-                          gap-2 sm:gap-0 text-white text-xs sm:text-sm">
-
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-teal-400/20
-                               flex items-center justify-center
-                               text-teal-400 text-[10px] sm:text-xs font-bold flex-shrink-0">
-                ✓
-              </span>
-              <span className="text-white/80">
-                <span className="font-semibold text-white">500+</span> gadgets delivered this year
-              </span>
-            </div>
-
-            <div className="hidden sm:block w-px h-5 bg-white/20" />
-
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-teal-400/20
-                               flex items-center justify-center
-                               text-teal-400 text-[10px] sm:text-xs font-bold flex-shrink-0">
-                ✓
-              </span>
-              <span className="text-white/80">
-                <span className="font-semibold text-white">99.9%</span> customer success rate
-              </span>
-            </div>
-
-            <div className="hidden sm:block w-px h-5 bg-white/20" />
-
-            <div className="flex items-center gap-2">
-              <span className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-teal-400/20
-                               flex items-center justify-center
-                               text-teal-400 text-[10px] sm:text-xs font-bold flex-shrink-0">
-                ✓
-              </span>
-              <span className="text-white/80">
-                Serving customers{" "}
-                <span className="font-semibold text-white">across Nigeria</span>
-              </span>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
     </section>
   );
 };

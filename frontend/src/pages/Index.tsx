@@ -1,30 +1,32 @@
 import HeroSection from "@/components/HeroSection";
 import ProductCategories from "@/components/ProductCategories";
-import ServicesSection from "@/components/ServiceSection";
-import GadgetGuide from "@/components/GadgetGuide";
-import Testimonials from "@/components/Testimonials";
-import WhyChooseUs from "@/components/WhyChooseUs";
-import FAQ from "@/components/FAQ";
+import PromoBanners from "@/components/PromoBanners";
+import PromoCarousel from "@/components/PromoCarousel";
 import FeaturedProducts from "@/components/FeaturedProducts";
+import SweetDeals from "@/components/SweetDeals";
+import DealsSection from "@/components/DealsSection";
+import ServicesSection from "@/components/ServiceSection";
+import WhyChooseUs from "@/components/WhyChooseUs";
+import Testimonials from "@/components/Testimonials";
 
 // Header, TrustBadges and Footer are provided by PublicLayout — do not import here.
 const Index = () => {
   return (
     <div className="min-h-screen bg-background">
-      {/* Negative margin pulls hero up under the sticky header (h-14 = 56px / sm:h-16 = 64px) */}
-      <div className="-mt-14 sm:-mt-16">
-        <HeroSection />
-      </div>
+      <HeroSection />
       <ProductCategories />
+      <PromoBanners />
+      
       <FeaturedProducts />
-      <ServicesSection />
-      {/* <GadgetGuide />
-      <Testimonials />
+      <PromoCarousel />
+      <SweetDeals />
+     
+      {/* <ServicesSection /> */}
       <WhyChooseUs />
-      <FAQ /> */}
+       <DealsSection />
+      <Testimonials />
     </div>
   );
 };
 
 export default Index;
-

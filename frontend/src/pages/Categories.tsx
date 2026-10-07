@@ -1,10 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
 import {
-  Heart,
   ChevronDown,
-  ShoppingCart,
-  Star,
   Grid,
   List,
   X,
@@ -23,26 +19,21 @@ import {
   Watch,
   Gamepad,
   Speaker as SpeakerIcon,
-  CheckCircle,
   Loader2,
   SlidersHorizontal,
   ArrowUpDown,
-  ArrowRight,
-  Eye,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   productService,
-  formatPrice,
   type Product,
   type GetProductsParams,
   type SortBy,
 } from "@/services/products.service";
-import { getTypeIcon, getTypeColor, getTwoSpecs } from "@/utils/productUtils";
-import { useWishlist } from "@/contexts/WishlistContext";
-import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
 import { useInView } from "@/hooks/useInView";
+import ShowcaseProductCard from "@/components/ShowcaseProductCard";
+import ShowcaseProductListItem from "@/components/ShowcaseProductListItem";
 
 const LIMIT = 30;
 
@@ -125,6 +116,14 @@ const sortOptions: { value: SortBy; label: string }[] = [
   { value: "most_popular", label: "Most Popular" },
 ];
 
+// "New" / "Deal" badge on the shared cards, based on the product's section
+const badgeFor = (p: Product) =>
+  p.section === "New Arrivals"
+    ? "New"
+    : p.section === "Sweet Deals"
+      ? "Deal"
+      : undefined;
+
 const FilterSection = ({
   title,
   value,
@@ -200,370 +199,9 @@ const FilterSection = ({
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Animated ProductCard (standalone so useInView hook is valid)
-// ─────────────────────────────────────────────────────────────────────────────
-const ProductCard = ({
-  product,
-  index,
-  isInWishlist,
-  toggleWishlist,
-  handleAddToCart,
-  toast,
-}: {
-  product: Product;
-  index: number;
-  isInWishlist: (id: string) => boolean;
-  toggleWishlist: (id: string) => void;
-  handleAddToCart: (p: Product) => void;
-  toast: any;
-}) => {
-  const { ref, isInView } = useInView({ threshold: 0.05 });
-  const inWishlist = isInWishlist(product.id);
-  const TypeIcon = getTypeIcon(product.type);
-  const typeColor = getTypeColor(product.type);
-  const specs = getTwoSpecs(product);
-  const isOutOfStock = !product.inStock;
-
-  return (
-    <div
-      ref={ref}
-      className="group relative bg-white rounded-2xl border border-gray-200 hover:border-[#6426E1]/30 hover:shadow-xl overflow-hidden isolate flex flex-col transition-all duration-500"
-      style={{
-        transitionDelay: `${(index % 6) * 70}ms`,
-        opacity: isInView ? 1 : 0,
-        transform: isInView ? "translateY(0)" : "translateY(24px)",
-      }}
-    >
-      {/* Image */}
-      <div className="relative aspect-square bg-gray-50 overflow-hidden">
-        <img
-          src={product.image}
-          alt={product.name}
-          className="absolute inset-0 w-full h-full object-contain p-3 sm:p-4 transition-transform duration-500 group-hover:scale-105"
-        />
-
-        {/* Badges */}
-        <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-          {product.type && (
-            <div
-              className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${typeColor}`}
-            >
-              <TypeIcon className="w-2.5 h-2.5" />
-              <span className="hidden sm:inline">
-                {product.type.charAt(0).toUpperCase() + product.type.slice(1)}
-              </span>
-            </div>
-          )}
-          {product.section === "New Arrivals" && (
-            <span className="text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit bg-red-500">
-              NEW
-            </span>
-          )}
-          {product.condition === "UK Used" && (
-            <span className="bg-amber-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
-              UK USED
-            </span>
-          )}
-          {product.condition === "Open Box" && (
-            <span className="bg-purple-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
-              OPEN BOX
-            </span>
-          )}
-          {product.condition === "Refurbished" && (
-            <span className="bg-green-500 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
-              REFURB
-            </span>
-          )}
-          {!product.inStock && (
-            <span className="bg-gray-700 text-white px-1.5 py-0.5 rounded-full text-[10px] font-bold w-fit">
-              SOLD OUT
-            </span>
-          )}
-        </div>
-
-        {/* Wishlist */}
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const alreadyIn = inWishlist;
-            toggleWishlist(product.id);
-            toast({
-              title: alreadyIn ? "Removed from wishlist" : "Added to wishlist",
-              description: `${product.name} ${alreadyIn ? "removed from" : "saved to"} your wishlist`,
-            });
-          }}
-          className="absolute top-2 right-2 w-7 h-7 sm:w-8 sm:h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white hover:scale-110 transition-all border border-gray-200 z-30"
-        >
-          <Heart
-            className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors duration-200 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-600"}`}
-          />
-        </button>
-
-        {/* Desktop hover overlay */}
-        {!isOutOfStock && (
-          <div className="hidden sm:flex absolute inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-20 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300">
-            <div className="flex flex-col gap-2 translate-y-2 group-hover:translate-y-0 transition-transform duration-300">
-              <Button
-                className="bg-white text-[#6426E1] hover:bg-gray-100 px-4 py-2 rounded-xl font-semibold text-sm"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleAddToCart(product);
-                }}
-              >
-                <ShoppingCart className="w-4 h-4 mr-2" /> Quick Add
-              </Button>
-              <Link
-                to={`/products/${product.slug}`}
-                className="bg-[#6426E1] hover:bg-[#5420c4] text-white px-4 py-2 rounded-xl font-semibold text-sm text-center transition-colors"
-              >
-                View Details
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Card body */}
-      <div className="p-3 sm:p-4 flex flex-col flex-1">
-        <div className="flex items-center justify-between mb-1 sm:mb-1.5">
-          <div className="flex items-center gap-1">
-            <span
-              className={`text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-full ${typeColor}`}
-            >
-              {product.brand}
-            </span>
-            {product.condition === "Brand New" && (
-              <CheckCircle className="w-3 h-3 text-green-500 hidden sm:block" />
-            )}
-          </div>
-          {product.rating > 0 && (
-            <div className="flex items-center gap-0.5">
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-              <span className="text-[11px] font-bold text-gray-900">
-                {product.rating}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <Link to={`/products/${product.slug}`}>
-          <h3 className="font-bold text-gray-900 text-xs sm:text-sm leading-snug line-clamp-2 mb-1.5 sm:mb-2 hover:text-[#6426E1] transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-
-        {specs.length > 0 && (
-          <div className="hidden sm:block space-y-1 mb-3">
-            {specs.slice(0, 2).map((spec, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-1.5 text-xs text-gray-500"
-              >
-                <spec.icon className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                <span className="truncate">{spec.value}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-gray-100 mb-2">
-          <div className="text-sm sm:text-base font-bold text-[#6426E1]">
-            {formatPrice(product.price)}
-          </div>
-          <div className="hidden sm:block text-[10px] text-gray-400 truncate max-w-[90px] text-right">
-            {product.condition}
-          </div>
-        </div>
-
-       {!isOutOfStock ? (
-  <div className="flex gap-1.5 sm:hidden">
-    {/* Mobile: icon-only cart button so it never wraps */}
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        handleAddToCart(product); 
-      }}
-      aria-label="Add to cart"
-      className="w-9 h-9 min-w-[36px] bg-[#6426E1] hover:bg-[#5420c4] text-white rounded-xl flex items-center justify-center active:scale-95 transition-all flex-shrink-0"
-    >
-      <ShoppingCart className="w-4 h-4" />
-    </button>
-    <Link
-      to={`/products/${product.slug}`}
-      onClick={(e) => e.stopPropagation()}
-      className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 text-[11px] font-semibold transition-colors whitespace-nowrap"
-    >
-      <Eye className="w-3 h-3" /> View Details
-    </Link>
-  </div>
-) : (
-  <div className="py-2 text-center text-[11px] text-gray-400 font-medium border border-gray-200 rounded-xl sm:hidden">
-    Sold out
-  </div>
-)}
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Animated ProductListItem
-// ─────────────────────────────────────────────────────────────────────────────
-const ProductListItem = ({
-  product,
-  index,
-  isInWishlist,
-  toggleWishlist,
-  handleAddToCart,
-  toast,
-}: {
-  product: Product;
-  index: number;
-  isInWishlist: (id: string) => boolean;
-  toggleWishlist: (id: string) => void;
-  handleAddToCart: (p: Product) => void;
-  toast: any;
-}) => {
-  const { ref, isInView } = useInView({ threshold: 0.05 });
-  const inWishlist = isInWishlist(product.id);
-  const TypeIcon = getTypeIcon(product.type);
-  const typeColor = getTypeColor(product.type);
-  const specs = getTwoSpecs(product);
-  const isOutOfStock = !product.inStock;
-
-  return (
-    <div
-      ref={ref}
-      className="bg-white rounded-2xl border border-gray-200 hover:border-[#6426E1]/30 p-4 sm:p-5 transition-all duration-500 hover:shadow-lg"
-      style={{
-        transitionDelay: `${(index % 8) * 60}ms`,
-        opacity: isInView ? 1 : 0,
-        transform: isInView ? "translateX(0)" : "translateX(-20px)",
-      }}
-    >
-      <div className="flex items-start gap-3 sm:gap-5">
-        <Link
-          to={`/products/${product.slug}`}
-          className="relative w-20 h-20 sm:w-28 sm:h-28 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
-        >
-          <img
-            src={product.image}
-            alt={product.name}
-            className="w-14 h-14 sm:w-20 sm:h-20 object-contain transition-transform duration-300 hover:scale-110"
-          />
-          {isOutOfStock && (
-            <span className="absolute bottom-1 left-1 bg-gray-700 text-white px-1.5 py-0.5 rounded text-xs font-bold">
-              SOLD OUT
-            </span>
-          )}
-        </Link>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <div
-                  className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold ${typeColor}`}
-                >
-                  <TypeIcon className="w-3 h-3" />
-                  <span>
-                    {product.type?.charAt(0).toUpperCase()}
-                    {product.type?.slice(1)}
-                  </span>
-                </div>
-                {product.section === "New Arrivals" && (
-                  <span className="bg-red-500 text-white px-2 py-0.5 rounded-full text-xs font-bold">
-                    NEW
-                  </span>
-                )}
-              </div>
-              <Link to={`/products/${product.slug}`}>
-                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-1 hover:text-[#6426E1] transition-colors line-clamp-2">
-                  {product.name}
-                </h3>
-              </Link>
-              {specs.length > 0 && (
-                <div className="flex items-center gap-3 text-xs text-gray-500 mb-2 flex-wrap">
-                  {specs.slice(0, 2).map((spec, i) => (
-                    <div key={i} className="flex items-center gap-1">
-                      <spec.icon className="w-3 h-3" />
-                      <span>{spec.value}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="text-right flex-shrink-0">
-              <div className="text-base sm:text-xl font-bold text-[#6426E1]">
-                {formatPrice(product.price)}
-              </div>
-              {product.rating > 0 && (
-                <div className="flex items-center justify-end gap-1 mt-1">
-                  <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                  <span className="text-xs font-bold text-gray-900">
-                    {product.rating}
-                  </span>
-                </div>
-              )}
-              <div className="text-xs text-gray-400 mt-0.5">
-                {product.condition}
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-2 mt-2">
-            <button
-              disabled={isOutOfStock}
-              onClick={() => {
-                if (!isOutOfStock) handleAddToCart(product);
-              }}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 text-xs h-8 sm:h-9 px-4 rounded-xl font-semibold transition-all active:scale-95 ${
-                isOutOfStock
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : "bg-[#6426E1] hover:bg-[#5420c4] text-white"
-              }`}
-            >
-              <ShoppingCart className="w-3.5 h-3.5" />
-              {isOutOfStock ? "Sold Out" : "Add to Cart"}
-            </button>
-            <Link
-              to={`/products/${product.slug}`}
-              className="flex items-center justify-center gap-1.5 text-xs h-8 sm:h-9 px-3 sm:px-4 rounded-xl font-semibold border border-gray-200 hover:border-[#6426E1] hover:text-[#6426E1] text-gray-600 transition-all whitespace-nowrap"
-            >
-              <Eye className="w-3.5 h-3.5" /> View Details
-            </Link>
-            <button
-              onClick={() => {
-                const alreadyIn = inWishlist;
-                toggleWishlist(product.id);
-                toast({
-                  title: alreadyIn
-                    ? "Removed from wishlist"
-                    : "Added to wishlist",
-                  description: `${product.name} ${alreadyIn ? "removed from" : "saved to"} your wishlist`,
-                });
-              }}
-              className="w-8 h-8 sm:h-9 sm:w-9 flex items-center justify-center rounded-xl border border-gray-200 hover:border-red-300 hover:bg-red-50 transition-all flex-shrink-0"
-            >
-              <Heart
-                className={`w-4 h-4 transition-colors duration-200 ${inWishlist ? "fill-red-500 text-red-500" : "text-gray-400"}`}
-              />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Categories page
 // ─────────────────────────────────────────────────────────────────────────────
 const Categories = () => {
-  const { isInWishlist, toggleWishlist } = useWishlist();
-  const { addToCart } = useCart();
   const { toast } = useToast();
 
   const [productType, setProductType] = useState("all");
@@ -715,28 +353,6 @@ const Categories = () => {
     { value: "all", label: "All Brands", icon: Layers },
     ...allBrands.map((b) => ({ value: b, label: b, icon: Layers })),
   ];
-
-  const handleAddToCart = (product: Product) => {
-    const firstVariant =
-      product.variants?.find((v) => v.is_active && v.stock > 0) ??
-      product.variants?.[0];
-    if (!firstVariant) {
-      toast({ title: "Error", description: "No variants available" });
-      return;
-    }
-    addToCart({
-      id: product.id,
-      variantId: firstVariant.id,
-      name: product.name,
-      price: firstVariant.price,
-      image: product.image,
-      quantity: 1,
-      storage: firstVariant.storage ?? undefined,
-      color: firstVariant.color,
-      sku: firstVariant.sku,
-    });
-    toast({ title: "Added to cart", description: `${product.name} added` });
-  };
 
   const filterSidebar = (
     <div className="space-y-0">
@@ -1157,28 +773,22 @@ const Categories = () => {
                 {viewMode === "grid" ? (
                   <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5">
                     {products.map((p, i) => (
-                      <ProductCard
+                      <ShowcaseProductCard
                         key={p.id}
                         product={p}
-                        index={i}
-                        isInWishlist={isInWishlist}
-                        toggleWishlist={toggleWishlist}
-                        handleAddToCart={handleAddToCart}
-                        toast={toast}
+                        badge={badgeFor(p)}
+                        index={i % 6}
                       />
                     ))}
                   </div>
                 ) : (
                   <div className="space-y-3">
                     {products.map((p, i) => (
-                      <ProductListItem
+                      <ShowcaseProductListItem
                         key={p.id}
                         product={p}
-                        index={i}
-                        isInWishlist={isInWishlist}
-                        toggleWishlist={toggleWishlist}
-                        handleAddToCart={handleAddToCart}
-                        toast={toast}
+                        badge={badgeFor(p)}
+                        index={i % 8}
                       />
                     ))}
                   </div>
